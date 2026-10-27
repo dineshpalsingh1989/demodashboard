@@ -1,0 +1,20 @@
+# Local tooling and previews
+node_modules/
+.preview/
+.tmp/
+.codex/
+.agents/
+.aws/
+.vscode/
+
+# Local credentials and machine-specific settings
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Logs and operating system files
+*.log
+Thumbs.db
+.DS_Store
