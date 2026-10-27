@@ -2,6 +2,8 @@
 
 An interactive smart city simulation built with HTML, CSS, and JavaScript. Explore 25 districts, 177 deployed demo devices, building interiors, energy monitoring, and guided scenarios.
 
+**[Open the live demo](https://dineshpalsingh1989.github.io/demodashboard/)**
+
 ## Explore the demo
 
 - Search for districts, devices, and scenarios using the search button or `/`.
@@ -32,7 +34,7 @@ Then visit `http://localhost:8080`. No package installation or build step is req
 
 ## GitHub Pages
 
-Publish the repository using **Settings → Pages → Deploy from a branch**, with branch `main` and folder `/ (root)`. The `.nojekyll` file lets GitHub serve the static files directly.
+GitHub Pages publishes branch `main` from `/ (root)`. Pushing changes to `main` updates the live demo automatically. The `.nojekyll` file lets GitHub serve the static files directly.
 
 ## Product references
 
