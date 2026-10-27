@@ -121,13 +121,8 @@ function drawUtilityLabels() {
     if (!p.b && p[0] > -120 && p[0] < W + 120 && p[1] > 0 && p[1] < H) pill(p[0], p[1], label, color, '#fff', 11);
   }
 }
-function utilityMinimapMarkup() {
-  return [[POWER_ROUTE, '#c48909'], [WATER_ROUTE, '#009ac8'], [SEWER_ROUTE, '#8d6e63']].map(([points, color]) =>
-    `<polyline points="${points.map(p => p.slice(0, 2).join(',')).join(' ')}" fill="none" stroke="${color}" stroke-width="1" pointer-events="none"/>`).join('');
-}
 function showUtilities() {
   resetCityView(); sel = null; selDev = null; nav = null; rotHold = true;
-  document.getElementById('worldMap').open = false;
   cam.tx = 27; cam.ty = 52.5; cam.tz = .9;
   const metrics = [...powerMetrics.slice(0, 4), ...waterSupplyMetrics];
   openPanel('#0288d1', headHTML('🏙️', 'Simulated city supply', 'Power & water to the city') +
@@ -139,9 +134,6 @@ function showUtilities() {
     '<button class="tourbtn" data-utility="wtp">Visit remote water treatment →</button>' +
     '<p class="p-sum utility-note">Brown flow shows wastewater returning to its separate treatment plant. Ratings, flows and distances are illustrative demo values.</p>', metrics);
 }
-document.getElementById('bPowerStation').onclick = () => show('powerstation');
-document.getElementById('bWaterPlant').onclick = () => show('wtp');
-document.getElementById('bUtilities').onclick = showUtilities;
 panel.addEventListener('click', event => {
   const target = event.target.closest('[data-utility]')?.dataset.utility;
   if (target === 'overview') showUtilities();

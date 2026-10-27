@@ -237,17 +237,6 @@
   <button id="bRot" aria-label="Automatic camera rotation" title="Automatic camera rotation" aria-pressed="true"><span data-icon="rotate"></span></button>
 </div>
 <div class="hint" id="mapHint"><span data-icon="mouse"></span><span>Click to explore</span><i></i><span>Drag to move · Shift-drag to rotate</span><i></i><span>Scroll to zoom</span></div>
-<details id="worldMap" class="world-map">
-  <summary><span data-icon="map"></span><span>Whole map</span><span class="map-chevron" aria-hidden="true">⌄</span></summary>
-  <div class="minimap-content">
-    <div class="minimap-caption"><span>Click anywhere to jump</span><span id="mapLocation">City</span></div>
-    <svg id="minimapSvg" role="img" aria-label="Overview of the city, highway, small town, farms and remote utilities"></svg>
-    <div class="map-regions" role="group" aria-label="Jump to a region"><button data-region="city">City</button><button data-region="highway">Highway</button><button data-region="town">Small town</button><button data-region="farms">Farms</button></div>
-    <div class="utility-shortcuts"><button id="bPowerStation">⚡ Power station</button><button id="bWaterPlant">💧 Water treatment</button></div>
-    <button id="bUtilities">City supply overview →</button>
-    <button id="bFitMap"><span data-icon="focus"></span>Fit entire map</button>
-  </div>
-</details>
 <button id="bBack" class="backcity" hidden>⬅ Back to city <span>· inside City Hall</span></button>
 <aside id="panel" aria-label="City details" inert></aside>
 <div id="legend"></div>
@@ -674,10 +663,10 @@ function tree(zone, x, y, s = 1, k) {
 const add = (t, zone, x, y, extra = {}) => objs.push(Object.assign({ t, id: ++oid, zone, cx: x, cy: y }, extra));
 
 // Business district
-box('buildings', 1.0, 1.0, 3.2, 3.2, 8.5, '#dfe6ec', { win: 'bands', deco: ['helipad'] });
-box('buildings', 4.0, 0.9, 5.9, 2.8, 6.6, '#e8edf0', { win: 'bands', deco: ['helipad'] });
-box('buildings', 1.2, 4.2, 3.0, 6.0, 5.4, '#d5dde4', { win: 'grid' });
-box('buildings', 4.2, 4.0, 6.1, 5.9, 7.3, '#cfd8df', { win: 'bands', deco: ['antenna'] });
+box('buildings', 1.25, 1.25, 2.95, 2.95, 8.5, '#dfe6ec', { win: 'bands', deco: ['helipad'] });
+box('buildings', 4.2, 1.1, 5.7, 2.6, 6.6, '#e8edf0', { win: 'bands', deco: ['helipad'] });
+box('buildings', 1.4, 4.4, 2.8, 5.8, 5.4, '#d5dde4', { win: 'grid' });
+box('buildings', 4.4, 4.2, 5.9, 5.7, 7.3, '#cfd8df', { win: 'bands', deco: ['antenna'] });
 [[3.6, 1.2], [3.6, 2.7], [3.6, 4.4], [3.6, 5.9], [0.8, 3.7], [2.3, 3.7], [5.0, 3.4], [6.2, 3.4]].forEach(p => tree('buildings', p[0], p[1], .8));
 links.push({ x: 2.1, y: 2.1, z: 8.5, zone: 'buildings' }, { x: 5.15, y: 4.95, z: 8.8, zone: 'buildings' });
 wifis.push({ x: 2.1, y: 2.1, z: 9.6 });
@@ -691,8 +680,8 @@ links.push({ x: 11, y: 2.5, z: 2.2, zone: 'iot' }, { x: 12.4, y: 5, z: 4.6, zone
 wifis.push({ x: 12.4, y: 5, z: 5.9 });
 
 // Homes
-box('homes', 15.9, 0.9, 18.2, 3.0, 4.2, '#f1e3d3', { win: 'grid', deco: ['solar'] });
-box('homes', 19.0, 0.9, 21.2, 3.2, 5.2, '#e6d5c3', { win: 'grid', deco: ['solar'] });
+box('homes', 16.15, 1.15, 17.95, 2.75, 4.2, '#f1e3d3', { win: 'grid', deco: ['solar'] });
+box('homes', 19.25, 1.15, 20.95, 2.95, 5.2, '#e6d5c3', { win: 'grid', deco: ['solar'] });
 box('homes', 16.0, 4.2, 17.6, 5.8, 1.3, '#f4efe6', { win: 'grid', roof: '#c96f4a' });
 box('homes', 18.3, 4.2, 19.9, 5.8, 1.3, '#efe6d6', { win: 'grid', roof: '#b75d3c' });
 box('homes', 20.4, 4.3, 21.3, 5.8, 1.1, '#f4efe6', { win: 'grid', roof: '#c96f4a' });
@@ -709,8 +698,8 @@ add('sensor', 'green', 2.0, 9.2);
 links.push({ x: 2.0, y: 9.2, z: 1.3, zone: 'green' });
 
 // Command center
-box('command', 9.2, 9.0, 11.0, 11.0, 6.8, '#f2c230', { win: 'bands', deco: ['helipad'] });
-box('command', 11.2, 9.2, 12.9, 10.9, 5.2, '#e9eef2', { win: 'bands', kids: [kid(11.8, 9.8, 12.3, 10.3, 5.2, .4, '#f5f7f9', { deco: ['lora'] })] });
+box('command', 9.2, 9.2, 10.6, 10.8, 6.8, '#f2c230', { win: 'bands', deco: ['helipad'] });
+box('command', 11.4, 9.4, 12.7, 10.7, 5.2, '#e9eef2', { win: 'bands', kids: [kid(11.8, 9.8, 12.3, 10.3, 5.2, .4, '#f5f7f9', { deco: ['lora'] })] });
 box('command', 9.4, 11.6, 11.4, 13.0, 1.0, '#dfe6ec', { win: 'grid', roof: '#cfd8e0' });
 [[9.0, 12.3], [13.1, 13.2], [12.6, 12.0], [13.2, 8.9], [12.0, 13.2]].forEach(p => tree('command', p[0], p[1], .75));
 links.push({ x: 10.1, y: 10, z: 6.8, zone: 'command' }, { x: 12.05, y: 10.05, z: 5.2, zone: 'command' });
@@ -752,8 +741,8 @@ box('mobility', 8.55, 13.0, 8.95, 13.4, .6, '#b0bec5', { deco: ['cabinet'] });  
 
 // ---------- new districts ----------
 // Condominium: two towers, pool, EV chargers
-box('condo', 23.0, 0.9, 25.2, 3.3, 8.0, '#ece6dc', { win: 'grid', deco: ['solar'] });
-box('condo', 25.9, 0.9, 28.1, 3.0, 6.6, '#dde6ee', { win: 'bands', deco: ['solar'] });
+box('condo', 23.25, 1.15, 24.95, 3.05, 8.0, '#ece6dc', { win: 'grid', deco: ['solar'] });
+box('condo', 26.15, 1.15, 27.85, 2.75, 6.6, '#dde6ee', { win: 'bands', deco: ['solar'] });
 [26.0, 26.9, 27.8].forEach((x, i) => {
   box('condo', x - .1, 4.0, x + .1, 4.2, .7, '#eceff1', { deco: ['cabinet'], stripe: '#43a047' });
   box('condo', x - .2, 4.5, x + .2, 5.3, .17, ['#e53935', '#1e88e5', '#ffffff'][i], { kids: [kid(x - .17, 4.7, x + .17, 5.1, .17, .12, '#a9c7dc', { roof: ['#e53935', '#1e88e5', '#ffffff'][i] })] });
@@ -895,7 +884,7 @@ const DEVICES = [
     m: [['Lamps on', () => night > .5 ? '20 / 20' : '0 / 20'], ['Dimming', () => night > .5 ? '70%' : 'off'], ['Energy today', () => fint(410 + time / 4) + ' kWh'], ['Faults', () => '0']],
     payload: () => ({ devEUI: '24E1-xxxx-0558', model: 'WS558', switch: night > .5 ? 'on' : 'off', active_power_w: night > .5 ? Math.round(wob(1240, 40, .5)) : 0, energy_kwh: +(410 + time / 4).toFixed(1) }),
     say: 'This is the Milesight W S 558 smart light controller, installed on the street-light circuits. It lets the edge computer switch the street lights on at sunset, dim them late at night to save energy, and report any fault automatically.' },
-  { id: 'am319', cat: 'sensor', brand: 'Milesight', model: 'AM319', name: 'Indoor Air Quality Sensor', icon: '🌡️', zone: 'buildings', x: 2.1, y: 3.2, z: 4.2, qty: 12,
+  { id: 'am319', cat: 'sensor', brand: 'Milesight', model: 'AM319', name: 'Indoor Air Quality Sensor', icon: '🌡️', zone: 'buildings', x: 2.1, y: 2.95, z: 4.2, qty: 12,
     loc: 'Office floors and hospital wards', short: 'Offices & hospital', conn: 'LoRaWAN', power: 'DC adapter',
     what: 'A multi-sensor indoor air quality monitor: temperature, humidity, CO₂, particulate matter, TVOC, light and motion. The building management system uses it to control ventilation and air conditioning.',
     why: 'Wall-mounted in occupied areas so ventilation follows the real number of people. High CO₂ brings in more fresh air, and empty rooms save energy.',
@@ -1033,7 +1022,7 @@ const DEVICES = [
     why: 'On the charger feeds in the car park distribution board.',
     m: [['Chargers in use', () => '3 / 3'], ['Charging current', () => Math.round(wob(46, 4, .3)) + ' A'], ['Building headroom', () => Math.round(wob(28, 5, .2)) + '%'], ['Energy today', () => fint(210 + time / 6) + ' kWh']],
     say: 'These C T 103 sensors measure the current to the condo\'s E V chargers. When the building is busy, charging slows down a little, so cars charge fairly and the main breaker never trips.' }),
-  fdev({ id: 'condo-vs', model: 'VS133', name: 'Lobby People Counter', icon: '👥', zone: 'condo', x: 24.1, y: 3.35, z: 1.4, qty: 2, power: 'DC / PoE',
+  fdev({ id: 'condo-vs', model: 'VS133', name: 'Lobby People Counter', icon: '👥', zone: 'condo', x: 24.1, y: 3.1, z: 1.4, qty: 2, power: 'DC / PoE',
     loc: 'Condo lobby entrance', short: 'Condo lobby',
     what: 'A ceiling people counter that counts residents and visitors through the lobby without recording faces.',
     why: 'Above the lobby doors, so management sees how busy the lobby and lifts are.',
@@ -2009,6 +1998,39 @@ function workstation(O, x, y, who = null, n = 2) {
   for (let k = 0; k < n; k++) { const mx = x + (k - (n - 1) / 2) * .46; Bx(O, { x0: mx - .21, y0: y - .25, x1: mx + .21, y1: y - .19, z0: .75, h: .34, color: '#1e3a5f' }, mx, y - .19); }
   chair(O, x, y + .75, '#37474f', who);
 }
+// high-tech operator desk: dark top, cyan edge light, live monitors
+function opsDesk(O, x, y, who = null, n = 2, seed = 0) {
+  Bx(O, { x0: x - .6, y0: y - .35, x1: x + .6, y1: y + .35, h: .75, color: '#263238', roof: '#37474f', stripe: '#00e5ff' });
+  for (let k = 0; k < n; k++) {
+    const mx = x + (k - (n - 1) / 2) * .46, kind = ['line', 'bars', 'heat'][(k + seed) % 3];
+    fnObj(O, mx, y - .19, () => {
+      drawBox({ x0: mx - .21, y0: y - .25, x1: mx + .21, y1: y - .19, z0: .75, h: .34, color: '#11161d' });
+      screenTile([P(mx - .19, y - .185, .78), P(mx + .19, y - .185, .78), P(mx + .19, y - .185, 1.06), P(mx - .19, y - .185, 1.06)], kind, k + seed);
+    });
+  }
+  chair(O, x, y + .75, '#263238', who);
+}
+// digital-twin table: a hologram of the city rotating above a glowing disc
+function holoTable(O, cx, cy) {
+  fnObj(O, cx, cy, () => {
+    const top = cylinder(cx, cy, 0, .85, .95, '#263238'), rx = .82 * sc;
+    ctx.fillStyle = 'rgba(0,229,255,.22)'; ctx.strokeStyle = 'rgba(0,229,255,.9)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(top[0], top[1], rx, rx * TILT, 0, 0, 7); ctx.fill(); ctx.stroke();
+    for (let k = 0; k < 2; k++) {
+      const u = (time * .35 + k / 2) % 1, p = P(cx, cy, .9 + u * 1.3), r = (.75 - u * .35) * sc;
+      ctx.strokeStyle = `rgba(0,229,255,${(1 - u) * .6})`; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.ellipse(p[0], p[1], r, r * TILT, 0, 0, 7); ctx.stroke();
+    }
+    for (let i = 0; i < 11; i++) {
+      const a = i * 2.4 + time * .3, r = .15 + .5 * hsh(i * 7.1), x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r, h = .15 + .6 * hsh(i * 3.3);
+      line(P(x, y, .88), P(x, y, .88 + h), 'rgba(79,195,247,.7)', Math.max(2, sc * .09));
+      poly(quad(x - .05, y - .05, x + .05, y + .05, .88 + h), 'rgba(178,235,242,.9)');
+    }
+    const p = P(cx, cy, 2.5); pill(p[0], p[1], '🛰️ Digital twin · live', '#00838f', '#fff', 10);
+  });
+}
+const ccAlerts = () => Math.max(0, Math.round(wob(6, 3, .15)));
+const ccMsgs = () => Math.round(wob(46, 6, .6));
 const plant = (O, x, y) => O.push({ t: 'plant', x, y });
 const rack = (O, x0, y0, x1, y1, h, id, color = '#2b333d', roof = '#3a4450') => Bx(O, { x0, y0, x1, y1, h, color, roof, win: 'server', id });
 function bed(O, x, yc, i) {
@@ -2157,23 +2179,48 @@ const SCENES = {
 
   command: {
     title: 'Command & Control Room', short: 'the Command Center', kicker: 'Inside the Command Center', icon: '🧠', color: '#f2b705',
-    floor: '#d9dee3', tile: '#c9d0d6', wallA: '#e4e8ec', wallB: '#eceff2', winA: [[1, 3], [4.6, 6.6]], winZ: [1.4, 3.0], sign: 'CONTROL ROOM',
-    sum: 'The brain of the city. Operators watch the whole city on a video wall, while the IRIV Edge computer in the rack processes every sensor message and runs the automation rules.',
-    say: 'Welcome to the command and control room. Operators watch the whole city on the video wall: the live map, alerts, traffic cameras and energy charts. In the rack on the right is the IRIV Edge computer, which receives all sensor data from the UG 65 gateway on this roof, runs the automation rules, and sends commands to the PiControl controllers. A temperature sensor protects the rack, an air quality sensor keeps operators alert, and a people counter tracks who is in the room.',
-    can: ['<b>One view of the city:</b> map, alerts, cameras and KPIs on one video wall.', '<b>AI alerts:</b> sensor data triggers alarms on operator screens automatically.',
+    floor: '#1b2430', tile: '#2a3a4c', wallA: '#2b3440', wallB: '#303a47', winA: [], sign: 'CONTROL ROOM',
+    sum: 'The brain of the city, where data from every district arrives. Sensors send to the UG65 gateway on this roof; the IRIV Edge computer in the rack processes every message, runs the automation rules and feeds the video wall, the live data wall and the digital-twin table.',
+    say: 'Welcome to the command and control room, where data from the whole city comes together. Every sensor sends its readings by LoRaWAN to the U G 65 gateway on this roof. The IRIV Edge computer in the rack processes every message, runs the automation rules, and sends commands back out to the PiControl controllers. Operators follow it all on the video wall, the live data wall, and the digital twin table, a live hologram of the city. A temperature sensor protects the rack, an air quality sensor keeps operators alert, and a people counter tracks who is in the room.',
+    can: ['<b>One view of the city:</b> map, alerts, cameras and KPIs on one video wall.', '<b>Digital twin:</b> a live 3D model of the city to plan and rehearse responses.',
+      '<b>Every data stream in one place:</b> sensors, power, water and alerts on the live data wall.', '<b>AI alerts:</b> sensor data triggers alarms on operator screens automatically.',
       '<b>One-click dispatch:</b> send police, ambulance or repair teams and clear their route.', '<b>Works offline:</b> IRIV Edge keeps rules running even without internet.',
       '<b>Protected IT:</b> rack temperature alerts before equipment overheats.', '<b>Reports:</b> shift handover and incident reports generated automatically.'],
-    m: [['Active alerts', () => Math.max(0, Math.round(wob(6, 3, .15)))], ['Operators on duty', () => countPeople()], ['Cameras online', () => fint(wob(2410, 6, .4))], ['Edge CPU', () => Math.round(wob(23, 6, .7)) + '%']],
+    m: [['Active alerts', ccAlerts], ['Messages / min', ccMsgs], ['Operators on duty', () => countPeople()], ['Cameras online', () => fint(wob(2410, 6, .4))], ['Edge CPU', () => Math.round(wob(23, 6, .7)) + '%']],
     build(O) {
-      [3, 5.2, 7.4, 9.6, 11.8].forEach((x, i) => workstation(O, x, 4.3, i < 4 ? i : null, 2));
-      [4.2, 6.6, 9.0].forEach((x, i) => workstation(O, x, 7.0, i + 4, 3));
+      [3, 5.2, 7.4, 9.6, 11.8].forEach((x, i) => opsDesk(O, x, 4.3, i < 4 ? i : null, 2, i));
+      [4.2, 6.6, 9.0].forEach((x, i) => opsDesk(O, x, 7.0, i + 4, 3, i + 2));
       rack(O, 12.6, .2, 13.8, 1.0, 2.2, 88);
-      [[.7, .7], [13.4, 10.3], [.7, 7.2]].forEach(([x, y]) => plant(O, x, y));
+      holoTable(O, 11.8, 7.9);
+      [[13.4, 10.3], [.7, 10.3]].forEach(([x, y]) => plant(O, x, y));
+    },
+    floorDecor() {
+      // data streams on the floor, flowing from the desks to the edge rack
+      ctx.save(); ctx.setLineDash([sc * .3, sc * .25]); ctx.lineDashOffset = -time * 30; ctx.lineCap = 'round';
+      for (const pts of [[[1.2, 5.75], [12.9, 5.75], [12.9, 1.2]], [[2.6, 8.45], [10.7, 8.45]]]) pline(pts.map(p => P(p[0], p[1], .01)), 'rgba(0,229,255,.55)', Math.max(2, sc * .06));
+      ctx.restore();
     },
     decor() {
-      const T = [['map', 'line', 'cam'], ['alerts', 'kpi', 'bars']], X = [[1.4, 4.9], [5.1, 8.6], [8.8, 12.3]], Z = [[2.15, 3.1], [1.1, 2.05]];
-      T.forEach((row, r) => row.forEach((k, c) => screenTile(wallB(X[c][0], X[c][1], Z[r][0], Z[r][1]), k, c + r * 3)));
-      wtext(6.85, .01, 3.38, 'INTEGRATED COMMAND & CONTROL CENTER', .2, col('#5d4037'), 800);
+      // seamless video wall with a live ticker above it
+      poly(wallB(.95, 12.45, .95, 3.25), '#05080d', '#00acc1', null, 1.5);
+      const T = [['map', 'flow', 'cam', 'line'], ['alerts', 'kpi', 'bars', 'heat']];
+      T.forEach((row, r) => row.forEach((k, c) => { const x0 = 1.05 + c * 2.85; screenTile(wallB(x0, x0 + 2.8, r ? 1.0 : 2.13, r ? 2.07 : 3.2), k, c + r * 4); }));
+      const R = utilityReadings(), news = ['INTEGRATED COMMAND & CONTROL CENTER', `${ccMsgs()} SENSOR MESSAGES / MIN  ·  ${ccAlerts()} ACTIVE ALERTS`,
+        `POWER TO CITY ${R.deliveredMW.toFixed(1)} MW  ·  WATER ${fint(R.waterToCity)} m³/h`, 'IRIV EDGE ONLINE  ·  CLOUD SYNC OK'];
+      poly(wallB(.95, 12.45, 3.3, 3.54), '#0b1220');
+      wtext(6.7, .01, 3.42, news[Math.floor(time / 4) % news.length], .14, '#7dd3fc', 800);
+      // live data wall: every stream that reaches the command center
+      poly(wallA(.8, 7.0, 1.0, 3.2), '#0b1220', '#00acc1', null, 1.5);
+      wtext(.01, 3.9, 2.95, 'LIVE CITY DATA', .17, '#7dd3fc', 800);
+      [['Sensors reporting', fint(DEVICES.filter(d => d.cat === 'sensor').reduce((a, d) => a + d.qty, 0))], ['Messages / min', ccMsgs()], ['Active alerts', ccAlerts()],
+        ['Power to city', R.deliveredMW.toFixed(1) + ' MW'], ['Water to city', fint(R.waterToCity) + ' m³/h'], ['Edge CPU', Math.round(wob(23, 6, .7)) + '%']].forEach(([k, v], i) => {
+        const z = 2.6 - i * .3;
+        wtext(.01, 5.5, z, k, .12, '#90a4ae', 600);
+        wtext(.01, 2.1, z, String(v), .15, i === 2 && v > 6 ? '#ffab40' : '#fff', 800);
+      });
+      // cable riser: the rack's uplink to the gateway on the roof
+      line(P(13.2, .3, 2.2), P(13.2, .3, 3.6), 'rgba(0,229,255,.5)', 3);
+      for (let k = 0; k < 3; k++) { const q = P(13.2, .3, 3.6 - ((time * .6 + k / 3) % 1) * 1.4); glow(q[0], q[1], 7, 'rgba(0,229,255,.95)'); }
     },
     routes: [
       [[2.2, 5.7, 2], [12.6, 5.7, 3]],
@@ -2188,7 +2235,7 @@ const SCENES = {
         why: 'On the rack that holds the edge computer and network switches: if cooling fails here, the whole city platform is at risk.',
         can: ['Alert when the rack goes above 30 °C', 'Trend data to plan cooling upgrades', 'Battery powered, no wiring in the rack'],
         say: 'This E M 300 sensor watches the temperature and humidity of the control room rack, which holds the edge computer and the network switches. If cooling fails, operators get an alert straight away.' },
-      { id: 'am319', x: .03, y: 3.8, z: 1.75, mount: 'A', qty: 1, where: 'Control room wall, between the windows',
+      { id: 'am319', x: .03, y: 7.45, z: 1.75, mount: 'A', qty: 1, where: 'Control room wall, beside the door',
         why: 'Operators work long shifts here: good air keeps them alert and is a duty of care.',
         can: ['More fresh air when CO₂ rises during busy shifts', 'Comfort reports for the 24/7 team'],
         say: 'This A M 319 sensor measures the air quality in the control room. During busy shifts with many operators, carbon dioxide rises and the ventilation increases automatically, keeping the team alert.' },
@@ -2611,7 +2658,6 @@ function drawInterior() {
 // ---------- scene switching ----------
 const fade = document.getElementById('fade'), bBack = document.getElementById('bBack');
 function enterInside(zone) {
-  cancelMapFit();
   if (WALK.on) exitWalk();
   zone = zone || (SCENES[sel] ? sel : 'gov');
   const S = SCENES[zone]; if (!S) return;
@@ -3728,6 +3774,16 @@ function drawFX2() {
 
 /* ---------- inside: water treatment SCADA room and substation relay room ---------- */
 Object.assign(screenTiles, {
+  flow(q, F) {   // data path into the command center
+    const N = [['SENSORS', .12], ['UG65', .37], ['IRIV EDGE', .63], ['CLOUD', .88]];
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '700 8px Inter,sans-serif';
+    N.forEach(([n, u], i) => {
+      if (i < 3) { pline([F(u, .5), F(N[i + 1][1], .5)], 'rgba(0,229,255,.35)', 2); const p = F(u + (N[i + 1][1] - u) * ((time * .8 + i * .3) % 1), .5); glow(p[0], p[1], 7, 'rgba(0,229,255,.95)'); }
+      const c = F(u, .5); ctx.fillStyle = '#00acc1'; ctx.beginPath(); ctx.arc(c[0], c[1], 4, 0, 7); ctx.fill();
+      const t = F(u, .22); ctx.fillStyle = '#cfd8dc'; ctx.fillText(n, t[0], t[1]);
+    });
+    const t = F(.5, .85); ctx.fillStyle = '#a5f3c4'; ctx.font = '700 9px Inter,sans-serif'; ctx.fillText(`${ccMsgs()} msgs/min · all districts`, t[0], t[1]);
+  },
   mimic(q, F) {
     const names = ['RAW', 'CLARIFY', 'FILTER', 'CLEAR'], lv = [.78, .66, .55, .84];
     names.forEach((n, i) => {
@@ -4824,7 +4880,6 @@ walkHud.innerHTML = `<div class="wh-top"><b>🧍 Walk mode</b><span>Drag to look
   <div class="wh-pad"><button data-k="fwd">▲</button><button data-k="left">⟲</button><button data-k="back">▼</button><button data-k="right">⟳</button></div>`;
 document.body.appendChild(walkHud);
 function startWalk(x = 45.5, y = 1.2, yaw = Math.PI / 2) {   // sidewalk between the car park and the township shophouses
-  cancelMapFit();
   stopTour(); if (SC) stopScenario(true); if (scene === 'inside') leaveNow();
   closePanel();
   Object.assign(WALK, { on: true, x, y, yaw, pitch: -.05, target: null, keys: {} });
@@ -5043,14 +5098,12 @@ SCENES.petrol.devs.push({ id: 'petrol-ws', x: 2.4, y: 6.82, z: .6, b: { x0: 2.3,
 
 /* ---------- navigation: drag to pan, zoom toward the mouse, full screen ---------- */
 function panBy(dxs, dys) {
-  cancelMapFit();
   const a = dxs / sc, b = dys / (sc * TILT), wx = a * C + b * S, wy = -a * S + b * C;
   cam.x -= wx; cam.y -= wy; cam.tx = cam.x; cam.ty = cam.y; clampCam();
   rotPauseUntil = performance.now() + 6000;
 }
 function clampCam() { cam.tx = Math.max(LAND_X0 - 4, Math.min(LAND_X + 4, cam.tx)); cam.ty = Math.max(-4, Math.min(LAND_Y + 4, cam.ty)); cam.x = Math.max(LAND_X0 - 6, Math.min(LAND_X + 6, cam.x)); cam.y = Math.max(-6, Math.min(LAND_Y + 6, cam.y)); }
 function zoomAt(mx, my, f) {
-  cancelMapFit();
   const z2 = clampZoom(cam.tz * f), a = (mx - W / 2 - cam.offX) / sc, b = (my - H / 2 - cam.offY) / (sc * TILT);
   const wx = cam.x + a * C + b * S, wy = cam.y - a * S + b * C, r = cam.zoom / z2;
   cam.x = cam.tx = wx + (cam.x - wx) * r; cam.y = cam.ty = wy + (cam.y - wy) * r; cam.zoom = cam.tz = z2; clampCam();
@@ -5312,11 +5365,10 @@ function frame(now) {
   const wide = W > 820, panelOpen = panel.classList.contains('open');
   S = Math.sin(cam.th); C = Math.cos(cam.th);
   sc = mapBaseScale() * cam.zoom;
-  cam.offX += ((MAP_VIEW.fitted ? MAP_VIEW.offsetX : wide ? (panelOpen ? -212 : W > 1100 ? 90 : 45) : 0) - cam.offX) * k;
+  cam.offX += ((wide ? (panelOpen ? -212 : W > 1100 ? 90 : 45) : 0) - cam.offX) * k;
   const mobileOffset = !wide && !panelOpen && H > 600 ? Math.min(140, H * .16) : 0;
-  const offYT = MAP_VIEW.fitted ? MAP_VIEW.offsetY : 3.4 * sc / cam.zoom * Math.min(1, cam.zoom) + (panelOpen && !wide ? -H * .2 : mobileOffset) + (wide ? 20 : 0);
+  const offYT = 3.4 * sc / cam.zoom * Math.min(1, cam.zoom) + (panelOpen && !wide ? -H * .2 : mobileOffset) + (wide ? 20 : 0);
   cam.offY += (offYT - cam.offY) * k;
-  updateWorldMap(now);
   updateCars(dt);
   updateWalkers(dt);
   shopUpdate(dt);
@@ -5385,7 +5437,6 @@ cv.addEventListener('pointermove', e => {
     if (Math.abs(dx) + Math.abs(e.clientY - down.y) > 6) { down.moved = true; dragging = true; cv.classList.add('drag'); }
     if (dragging && WALK.on) { WALK.yaw = down.yaw - dx * .005; WALK.pitch = Math.max(-.7, Math.min(.5, down.pitch + (e.clientY - down.y) * .004)); WALK.target = null; tip.style.opacity = 0; return; }
     if (dragging) {
-      cancelMapFit();
       if (down.rotate) { cam.th = down.th + dx * .007; if (scene === 'inside') cam.th = Math.max(.3, Math.min(1.27, cam.th)); }
       else panBy(e.clientX - down.lx, e.clientY - down.ly);
       down.lx = e.clientX; down.ly = e.clientY; tip.style.opacity = 0;
@@ -5410,7 +5461,6 @@ cv.addEventListener('pointermove', e => {
 cv.addEventListener('pointerup', e => {
   if (down && !down.moved && WALK.on && scene === 'city') walkClick(e.clientX, e.clientY);
   else if (down && !down.moved) {
-    cancelMapFit();
     const z = pick(e.clientX, e.clientY);
     rotHold = z ? true : !rotHold;
     if (!z) { tip.textContent = rotHold ? '⏸ Rotation paused · click the map again to resume' : '▶ Rotation resumed'; tip.style.left = e.clientX + 'px'; tip.style.top = e.clientY + 'px'; tip.style.opacity = 1; setTimeout(() => { tip.style.opacity = 0; }, 1400); }
@@ -5460,7 +5510,6 @@ const metricsHTML = m => `<div class="metrics">${m.map((x, i) => `<div class="me
 const navHTML = (i, n) => `<div class="p-nav"><button data-act="prev">← Prev</button><span>${i + 1} / ${n}</span><button data-act="next">Next →</button></div>`;
 
 function openPanel(color, html, metrics, extra) {
-  cancelMapFit();
   if (WALK.on) exitWalk();
   rememberPanelFocus();
   if (!openPanel.keep) { FX.follow = null; if (SC) stopScenario(true); }
@@ -5605,7 +5654,7 @@ function setDevLayer(on) { showDev = on; legend.style.display = on ? '' : 'none'
 bDev.onclick = () => setDevLayer(!showDev);
 document.getElementById('bProj').onclick = () => showProject();
 bNight.onclick = () => { nightTarget = nightTarget ? 0 : 1; document.body.classList.toggle('night', !!nightTarget); syncPreferences(); };
-bRot.onclick = () => { cancelMapFit(); autoRot = !autoRot; syncPreferences(); };
+bRot.onclick = () => { autoRot = !autoRot; syncPreferences(); };
 function toggleVoice() {
   if (!('speechSynthesis' in window)) return;
   voiceOn = !voiceOn; if (voiceOn) loadVoices(); else stopSpeech();

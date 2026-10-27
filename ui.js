@@ -16,7 +16,6 @@ const UI_ICONS = {
   plus: '<path d="M12 5v14M5 12h14"/>',
   minus: '<path d="M5 12h14"/>',
   focus: '<path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/><circle cx="12" cy="12" r="3"/>',
-  map: '<path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2V5Zm6-2v16m6-14v16"/>',
   arrow: '<path d="M4 12h16m-6-6 6 6-6 6"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v.5"/>',
   mouse: '<rect x="6" y="2" width="12" height="20" rx="6"/><path d="M12 6v4"/>',
@@ -47,7 +46,6 @@ function preparePanelActions() {
   });
 }
 function preparePanel() {
-  if (W <= 820) document.getElementById('worldMap').open = false;
   preparePanelActions();
   const title = panel.querySelector('h2')?.textContent || 'City details';
   document.getElementById('announcement').textContent = title + ' opened';
@@ -87,7 +85,6 @@ function renderTourButton() {
   bTour.innerHTML = uiIcon(tourList ? 'stop' : 'play') + `<span>${tourList ? 'Stop tour' : 'Guided tour'}</span>`;
 }
 const MAP_ZOOM = { min: .35, max: 5 };
-const MAP_VIEW = { fitted: false, offsetX: 0, offsetY: 0, lastUpdate: 0 };
 const clampZoom = value => Math.max(MAP_ZOOM.min, Math.min(MAP_ZOOM.max, value));
 const mapBaseScale = () => Math.min(W * (W > 820 ? .84 : .95) / (WORLD * 1.43), H * (W > 820 ? .66 : .8) / (WORLD * .707 + 8));
 function updateCameraControls() {
@@ -99,7 +96,6 @@ function zoomMap(factor) {
   zoomAt(W / 2 + cam.offX, H / 2 + cam.offY, factor);
 }
 function resetCityView() {
-  cancelMapFit();
   if (WALK.on) exitWalk();
   closePanel();
   if (scene === 'inside') leaveNow();
@@ -107,104 +103,6 @@ function resetCityView() {
   rotPauseUntil = performance.now() + 4000;
   updateCameraControls();
   document.getElementById('announcement').textContent = 'City view reset';
-}
-
-function cancelMapFit() {
-  if (MAP_VIEW.fitted) rotHold = false;
-  MAP_VIEW.fitted = false;
-  document.body.classList.remove('map-overview');
-}
-function mapViewport() {
-  const top = document.querySelector('.top').getBoundingClientRect().bottom + 18;
-  let bottom = W > 820 ? document.querySelector('.telemetry').getBoundingClientRect().top - 18 : H - 124;
-  let right = W > 820 ? W - 88 : W - 16;
-  if (panel.classList.contains('open')) {
-    const r = panel.getBoundingClientRect();
-    if (W > 820) right = r.left - 76; else bottom = Math.min(bottom, r.top - 12);
-  }
-  return { left: W > 820 ? 24 : 16, right, top, bottom: Math.max(top + 80, bottom) };
-}
-function fitEntireMap() {
-  if (WALK.on) exitWalk();
-  closePanel(); if (scene === 'inside') leaveNow();
-  document.getElementById('worldMap').open = false;
-  MAP_VIEW.fitted = true; rotHold = true;
-  document.body.classList.add('map-overview');
-  cam.th = Math.PI / 4;
-  cam.tx = (LAND_X0 + LAND_X) / 2; cam.ty = LAND_Y / 2;
-  const c = Math.cos(cam.th), s = Math.sin(cam.th), points = [];
-  // Include slab edges and tall buildings, not just the centers of districts.
-  for (const x of [LAND_X0 - 1.5, LAND_X + 1.5]) for (const y of [-1.5, LAND_Y + 1.5]) for (const z of [-.7, 11]) {
-    points.push([(x - cam.tx) * c - (y - cam.ty) * s, ((x - cam.tx) * s + (y - cam.ty) * c) * TILT - z * ZK]);
-  }
-  const xs = points.map(p => p[0]), ys = points.map(p => p[1]);
-  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
-  const r = mapViewport(), base = mapBaseScale();
-  // An automatic fit may go below manual zoom's minimum on short screens.
-  cam.tz = Math.min(MAP_ZOOM.max, Math.min((r.right - r.left) / (x1 - x0), (r.bottom - r.top) / (y1 - y0)) * .92 / base);
-  MAP_VIEW.offsetX = (r.left + r.right) / 2 - W / 2 - (x0 + x1) / 2 * base * cam.tz;
-  MAP_VIEW.offsetY = (r.top + r.bottom) / 2 - H / 2 - (y0 + y1) / 2 * base * cam.tz;
-  updateCameraControls();
-  document.getElementById('announcement').textContent = 'Entire map: city, highway, small town, farms and remote power and water plants';
-}
-function jumpToMapPoint(x, y, label = 'Map location', zoom = 1.3) {
-  resetCityView();
-  cam.tx = Math.max(LAND_X0, Math.min(LAND_X, x));
-  cam.ty = Math.max(0, Math.min(LAND_Y, y)); cam.tz = clampZoom(zoom);
-  rotHold = true;
-  if (W <= 820) document.getElementById('worldMap').open = false;
-  updateCameraControls();
-  document.getElementById('announcement').textContent = label + ' view';
-}
-function initWorldMap() {
-  const map = document.getElementById('worldMap'), svg = document.getElementById('minimapSvg');
-  const rect = (b, fill, extra = '') => `<rect x="${b.x0}" y="${b.y0}" width="${b.x1 - b.x0}" height="${b.y1 - b.y0}" fill="${fill}" ${extra}/>`;
-  svg.setAttribute('viewBox', `${LAND_X0 - 3} -3 ${LAND_X - LAND_X0 + 6} ${LAND_Y + 6}`);
-  svg.innerHTML = '<title>Whole map. Use the region buttons below or click a location to jump there.</title>' +
-    rect({ x0: 0, y0: 0, x1: WORLD, y1: WORLD }, '#a5b5c4') + rect(SAT, '#a5b5c4') + rect(HWY, '#a5b5c4') + rect(FARMROAD, '#a5b5c4') +
-    BELTS.map(b => rect(b, '#b4cc8e')).join('') + rect(RIVER, '#70b8dc') + rect(UTILITY_LAND, '#c3d8ac') +
-    blocks.map(b => rect(b, TOPICS[b.zone]?.color || '#94a3b8', 'opacity=".72" stroke="var(--panel)" stroke-width=".35"')).join('') +
-    utilityMinimapMarkup() +
-    '<polygon id="minimapViewport" fill="var(--accent)" fill-opacity=".1" stroke="var(--accent)" stroke-width=".8" stroke-dasharray="2 1" pointer-events="none"/>' +
-    '<circle id="minimapPosition" r="1.8" fill="var(--accent)" stroke="var(--panel)" stroke-width=".8" pointer-events="none"/>';
-  svg.addEventListener('click', e => {
-    const matrix = svg.getScreenCTM(); if (!matrix) return;
-    const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(matrix.inverse());
-    jumpToMapPoint(p.x, p.y);
-  });
-  const regions = {
-    city: [CX, CX, 'City', 1], highway: [(HWY.x0 + HWY.x1) / 2, (HWY.y0 + HWY.y1) / 2, 'Highway', 1.9],
-    town: [(SAT.x0 + SAT.x1) / 2, (SAT.y0 + SAT.y1) / 2, 'Small town', 1.5], farms: [ZINFO.farmbelt.x, 30.5, 'Farms', 1.5]
-  };
-  map.querySelectorAll('[data-region]').forEach(button => { button.onclick = () => jumpToMapPoint(...regions[button.dataset.region]); });
-  document.getElementById('bFitMap').onclick = fitEntireMap;
-  map.open = W > 820 && H >= 820;
-  const sync = () => { document.body.classList.toggle('minimap-open', map.open); MAP_VIEW.lastUpdate = 0; updateWorldMap(performance.now()); };
-  map.addEventListener('toggle', sync); sync();
-  addEventListener('resize', () => {
-    if (W <= 820) map.open = false;
-    if (MAP_VIEW.fitted) fitEntireMap();
-    MAP_VIEW.lastUpdate = 0;
-  });
-}
-function updateWorldMap(now) {
-  const map = document.getElementById('worldMap');
-  if (!map?.open || WALK.on || now - MAP_VIEW.lastUpdate < 100) return;
-  MAP_VIEW.lastUpdate = now;
-  const p = scene === 'inside' ? ZINFO[curZone] : cam;
-  const dot = document.getElementById('minimapPosition'), viewport = document.getElementById('minimapViewport');
-  if (!dot || !p) return;
-  dot.setAttribute('cx', p.x); dot.setAttribute('cy', p.y);
-  const area = p.y > WORLD ? 'Remote utilities' : p.x > WORLD ? 'Power corridor' : p.x >= 0 ? 'City' : p.x < SAT.x0 ? 'Farms' : p.x < HWY.x0 ? 'Small town' : 'Highway';
-  document.getElementById('mapLocation').textContent = scene === 'inside' ? area + ' · indoors' : area;
-  viewport.style.display = scene === 'inside' ? 'none' : '';
-  if (scene === 'inside' || !sc) return;
-  const r = mapViewport(), c = Math.cos(cam.th), s = Math.sin(cam.th);
-  const points = [[r.left, r.top], [r.right, r.top], [r.right, r.bottom], [r.left, r.bottom]].map(([x, y]) => {
-    const a = (x - W / 2 - cam.offX) / sc, b = (y - H / 2 - cam.offY) / (sc * TILT);
-    return `${cam.x + a * c + b * s},${cam.y - a * s + b * c}`;
-  });
-  viewport.setAttribute('points', points.join(' '));
 }
 
 function initDirectory() {
@@ -306,7 +204,6 @@ function initUI() {
     if (e.key === '-') { e.preventDefault(); zoomMap(1 / 1.2); }
     if (e.key === '0') { e.preventDefault(); resetCityView(); }
     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-      cancelMapFit();
       e.preventDefault(); cam.th += e.key === 'ArrowLeft' ? -.12 : .12;
       if (scene === 'inside') cam.th = Math.max(.3, Math.min(1.27, cam.th));
       rotPauseUntil = performance.now() + 4000;
@@ -323,6 +220,5 @@ function initUI() {
     tip.style.top = Math.max(tip.offsetHeight * 1.4 + 8, e.clientY) + 'px';
   });
   initDirectory();
-  initWorldMap();
   updateCameraControls();
 }
