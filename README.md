@@ -1,6 +1,6 @@
-# NeoVille Demo Dashboard
+# Smart City Demo Dashboard
 
-An interactive smart city simulation built with HTML, CSS, and JavaScript. Explore 25 districts, 177 deployed demo devices, building interiors, energy monitoring, and guided scenarios.
+An interactive smart city simulation built with HTML, CSS, and JavaScript. Explore 25 districts, 181 deployed demo devices, building interiors, energy monitoring, and guided scenarios.
 
 **[Open the live demo](https://dineshpalsingh1989.github.io/demodashboard/)**
 
