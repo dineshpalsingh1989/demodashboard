@@ -237,6 +237,17 @@
   <button id="bRot" aria-label="Automatic camera rotation" title="Automatic camera rotation" aria-pressed="true"><span data-icon="rotate"></span></button>
 </div>
 <div class="hint" id="mapHint"><span data-icon="mouse"></span><span>Click to explore</span><i></i><span>Drag to move · Shift-drag to rotate</span><i></i><span>Scroll to zoom</span></div>
+<details id="worldMap" class="world-map">
+  <summary><span data-icon="map"></span><span>Whole map</span><span class="map-chevron" aria-hidden="true">⌄</span></summary>
+  <div class="minimap-content">
+    <div class="minimap-caption"><span>Click anywhere to jump</span><span id="mapLocation">City</span></div>
+    <svg id="minimapSvg" role="img" aria-label="Overview of the city, highway, small town, farms and remote utilities"></svg>
+    <div class="map-regions" role="group" aria-label="Jump to a region"><button data-region="city">City</button><button data-region="highway">Highway</button><button data-region="town">Small town</button><button data-region="farms">Farms</button></div>
+    <div class="utility-shortcuts"><button id="bPowerStation">⚡ Power station</button><button id="bWaterPlant">💧 Water treatment</button></div>
+    <button id="bUtilities">City supply overview →</button>
+    <button id="bFitMap"><span data-icon="focus"></span>Fit entire map</button>
+  </div>
+</details>
 <button id="bBack" class="backcity" hidden>⬅ Back to city <span>· inside City Hall</span></button>
 <aside id="panel" aria-label="City details" inert></aside>
 <div id="legend"></div>
@@ -2600,6 +2611,8 @@ function drawInterior() {
 // ---------- scene switching ----------
 const fade = document.getElementById('fade'), bBack = document.getElementById('bBack');
 function enterInside(zone) {
+  cancelMapFit();
+  if (WALK.on) exitWalk();
   zone = zone || (SCENES[sel] ? sel : 'gov');
   const S = SCENES[zone]; if (!S) return;
   stopTour(); stopSpeech();
@@ -3561,7 +3574,7 @@ const IO = {
     DO1: io('Coagulant pump', on), DO2: io('Chlorine pump', on), DO3: io('Filter backwash valve', off), DO4: io('Quality alarm', () => WTP.turb > 30), DI1: io('Chlorine leak detector', off), DI2: io('Dosing pump fault', off), RS485: io('Dosing pump speed (Modbus)', () => WTP.dose === 'High' ? '85%' : '40%'), RS232: io('Lab analyzer', () => 'OK') },
   'wtp-ai': { CSI0: io('Chlorine room camera', () => 'AI: PPE detection'), CSI1: io('Perimeter camera', () => 'AI: person detection'), DI1: io('Chlorine room door', () => WTP.aiAlert), DO1: io('Door interlock (locked)', () => WTP.aiAlert), DO2: io('Warning beacon', () => WTP.aiAlert) },
   'wtp-ioc': { DI1: io('Filter 1 inlet valve open', on), DI2: io('Filter 2 inlet valve open', on), DI3: io('Filter 3 inlet valve open', on), DI4: io('Filter 1 high level', off), DI5: io('Filter 2 high level', off), DI6: io('Filter 3 high level', off), DI7: io('Backwash pump running', off),
-    DO1: io('Backwash request F1', off), AI1: io('Filter head-loss F1', () => wob(1.1, .05, .1).toFixed(2) + ' m'), AI2: io('Filtered water flow', () => Math.round(wob(790, 25, .2)) + ' m³/h') },
+    DO1: io('Backwash request F1', off), AI1: io('Filter head-loss F1', () => wob(1.1, .05, .1).toFixed(2) + ' m'), AI2: io('Filtered water flow', () => fint(utilityReadings().treatedWater) + ' m³/h') },
   'cw-ioc': { DI1: io('Pump 1 running', on), DI2: io('Pump 1 fault', off), DI3: io('Pump 2 running', on), DI4: io('Pump 2 fault', off), DI5: io('Pump 3 running', off), DI6: io('Pump 3 fault', off), DI7: io('Pump 4 running', off), DI8: io('Pump 4 fault', off),
     DO1: io('Start pump 1', on), DO2: io('Start pump 2', on), DO3: io('Start pump 3', off), DO4: io('Start pump 4', off), AI1: io('Network pressure (4–20 mA)', () => wob(3.4, .1, .3).toFixed(1) + ' bar'), AI2: io('Outflow', () => Math.round(wob(760, 30, .2)) + ' m³/h'), RS485: io('Pump drives (Modbus)', () => '2 running') },
   'ww-ioc': { DI1: io('Blower 1 running', on), DI2: io('Blower 2 running', on), DI3: io('Blower 3 running', off), DI4: io('Blower fault', off), DO1: io('Start blower 1', on), DO2: io('Start blower 2', on), DO3: io('Start blower 3', off),
@@ -3659,7 +3672,7 @@ function drawPylon(o) {
   for (const [dx, dy] of [[-.35, -.35], [.35, -.35], [.35, .35], [-.35, .35]]) line(P(o.cx + dx, o.cy + dy, 0), P(o.cx + dx * .2, o.cy + dy * .2, h), col('#78909c'), 1.5);
   for (const zz of [1.2, 2.4, 3.4]) { const f = 1 - zz / h * .8; line(P(o.cx - .35 * f, o.cy, zz), P(o.cx + .35 * f, o.cy, zz), col('#78909c'), 1); line(P(o.cx, o.cy - .35 * f, zz), P(o.cx, o.cy + .35 * f, zz), col('#78909c'), 1); }
   line(P(o.cx - .8, o.cy, z), P(o.cx + .8, o.cy, z), col('#78909c'), 2);
-  const tz = o.to[1] < M(5) ? 2.6 : z;   // the last span lands on the substation gantry
+  const tz = o.toZ ?? (o.to[1] < M(5) ? 2.6 : z);   // the last span lands on the substation gantry
   for (const s of [-.7, 0, .7]) line(P(o.cx + s, o.cy, z), P(o.to[0] + s, o.to[1], tz), col('#37474f'), 1);
 }
 function drawAiCam(o) {
@@ -3671,7 +3684,7 @@ function drawAiCam(o) {
   drawBox({ x0: o.cx - .16, y0: o.cy - .1, x1: o.cx + .16, y1: o.cy + .1, z0: 2.05, h: .16, color: '#263238' });
   glow(b[0], b[1] - 3, sc * .3, Math.sin(time * 3) > 0 ? 'rgba(124,77,255,.95)' : 'rgba(124,77,255,.35)');
 }
-function drawIntake(o, path) { line(P(o.cx, o.cy, 1.0), Q(6.1, 32.5, 1.0), col('#90a4ae'), 3); cylinder(o.cx, o.cy, 0, 1.3, .38, '#b0bec5', path); }
+function drawIntake(o, path) { line(P(o.cx, o.cy, 1.0), waterQ(6.1, 32.5, 1.0), col('#90a4ae'), 3); cylinder(o.cx, o.cy, 0, 1.3, .38, '#b0bec5', path); }
 function drawClarifier(o, path) {
   const t = cylinder(o.cx, o.cy, 0, .5, o.r, '#b0bec5', path), rx = (o.r - .08) * sc;
   ctx.fillStyle = col('#6f9bb8'); ctx.beginPath(); ctx.ellipse(t[0], t[1], rx, rx * TILT, 0, 0, 7); ctx.fill();
@@ -3685,15 +3698,14 @@ function drawTank(o, path) {
 }
 function worldGround2() {
   // reservoir lake
-  const lake = []; for (let i = 0; i < 40; i++) { const a = i / 40 * Math.PI * 2, r = 2.6 + .3 * Math.sin(a * 3) + .15 * Math.sin(a * 5); lake.push(Q(3.4 + Math.cos(a) * r, 32.4 + Math.sin(a) * r * .95, .09)); }
+  const lake = []; for (let i = 0; i < 40; i++) { const a = i / 40 * Math.PI * 2, r = 2.6 + .3 * Math.sin(a * 3) + .15 * Math.sin(a * 5); lake.push(waterQ(3.4 + Math.cos(a) * r, 32.4 + Math.sin(a) * r * .95, .09)); }
   poly(lake, col('#4f9fd6'), col('#3b86bf'), null, 1.5);
   // water flows: reservoir → clarifiers → filters → clear-water tanks → city; city → wastewater
-  const flow = (pts, c, sp = 30) => { ctx.setLineDash([6, 5]); ctx.lineDashOffset = -time * sp; ctx.strokeStyle = c; ctx.lineWidth = 3; ctx.beginPath(); pts.forEach((p, i) => { const q = Q(p[0], p[1], .1); i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); }); ctx.stroke(); ctx.setLineDash([]); };
+  const flow = (pts, c, sp = 30) => { ctx.setLineDash([6, 5]); ctx.lineDashOffset = -time * sp; ctx.strokeStyle = c; ctx.lineWidth = 3; ctx.beginPath(); pts.forEach((p, i) => { const q = waterQ(p[0], p[1], .1); i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); }); ctx.stroke(); ctx.setLineDash([]); };
   flow([[6.4, 34.0], [8.2, 34.0], [8.2, 30.9], [8.8, 30.9]], WTP.turb > 20 ? 'rgba(161,136,90,.95)' : 'rgba(41,182,246,.9)');
   flow([[11.1, 31.9], [11.1, 32.7]], 'rgba(41,182,246,.9)');
   flow([[13.5, 33.3], [15.6, 33.3], [15.6, 31.3]], 'rgba(41,182,246,.9)');
-  flow([[18.6, 34.3], [21.0, 34.3], [21.0, 28.0]], 'rgba(0,229,255,.9)');
-  flow([[27.0, 28.9], [29.6, 28.9], [29.6, 30.7], [30.0, 30.7]], 'rgba(141,110,99,.9)', 18);
+  drawUtilityRoutes();
   // substation fence
   const F = [[29.7, .7], [35.3, .7], [35.3, 6.3], [29.7, 6.3]];
   for (let i = 0; i < 4; i++) { const a = F[i], b = F[(i + 1) % 4]; line(Q(a[0], a[1], .35), Q(b[0], b[1], .35), col('#90a4ae'), 1.2); line(Q(a[0], a[1], .1), Q(b[0], b[1], .1), col('#90a4ae'), 1); }
@@ -3702,8 +3714,8 @@ function worldGround2() {
   ctx.strokeStyle = col('#d7ccc8'); ctx.lineWidth = Math.max(2, sc * .18); ctx.beginPath(); for (let i = 0; i <= 40; i++) { const a = i / 40 * Math.PI * 2, p = Q(32.5 + Math.cos(a) * 1.4, 25.5 + Math.sin(a) * 1.4, .09); i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); } ctx.stroke();
 }
 function drawFX2() {
-  if (WTP.manual && WTP.turb > 10) { const p = Q(3.4, 32.4, 2.4); pill(p[0], p[1], `⚠ Raw water turbidity ${WTP.turb.toFixed(0)} NTU`, '#8d6e63'); }
-  if (WTP.aiAlert) { const p = Q(13.3, 35.2, 3.4); pill(p[0], p[1], '📷 AI: no respirator · door locked', Math.sin(time * 6) > 0 ? '#e53935' : '#b71c1c'); }
+  if (WTP.manual && WTP.turb > 10) { const p = waterQ(3.4, 32.4, 2.4); pill(p[0], p[1], `⚠ Raw water turbidity ${WTP.turb.toFixed(0)} NTU`, '#8d6e63'); }
+  if (WTP.aiAlert) { const p = waterQ(13.3, 35.2, 3.4); pill(p[0], p[1], '📷 AI: no respirator · door locked', Math.sin(time * 6) > 0 ? '#e53935' : '#b71c1c'); }
   if (GRID.manual && GRID.oil > 75) { const p = Q(31.0, 2.0, 3.0); pill(p[0], p[1], `🌡️ T1 oil ${Math.round(GRID.oil)} °C · load ${Math.round(GRID.load)}%`, GRID.oil > 85 ? '#e53935' : '#f57c00'); }
   if (GRID.intruder) {
     const y = 6.6 - GRID.ix * 4.5, x = 29.35, h = Q(x, y, .46), b = Q(x, y, 0);
@@ -3765,7 +3777,7 @@ SCENES.wtp = {
   say: 'Welcome to the water treatment control room. On the wall, operators see every stage of the treatment process, and the A I camera feed from the chlorine room. In the panels on the right are three IRIV devices. The PiControl reads the water quality analyzers and drives the chemical dosing. The I O Controller with MQTT reads the filter valves and levels. And the Edge A I C M 5 runs the camera safety model. Click any of them to see their terminals and wiring.',
   can: ['<b>Right chemical dose</b> from live analyzer readings (PiControl analog inputs).', '<b>Filter backwash on demand</b> from head-loss and level signals (IO Controller MQTT).',
     '<b>Worker safety:</b> AI checks respirators at the chlorine room door (EdgeAI CM5).', '<b>One SCADA view</b> of every stage, from raw water to the city.'],
-  m: [['Raw turbidity', () => WTP.turb.toFixed(1) + ' NTU'], ['Treated turbidity', () => (WTP.turb > 20 ? .6 : .3).toFixed(1) + ' NTU'], ['Chlorine', () => wob(.5, .03, .2).toFixed(2) + ' mg/L'], ['Output', () => Math.round(wob(790, 25, .2)) + ' m³/h']],
+  m: [['Raw turbidity', () => WTP.turb.toFixed(1) + ' NTU'], ['Treated turbidity', () => (WTP.turb > 20 ? .6 : .3).toFixed(1) + ' NTU'], ['Chlorine', () => wob(.5, .03, .2).toFixed(2) + ' mg/L'], ['Output', () => fint(utilityReadings().treatedWater) + ' m³/h']],
   build(O) {
     workstation(O, 3.6, 5.2, 0, 3); workstation(O, 6.6, 5.2, 1, 3);
     irivPanel(9.4, 10.9, 'PANEL A · DOSING')(O); irivPanel(11.0, 12.5, 'PANEL B · FILTERS')(O); irivPanel(12.6, 13.9, 'PANEL C · AI')(O);
@@ -3943,7 +3955,7 @@ function drawWires() {
   if (!z) return;
   const strong = z === sel, seen = new Set();
   WIRES[z].forEach(([kind, label, ...pts], i) => {
-    const sp = pts.map(p => Q(p[0], p[1], p[2])), c = WIRE_COL[kind];
+    const sp = pts.map(p => WATER_ZONES.includes(z) ? waterQ(...p) : Q(...p)), c = WIRE_COL[kind];
     ctx.save(); ctx.globalAlpha = strong ? 1 : .5;
     ctx.lineCap = 'round'; ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = strong ? 6 : 4;
     ctx.beginPath(); sp.forEach((p, k) => k ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.stroke();
@@ -4812,17 +4824,21 @@ walkHud.innerHTML = `<div class="wh-top"><b>🧍 Walk mode</b><span>Drag to look
   <div class="wh-pad"><button data-k="fwd">▲</button><button data-k="left">⟲</button><button data-k="back">▼</button><button data-k="right">⟳</button></div>`;
 document.body.appendChild(walkHud);
 function startWalk(x = 45.5, y = 1.2, yaw = Math.PI / 2) {   // sidewalk between the car park and the township shophouses
+  cancelMapFit();
   stopTour(); if (SC) stopScenario(true); if (scene === 'inside') leaveNow();
   closePanel();
   Object.assign(WALK, { on: true, x, y, yaw, pitch: -.05, target: null, keys: {} });
   walkHud.hidden = false; document.body.classList.add('walking');
   narrate('Walk mode. Drag to look around, click on the ground to walk there, or use the arrow keys. Click any building to go inside.', false);
 }
-function exitWalk() { WALK.on = false; walkHud.hidden = true; document.body.classList.remove('walking'); cam.tx = CX; cam.ty = CX; cam.tz = 1; }
+function clearWalkInput() { WALK.keys = {}; WALK.target = null; }
+function exitWalk() { clearWalkInput(); WALK.on = false; walkHud.hidden = true; document.body.classList.remove('walking'); cam.tx = CX; cam.ty = CX; cam.tz = 1; }
+addEventListener('blur', clearWalkInput);
+document.addEventListener('visibilitychange', () => { if (document.hidden) clearWalkInput(); });
 document.getElementById('walkExit').onclick = exitWalk;
 walkHud.querySelectorAll('[data-k]').forEach(b => {
   const k = b.dataset.k, set = v => e => { e.preventDefault(); WALK.keys[k] = v; };
-  b.addEventListener('pointerdown', set(true)); b.addEventListener('pointerup', set(false)); b.addEventListener('pointerleave', set(false));
+  b.addEventListener('pointerdown', set(true)); b.addEventListener('pointerup', set(false)); b.addEventListener('pointerleave', set(false)); b.addEventListener('pointercancel', set(false));
 });
 const WALK_KEYS = { KeyW: 'fwd', ArrowUp: 'fwd', KeyS: 'back', ArrowDown: 'back', KeyA: 'sl', KeyD: 'sr', ArrowLeft: 'left', ArrowRight: 'right', KeyQ: 'left', KeyE: 'right', ShiftLeft: 'shift', ShiftRight: 'shift' };
 for (const type of ['keydown', 'keyup']) addEventListener(type, e => {
@@ -4855,8 +4871,8 @@ document.getElementById('panel').addEventListener('click', e => { if (e.target.c
    ================================================================ */
 const HWY = { x0: -22.6, x1: 0, y0: 27.6, y1: 33.4 };       // highway corridor west of the city, beside the farm            // highway corridor east of the city
 const SAT = { x0: -47.4, x1: -22.6, y0: 14.6, y1: 38.4 };   // the small town            // the small town
-const LAND_X0 = -70.2, LAND_X = WORLD, LAND_Y = WORLD;
-const onLand = (x, y) => (x > .3 && y > .3 && x < WORLD - .3 && y < WORLD - .3) || (x > -69.8 && x < -47.6 && y > 17.8 && y < 43.2) || (x > -22.4 && x < -.2 && y > 14.8 && y < 43.2 && (x < -13 || x > -9 || (y > 27.6 && y < 33.4))) || (x >= HWY.x0 - .5 && x <= HWY.x1 + .5 && y > HWY.y0 + .2 && y < HWY.y1 - .2) || (x > SAT.x0 + .2 && x < SAT.x1 - .2 && y > SAT.y0 + .2 && y < SAT.y1 - .2);
+const LAND_X0 = -70.2, LAND_X = 60, LAND_Y = 78;
+const onLand = (x, y) => (x > .3 && y > .3 && x < LAND_X - .3 && y < LAND_Y - .3) || (x > -69.8 && x < -47.6 && y > 17.8 && y < 43.2) || (x > -22.4 && x < -.2 && y > 14.8 && y < 43.2 && (x < -13 || x > -9 || (y > 27.6 && y < 33.4))) || (x >= HWY.x0 - .5 && x <= HWY.x1 + .5 && y > HWY.y0 + .2 && y < HWY.y1 - .2) || (x > SAT.x0 + .2 && x < SAT.x1 - .2 && y > SAT.y0 + .2 && y < SAT.y1 - .2);
 
 Object.assign(TOPICS, {
   highway: { icon: '🛣️', color: '#455a64', kicker: 'Transport', title: 'Highway to the Small Town',
@@ -4931,6 +4947,7 @@ function drawHGantry(o, path) {
     for (const y of [29.5, 31.5]) { drawBox({ x0: o.cx - .12, y0: y - .1, x1: o.cx + .12, y1: y + .1, z0: 2.35, h: .18, color: '#263238' }); } }
 }
 function worldSlabs() {   // highway and small-town ground, drawn right after the city slab
+  drawUtilityGround();
   const hp = new Path2D(); drawBox({ x0: HWY.x0 - .05, y0: HWY.y0, x1: HWY.x1, y1: HWY.y1, z0: -.7, h: .7, color: '#dfe5ea', roof: '#7f8891' }, hp); hits.push({ path: hp, zone: 'highway' });
   const sp = new Path2D(); drawBox({ x0: SAT.x0, y0: SAT.y0, x1: SAT.x1, y1: SAT.y1, z0: -.7, h: .7, color: '#dfe5ea', roof: '#7f8891' }, sp); hits.push({ path: sp, zone: 'highway' });
   bridgeSlabs();
@@ -5026,16 +5043,19 @@ SCENES.petrol.devs.push({ id: 'petrol-ws', x: 2.4, y: 6.82, z: .6, b: { x0: 2.3,
 
 /* ---------- navigation: drag to pan, zoom toward the mouse, full screen ---------- */
 function panBy(dxs, dys) {
+  cancelMapFit();
   const a = dxs / sc, b = dys / (sc * TILT), wx = a * C + b * S, wy = -a * S + b * C;
   cam.x -= wx; cam.y -= wy; cam.tx = cam.x; cam.ty = cam.y; clampCam();
   rotPauseUntil = performance.now() + 6000;
 }
 function clampCam() { cam.tx = Math.max(LAND_X0 - 4, Math.min(LAND_X + 4, cam.tx)); cam.ty = Math.max(-4, Math.min(LAND_Y + 4, cam.ty)); cam.x = Math.max(LAND_X0 - 6, Math.min(LAND_X + 6, cam.x)); cam.y = Math.max(-6, Math.min(LAND_Y + 6, cam.y)); }
 function zoomAt(mx, my, f) {
-  const z2 = Math.max(.35, Math.min(5, cam.tz * f)), a = (mx - W / 2 - cam.offX) / sc, b = (my - H / 2 - cam.offY) / (sc * TILT);
+  cancelMapFit();
+  const z2 = clampZoom(cam.tz * f), a = (mx - W / 2 - cam.offX) / sc, b = (my - H / 2 - cam.offY) / (sc * TILT);
   const wx = cam.x + a * C + b * S, wy = cam.y - a * S + b * C, r = cam.zoom / z2;
   cam.x = cam.tx = wx + (cam.x - wx) * r; cam.y = cam.ty = wy + (cam.y - wy) * r; cam.zoom = cam.tz = z2; clampCam();
   rotPauseUntil = performance.now() + 6000;
+  updateCameraControls();
 }
 cv.addEventListener('contextmenu', e => e.preventDefault());
 function toggleFullscreen() {
@@ -5291,11 +5311,12 @@ function frame(now) {
   cam.x += (cam.tx - cam.x) * k; cam.y += (cam.ty - cam.y) * k; cam.zoom += (cam.tz - cam.zoom) * k;
   const wide = W > 820, panelOpen = panel.classList.contains('open');
   S = Math.sin(cam.th); C = Math.cos(cam.th);
-  sc = Math.min(W * (wide ? .84 : .95) / (WORLD * 1.43), H * (wide ? .66 : .8) / (WORLD * .707 + 8)) * cam.zoom;
-  cam.offX += ((wide ? (panelOpen ? -212 : W > 1100 ? 90 : 45) : 0) - cam.offX) * k;
+  sc = mapBaseScale() * cam.zoom;
+  cam.offX += ((MAP_VIEW.fitted ? MAP_VIEW.offsetX : wide ? (panelOpen ? -212 : W > 1100 ? 90 : 45) : 0) - cam.offX) * k;
   const mobileOffset = !wide && !panelOpen && H > 600 ? Math.min(140, H * .16) : 0;
-  const offYT = 3.4 * sc / cam.zoom * Math.min(1, cam.zoom) + (panelOpen && !wide ? -H * .2 : mobileOffset) + (wide ? 20 : 0);
+  const offYT = MAP_VIEW.fitted ? MAP_VIEW.offsetY : 3.4 * sc / cam.zoom * Math.min(1, cam.zoom) + (panelOpen && !wide ? -H * .2 : mobileOffset) + (wide ? 20 : 0);
   cam.offY += (offYT - cam.offY) * k;
+  updateWorldMap(now);
   updateCars(dt);
   updateWalkers(dt);
   shopUpdate(dt);
@@ -5333,7 +5354,7 @@ function frame(now) {
     if (o.zone) hits.push({ path: p, zone: o.room || o.zone });
   }
   if (WALK.on) drawWalkHUD();
-  else { drawOverlay(); drawFX(); drawWires(); drawFX2(); drawFX3(); drawHWOverlay(); if (SC?.def.draw) SC.def.draw(); }
+  else { drawOverlay(); drawFX(); drawWires(); drawFX2(); drawFX3(); drawHWOverlay(); drawUtilityLabels(); if (SC?.def.draw) SC.def.draw(); }
   requestAnimationFrame(frame);
 }
 
@@ -5364,6 +5385,7 @@ cv.addEventListener('pointermove', e => {
     if (Math.abs(dx) + Math.abs(e.clientY - down.y) > 6) { down.moved = true; dragging = true; cv.classList.add('drag'); }
     if (dragging && WALK.on) { WALK.yaw = down.yaw - dx * .005; WALK.pitch = Math.max(-.7, Math.min(.5, down.pitch + (e.clientY - down.y) * .004)); WALK.target = null; tip.style.opacity = 0; return; }
     if (dragging) {
+      cancelMapFit();
       if (down.rotate) { cam.th = down.th + dx * .007; if (scene === 'inside') cam.th = Math.max(.3, Math.min(1.27, cam.th)); }
       else panBy(e.clientX - down.lx, e.clientY - down.ly);
       down.lx = e.clientX; down.ly = e.clientY; tip.style.opacity = 0;
@@ -5388,6 +5410,7 @@ cv.addEventListener('pointermove', e => {
 cv.addEventListener('pointerup', e => {
   if (down && !down.moved && WALK.on && scene === 'city') walkClick(e.clientX, e.clientY);
   else if (down && !down.moved) {
+    cancelMapFit();
     const z = pick(e.clientX, e.clientY);
     rotHold = z ? true : !rotHold;
     if (!z) { tip.textContent = rotHold ? '⏸ Rotation paused · click the map again to resume' : '▶ Rotation resumed'; tip.style.left = e.clientX + 'px'; tip.style.top = e.clientY + 'px'; tip.style.opacity = 1; setTimeout(() => { tip.style.opacity = 0; }, 1400); }
@@ -5437,6 +5460,8 @@ const metricsHTML = m => `<div class="metrics">${m.map((x, i) => `<div class="me
 const navHTML = (i, n) => `<div class="p-nav"><button data-act="prev">← Prev</button><span>${i + 1} / ${n}</span><button data-act="next">Next →</button></div>`;
 
 function openPanel(color, html, metrics, extra) {
+  cancelMapFit();
+  if (WALK.on) exitWalk();
   rememberPanelFocus();
   if (!openPanel.keep) { FX.follow = null; if (SC) stopScenario(true); }
   panel.style.setProperty('--zc', color);
@@ -5580,7 +5605,7 @@ function setDevLayer(on) { showDev = on; legend.style.display = on ? '' : 'none'
 bDev.onclick = () => setDevLayer(!showDev);
 document.getElementById('bProj').onclick = () => showProject();
 bNight.onclick = () => { nightTarget = nightTarget ? 0 : 1; document.body.classList.toggle('night', !!nightTarget); syncPreferences(); };
-bRot.onclick = () => { autoRot = !autoRot; syncPreferences(); };
+bRot.onclick = () => { cancelMapFit(); autoRot = !autoRot; syncPreferences(); };
 function toggleVoice() {
   if (!('speechSynthesis' in window)) return;
   voiceOn = !voiceOn; if (voiceOn) loadVoices(); else stopSpeech();
@@ -5598,7 +5623,7 @@ function updTicker() {
   const values = [
     ['signal', 'Deployed devices', fint(TOTAL_DEVICES)], ['car', 'Vehicles moving', moving + ' / ' + cars.length],
     ['leaf', 'Renewable energy', wob(64, 4, .2).toFixed(0) + '%'], ['wind', 'Air quality', Math.round(wob(38, 5, .25)) + ' · Good'],
-    ['bolt', 'Energy demand', fint(totalKW()) + ' kW'], ['shield', 'Active alerts', Math.max(0, Math.round(wob(6, 3, .15)))]
+    ['bolt', 'Power to city', utilityReadings().deliveredMW.toFixed(1) + ' MW'], ['water', 'Water to city', fint(utilityReadings().waterToCity) + ' m³/h']
   ];
   if (!ticker.children.length) ticker.innerHTML = values.map(([icon, label]) => `<div><span class="metric-icon">${uiIcon(icon)}</span><span>${label}</span><b></b></div>`).join('');
   values.forEach(([, , value], i) => { ticker.children[i].querySelector('b').textContent = value; });
@@ -5607,6 +5632,7 @@ function updTicker() {
 
 </script>
 <script src="milesight-devices.js"></script>
+<script src="utilities.js"></script>
 <script>
 // Include devices appended by every district and interior expansion.
 const TOTAL_DEVICES = DEVICES.reduce((a, d) => a + d.qty, 0);
