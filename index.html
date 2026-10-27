@@ -1931,7 +1931,11 @@ function drawDeviceLinks() {
     const p = P(d.x, d.y, d.z);
     if (d.cat === 'sensor') link(p, d.gw ? P(DEV[d.gw].x, DEV[d.gw].y, DEV[d.gw].z) : g, CAT.sensor.c, [2, 4], focus === d.id || focus === (d.gw || 'ug65'), .35, 1, i);
     if (d.cat === 'gateway' && d.id !== 'ug65') link(p, e, CAT.gateway.c, [8, 5], focus === d.id || focus === 'edge', .4, 2, i);
-    if (d.cat === 'controller') link(e, p, CAT.controller.c, [7, 4], focus === d.id || focus === 'edge', .45, 2, i);
+    if (d.cat === 'controller') {
+      const gateway = d.gw && DEV[d.gw];
+      const source = gateway ? P(gateway.x, gateway.y, gateway.z) : e;
+      link(source, p, CAT.controller.c, gateway ? [2, 4] : [7, 4], focus === d.id || focus === (d.gw || 'edge'), .45, 2, i);
+    }
     if (d.cat === 'ai') link(e, p, CAT.ai.c, [4, 3], focus === d.id || focus === 'edge', .5, 2, i);
   });
   link(g, e, CAT.gateway.c, [], focus === 'ug65' || focus === 'edge', .6, 3, 0);
@@ -2577,11 +2581,11 @@ function drawInterior() {
 
   // links: sensors → UG65 (LoRaWAN), edge ← UG65, controllers ← IRIV Edge
   const GB = S.gw || GW_BADGE, badges = [GB];
-  const hasEdge = S.devs.some(p => p.id === 'edge'), needEdgeBadge = !hasEdge && S.devs.some(p => ['controller', 'ai'].includes(DEV[p.id].cat));
+  const hasEdge = S.devs.some(p => p.id === 'edge'), needEdgeBadge = !hasEdge && S.devs.some(p => ['controller', 'ai'].includes(DEV[p.id].cat) && !DEV[p.id].gw);
   if (needEdgeBadge) badges.push(EDGE_BADGE);
   const g = P(GB.x, GB.y, GB.z), eb = P(EDGE_BADGE.x, EDGE_BADGE.y, EDGE_BADGE.z);
   S.devs.forEach((p, i) => {
-    const cat = DEV[p.id].cat, a = P(p.x, p.y, p.z), tgt = (cat === 'controller' || cat === 'ai') ? (hasEdge ? P(...['x', 'y', 'z'].map(k => S.devs.find(q => q.id === 'edge')[k])) : eb) : g;
+    const cat = DEV[p.id].cat, a = P(p.x, p.y, p.z), tgt = (cat === 'controller' || cat === 'ai') && !DEV[p.id].gw ? (hasEdge ? P(...['x', 'y', 'z'].map(k => S.devs.find(q => q.id === 'edge')[k])) : eb) : g;
     const colr = cat === 'sensor' ? CAT.sensor.c : cat === 'edge' ? CAT.gateway.c : cat === 'ai' ? CAT.ai.c : CAT.controller.c;
     const on = selDev === p.id || hoverDev === p.id || selDev === 'ug65' && cat === 'sensor';
     const m = [(a[0] + tgt[0]) / 2, Math.min(a[1], tgt[1]) - 40];
@@ -2683,7 +2687,7 @@ const PICS = {
 };
 const genericPic = d => `<svg viewBox="0 0 240 160"><rect x="62" y="24" width="116" height="112" rx="22" fill="#fff" stroke="#c3ccd4" stroke-width="1.5"/>
   <text x="120" y="96" text-anchor="middle" font-size="52">${d.icon}</text></svg>`;
-const picHTML = d => `<div class="pic" data-model="${d.model}" title="Click to enlarge">${(PICS[d.model] || genericPic)(d)}<img src="images/${d.model.replace(/\s+/g, '-')}.png" alt="${d.model}" onerror="this.remove()"><span class="pic-tag">Illustration</span></div>`;
+const picHTML = d => `<div class="pic" data-model="${d.model}" title="Click to enlarge">${(PICS[d.model] || genericPic)(d)}<img src="images/${d.image || d.model.replace(/\s+/g, '-') + '.png'}" alt="${d.model}${d.imageCredit ? ' product family illustration' : ''}" onerror="this.remove()"><span class="pic-tag">Illustration</span></div>`;
 
 // "what we can do" for devices out in the city
 const CAN = {
@@ -3154,6 +3158,7 @@ function resetFX() {
 }
 function runScenario(id) {
   if (!Object.hasOwn(SCENARIOS, id)) return;
+  if (WALK.on) exitWalk();
   stopTour(); if (scene === 'inside') leaveNow();
   if (SC) stopScenario(true);
   resetFX(); FX.follow = null; sel = null; selDev = null; nav = null;
@@ -3189,6 +3194,7 @@ function scStep(i) {
 const readable = t => t.replace(/\b(?:[A-Z] ){1,3}[A-Z]\b/g, m => m.replace(/ /g, '')).replace(/\b([A-Z]{2,3}) (\d{2,3})\b/g, '$1$2');
 function stopScenario(silent) {
   if (!SC) return;
+  if (SC.def.reset) SC.def.reset();
   SC = null; resetFX(); stopSpeech();
   storyEl.hidden = true; document.body.classList.remove('story');
   if (!silent) { cam.tx = CX; cam.ty = CX; cam.tz = 1; }
@@ -3610,7 +3616,8 @@ function updIO(d) {
 document.body.insertAdjacentHTML('beforeend', '<dialog id="lightbox" aria-labelledby="lbCap" hidden><button id="lbX" aria-label="Close photo">✕</button><div id="lbMain"></div><div id="lbStrip"></div><p id="lbCap"></p></dialog>');
 const lb = document.getElementById('lightbox');
 function openLightbox(model) {
-  const files = SPEC[model] ? SPEC[model].photos : [model.replace(/\s+/g, '-') + '.png'];
+  const device = DEVICES.find(d => d.model === model);
+  const files = SPEC[model] ? SPEC[model].photos : [device?.image || model.replace(/\s+/g, '-') + '.png'];
   const show = f => {
     const main = document.getElementById('lbMain');
     main.innerHTML = `<img src="images/${f}" alt="${model}">`;
@@ -3619,7 +3626,7 @@ function openLightbox(model) {
   };
   document.getElementById('lbStrip').innerHTML = files.length > 1 ? files.map((f, i) => `<button data-f="${f}" aria-label="View ${model}, photo ${i + 1}" aria-pressed="false"><img src="images/${f}" alt=""></button>`).join('') : '';
   show(files[0]);
-  document.getElementById('lbCap').textContent = model + (SPEC[model] ? ' · photos: Cytron' : '');
+  document.getElementById('lbCap').textContent = model + (device?.imageCredit ? ' · ' + device.imageCredit : SPEC[model] ? ' · photos: Cytron' : '');
   lb.hidden = false;
   lb.showModal();
   document.getElementById('lbStrip').onclick = e => { const f = e.target.closest('[data-f]')?.dataset.f; if (f) show(f); };
@@ -5326,7 +5333,7 @@ function frame(now) {
     if (o.zone) hits.push({ path: p, zone: o.room || o.zone });
   }
   if (WALK.on) drawWalkHUD();
-  else { drawOverlay(); drawFX(); drawWires(); drawFX2(); drawFX3(); drawHWOverlay(); }
+  else { drawOverlay(); drawFX(); drawWires(); drawFX2(); drawFX3(); drawHWOverlay(); if (SC?.def.draw) SC.def.draw(); }
   requestAnimationFrame(frame);
 }
 
@@ -5480,14 +5487,16 @@ function showDevice(id, fromTour = false) {
   const can = (inside ? ip.can : CAN[id]) || [];
   openPanel(c.c, headHTML(d.icon, `${c.label}${d.brand === 'IRIV' ? '' : ' · ' + d.brand}`, `${d.model} <span style="font-weight:500;color:var(--muted)">· ${inside && ip.name || d.name}</span>`) +
     picHTML(d) +
+    (d.productUrl ? `<a class="product-source" href="${d.productUrl}" target="_blank" rel="noopener noreferrer">Official Milesight product details ↗</a><p class="product-note">Manufacturer capabilities; demo installation and readings. ${d.variant || ''}</p>` : '') +
     `<p class="p-sum">${inside && ip.what || d.what}</p>` + ACTIONS +
     `<dl class="p-meta"><dt>Installed at</dt><dd>${inside ? ip.where : d.loc}</dd><dt>Quantity</dt><dd>${inside ? ip.qty + ' in ' + curInt.short : d.qty}</dd><dt>Connectivity</dt><dd>${d.conn}</dd><dt>Power</dt><dd>${d.power}</dd></dl>` +
     (can.length ? `<h3>What we can do with it</h3><ul>${can.map(x => `<li>${x}</li>`).join('')}</ul>` : '') +
     (SPEC[d.model] ? ioHTML(d) : '') +
-    `<h3>Live readings</h3>` + metricsHTML(d.m) +
+    `<h3>${d.productUrl ? 'Simulated readings' : 'Live readings'}</h3>` + metricsHTML(d.m) +
+    (d.demoScenario ? `<button class="tourbtn" data-scen="${d.demoScenario}">▶ Run ${d.demoTitle}</button>` : '') +
     `<h3>Data path</h3><div class="p-flow">${d.path.map(x => `<span>${x}</span>`).join('<i>→</i>')}</div>` +
     `<h3>Why it is installed here</h3><p class="p-sum" style="margin:0">${inside ? ip.why : d.why}</p>` +
-    `<h3>Sample decoded uplink (JSON)</h3><pre class="payload" id="payload"></pre>` +
+    `<h3>${d.productUrl ? 'Sample demo telemetry (JSON)' : 'Sample decoded uplink (JSON)'}</h3>${d.productUrl ? '<p class="product-note">Illustrative application fields for this simulated installation.</p>' : ''}<pre class="payload" id="payload"></pre>` +
     (inside ? '<button class="tourbtn alt" data-act="hall">⬅ Back to the room overview</button>' : '') +
     navHTML(idx, ids.length), d.m,
     () => { const el = document.getElementById('payload'); if (el) el.textContent = JSON.stringify(d.payload(), null, 2); updIO(d); });
@@ -5505,17 +5514,18 @@ function showProject(fromTour = false) {
   const m = [['Devices deployed', () => TOTAL_DEVICES], ['LoRaWAN uplinks today', () => fint(18240 + time * 1.7)],
              ['Gateway / Edge', () => 'Online'], ['Network health', () => wob(99.4, .2, .1).toFixed(1) + '%']];
   openPanel('#0e9f8f', headHTML('📋', 'Project overview', 'Smart City IoT Deployment') +
-    `<p class="p-sum">Milesight LoRaWAN sensors measure the city, a Milesight UG65 gateway collects their radio messages, the IRIV Edge computer processes the data and runs the automation, and IRIV PiControl industrial controllers switch real equipment in the field.</p>` + ACTIONS +
+    `<p class="p-sum">Milesight sensors report through UG65 city gateways and an SG50 solar farm gateway. IRIV Edge processes their data, PiControl manages wired equipment, and UC511 controllers operate irrigation valves. All activity shown here is simulated.</p>` + ACTIONS +
     metricsHTML(m) +
     `<button class="tourbtn" data-act="devtour">▶ Walk through every device</button>` +
+    `<button class="tourbtn alt" data-act="milesight">Explore 8 new Milesight products →</button>` +
     `<h3>System architecture</h3><div class="arch">
       <div class="tier" style="--tc:${CAT.sensor.c}"><b>① Sensing · Milesight LoRaWAN sensors</b><span>Electrical current (CT101/103/105), air quality, water level, soil moisture, weather, people counting, street lighting, SOS buttons, smart sockets</span></div>
       <div class="arr">↓ LoRaWAN radio (long range, low power)</div>
-      <div class="tier" style="--tc:${CAT.gateway.c}"><b>② Gateway · Milesight UG65</b><span>Receives all sensor uplinks on the command-center roof and forwards them over MQTT</span></div>
-      <div class="arr">↓ Ethernet · MQTT</div>
+      <div class="tier" style="--tc:${CAT.gateway.c}"><b>② Gateways · Milesight UG65 + SG50</b><span>UG65 serves the city; a solar-powered SG50 links the remote farms over 4G through a LoRaWAN network server</span></div>
+      <div class="arr">↓ Ethernet / 4G · network server · MQTT</div>
       <div class="tier" style="--tc:${CAT.edge.c}"><b>③ Edge · IRIV Edge</b><span>Decodes, stores and visualises data; runs automation rules locally and keeps working offline</span></div>
       <div class="arr">↓ commands (MQTT)  ·  ↑ summaries to the cloud</div>
-      <div class="tier" style="--tc:${CAT.controller.c}"><b>④ Control · IRIV PiControl</b><span>Isolated digital I/O, analog inputs and RS485 Modbus: traffic signals, inverters, batteries and loads</span></div>
+      <div class="tier" style="--tc:${CAT.controller.c}"><b>④ Control · IRIV PiControl + Milesight UC511</b><span>PiControl manages wired equipment. UC511 controls DC latching irrigation valves over LoRaWAN</span></div>
       <div class="tier" style="--tc:#1e88e5;margin-top:6px"><b>⑤ Cloud & Command Center</b><span>City-wide dashboard, history, alerts and reports</span></div>
     </div>` +
     `<h3>Bill of materials</h3><table class="bom"><thead><tr><th>Model</th><th>Device · location</th><th class="q">Qty</th></tr></thead>
@@ -5594,12 +5604,15 @@ function updTicker() {
   values.forEach(([, , value], i) => { ticker.children[i].querySelector('b').textContent = value; });
   updateCameraControls();
 }
-setInterval(updTicker, 1000);
 
+</script>
+<script src="milesight-devices.js"></script>
+<script>
 // Include devices appended by every district and interior expansion.
 const TOTAL_DEVICES = DEVICES.reduce((a, d) => a + d.qty, 0);
 initUI();
-requestAnimationFrame(t => { last = t; frame(t); updTicker(); setTimeout(() => { const h = location.hash.slice(1); if (h === 'project') showProject(); else if (h === 'energy') showEnergy(); else if (h === 'street') streetView(); else if (h === 'walk') startWalk(); else if (h.startsWith('scenario=') && Object.hasOwn(SCENARIOS, h.slice(9))) runScenario(h.slice(9)); else if (h === 'hall') enterInside('gov'); else if (h.startsWith('inside=') && Object.hasOwn(SCENES, h.slice(7))) enterInside(h.slice(7)); else if (Object.hasOwn(DEV, h.replace('dev=', ''))) showDevice(h.replace('dev=', '')); else if (Object.hasOwn(TOPICS, h)) show(h, false, true); }, 900); });
+setInterval(updTicker, 1000);
+requestAnimationFrame(t => { last = t; frame(t); updTicker(); setTimeout(() => { const h = location.hash.slice(1); if (h === 'project') showProject(); else if (h === 'milesight') showMilesightCatalog(); else if (h === 'energy') showEnergy(); else if (h === 'street') streetView(); else if (h === 'walk') startWalk(); else if (h.startsWith('scenario=') && Object.hasOwn(SCENARIOS, h.slice(9))) runScenario(h.slice(9)); else if (h === 'hall') enterInside('gov'); else if (h.startsWith('inside=') && Object.hasOwn(SCENES, h.slice(7))) enterInside(h.slice(7)); else if (Object.hasOwn(DEV, h.replace('dev=', ''))) showDevice(h.replace('dev=', '')); else if (Object.hasOwn(TOPICS, h)) show(h, false, true); }, 900); });
 </script>
 </body>
 </html>

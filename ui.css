@@ -112,6 +112,12 @@ body.panel-open .hint { display: none; }
 .p-nav button { font-size: 11px; border-radius: 8px; }
 .p-meta { font-size: 11px; line-height: 1.5; }
 .p-meta dd { overflow-wrap: anywhere; }
+.product-source { display: inline-block; margin-top: 8px; color: var(--accent); font-size: 11px; font-weight: 600; text-underline-offset: 3px; }
+.product-note { color: var(--muted); font-size: 10px; line-height: 1.65; margin: 8px 0; }
+.catalog-products { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.catalog-products .pcard { min-width: 0; }
+.catalog-products .pcard small { display: block; margin-top: 4px; font-size: 10px; }
+.catalog-products .pcard span { display: block; line-height: 1.5; margin-top: 4px; }
 table.bom { font-size: 11px; }
 .bom .mdl { white-space: normal; overflow-wrap: anywhere; }
 .bom th { font-size: 9px; }
