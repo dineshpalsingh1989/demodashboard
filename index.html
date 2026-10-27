@@ -105,6 +105,25 @@
   #legend div{display:flex;align-items:center;gap:8px}
   #legend i{width:12px;height:12px;border-radius:4px;border:2.5px solid var(--c);background:var(--panel)}
   [hidden]{display:none!important}
+  #tilt{position:fixed;inset:0;pointer-events:none;z-index:1;backdrop-filter:blur(2.2px) saturate(1.15);-webkit-backdrop-filter:blur(2.2px) saturate(1.15);
+    -webkit-mask-image:linear-gradient(to bottom,#000 0%,transparent 30%,transparent 70%,#000 100%);mask-image:linear-gradient(to bottom,#000 0%,transparent 30%,transparent 70%,#000 100%)}
+  body.walking #tilt, body.inside #tilt, body.no-tilt #tilt{display:none}
+  #bTilt{font-size:16px} body.no-tilt #bTilt{opacity:.45}
+  body.fs .welcome, body.fs #legend, body.fs .telemetry, body.fs .hint, body.fs #mapHint{display:none!important}
+  #bFull{font-size:18px}
+  #walkHud{position:fixed;inset:0;pointer-events:none;z-index:6}
+  #walkHud .wh-top{pointer-events:auto;position:absolute;top:98px;left:50%;transform:translateX(-50%);display:flex;gap:12px;align-items:center;background:rgba(15,23,36,.85);color:#fff;
+    padding:8px 10px 8px 16px;border-radius:14px;font-size:12.5px;max-width:calc(100% - 32px);box-shadow:0 8px 30px rgba(0,0,0,.25)}
+  #walkHud .wh-top span{opacity:.8} #walkExit{font:inherit;font-weight:700;border:none;border-radius:10px;padding:8px 12px;cursor:pointer;background:#fff;color:#13202e;white-space:nowrap}
+  #walkHud .wh-pad{pointer-events:auto;position:absolute;right:96px;bottom:120px;display:grid;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(2,48px);gap:6px}
+  #walkHud .wh-pad button{font-size:18px;border:none;border-radius:12px;background:rgba(255,255,255,.92);box-shadow:0 4px 14px rgba(0,0,0,.2);cursor:pointer}
+  #walkHud .wh-pad [data-k="fwd"]{grid-column:2} #walkHud .wh-pad [data-k="left"]{grid-column:1;grid-row:2} #walkHud .wh-pad [data-k="back"]{grid-column:2;grid-row:2} #walkHud .wh-pad [data-k="right"]{grid-column:3;grid-row:2}
+  body.walking .welcome, body.walking #legend, body.walking .hint, body.walking #mapHint, body.walking .map-tools > :not(#bWalk){display:none!important}
+  #bWalk{font-size:18px} #bWalk.walk-float{position:fixed;right:24px;bottom:120px;z-index:6;width:48px;height:48px;border-radius:12px;border:none;background:#fff;box-shadow:0 4px 14px rgba(0,0,0,.2)}
+  body.walking #bWalk{background:#00897b;color:#fff}
+  @media (max-width:820px){#walkHud .wh-top span{display:none}}
+  .plate{display:inline-block;font:800 12px ui-monospace,Consolas,monospace;letter-spacing:.06em;background:#111;color:#fff;padding:3px 7px;border-radius:5px;border:1.5px solid #9e9e9e;white-space:nowrap}
+  .anpr td{vertical-align:middle;font-size:12px}
   .chainlist{list-style:none;margin:0;padding:0;display:grid;gap:0}
   #panel .chainlist li{padding:0 0 14px 0;display:flex;gap:10px;align-items:flex-start;position:relative}
   #panel .chainlist li::before{content:"";position:absolute;left:17px;top:34px;bottom:2px;width:2px;background:color-mix(in srgb,var(--zc) 40%,transparent);border-radius:0}
@@ -178,6 +197,7 @@
 <a class="skip-link" href="#bSearch">Skip to city search</a>
 <canvas id="city" tabindex="0" role="img" aria-label="Interactive smart city map. Use left and right arrow keys to rotate, plus and minus to zoom, or search to explore districts and devices." aria-describedby="mapHint">Explore the city's districts and devices using the search button.</canvas>
 <div id="fade" aria-hidden="true"></div>
+<div id="tilt" aria-hidden="true"></div>
 
 <header class="top">
   <div class="brand">
@@ -216,7 +236,7 @@
   <button id="bReset" aria-label="Reset city view" title="Reset city view (0)"><span data-icon="focus"></span></button>
   <button id="bRot" aria-label="Automatic camera rotation" title="Automatic camera rotation" aria-pressed="true"><span data-icon="rotate"></span></button>
 </div>
-<div class="hint" id="mapHint"><span data-icon="mouse"></span><span>Click to explore</span><i></i><span>Drag to rotate</span><i></i><span>Scroll to zoom</span></div>
+<div class="hint" id="mapHint"><span data-icon="mouse"></span><span>Click to explore</span><i></i><span>Drag to move · Shift-drag to rotate</span><i></i><span>Scroll to zoom</span></div>
 <button id="bBack" class="backcity" hidden>⬅ Back to city <span>· inside City Hall</span></button>
 <aside id="panel" aria-label="City details" inert></aside>
 <div id="legend"></div>
@@ -385,7 +405,80 @@ const TOPICS = {
     say: 'This is the urban forest and green space. Trees cool the city and clean the air. Air quality sensors, like the blinking pole here, measure pollution every minute, and smart irrigation waters plants only when soil sensors say they are dry, which saves a lot of water. Smart bins even report when they are full.'
   }
 };
-const ORDER = ['intro', 'command', 'mobility', 'energy', 'buildings', 'iot', 'cloud', 'homes', 'health', 'safety', 'gov', 'green', 'condo', 'houses', 'villas', 'farm', 'greenhouse', 'water', 'barn', 'substation', 'wtp', 'reservoir', 'clearwater', 'wwtp', 'gridstore', 'solarpark', 'factory', 'forest'];
+const ORDER = ['intro', 'command', 'mobility', 'energy', 'buildings', 'iot', 'cloud', 'homes', 'health', 'safety', 'gov', 'green', 'condo', 'houses', 'villas', 'farm', 'greenhouse', 'water', 'barn', 'substation', 'wtp', 'reservoir', 'clearwater', 'wwtp', 'gridstore', 'solarpark', 'factory', 'forest', 'carpark', 'shops', 'mall', 'market', 'parkride', 'hub', 'busdepot', 'school', 'suburb', 'townhouses', 'sportspark'];
+Object.assign(TOPICS, {
+  carpark: {
+    icon: '🅿️', color: '#1565c0', kicker: 'Smart parking', title: 'Smart Car Park · Pay by Plate',
+    sum: 'A multi-storey car park with no tickets. An IRIV EdgeAI CM5 reads every number plate at the entry and exit barriers, counts the cars inside, and lets drivers pay by plate in an app or at a kiosk. CCTV cameras count the free bays on every level.',
+    how: ['<b>Entry:</b> the EdgeAI CM5 reads the plate from the CCTV camera, logs the time and opens the barrier through its digital output. No ticket.',
+          '<b>Inside:</b> CCTV cameras with AI count free bays per level; guidance signs show where to go.',
+          '<b>Pay by plate:</b> in the app or at the kiosk by typing the plate, or automatically from a linked e-wallet.',
+          '<b>Exit:</b> the plate is read again; if paid, the barrier opens without stopping long.'],
+    ben: ['No tickets', 'No queues at the exit', 'Live occupancy', 'Less circling for spaces'],
+    m: [['Cars inside', () => CP.inside + ' / ' + CP.cap], ['Free spaces', () => CP.cap - CP.inside], ['Entries today', () => fint(CP.entries)], ['Revenue today', () => 'RM ' + fint(CP.revenue)]],
+    extra: () => `<h3>Live number-plate log (ANPR)</h3><table class="bom anpr"><thead><tr><th>Plate</th><th>In</th><th>Out</th><th class="q">Fee · payment</th></tr></thead><tbody id="anprlog">${anprRows()}</tbody></table>
+      <p class="mut" style="font-size:11.5px;margin:6px 0 0">Plates and fees are simulated. Tariff in this demo: RM 2 for the first hour, RM 1 per extra hour.</p>`,
+    tick: () => { const t = document.getElementById('anprlog'); if (t) t.innerHTML = anprRows(); },
+    chain: [['📷', 'Entry & exit CCTV', 'IP cameras (Ethernet) or MIPI cameras'], ['🧠', 'IRIV EdgeAI CM5', 'ANPR model reads the plate on site'], ['🚧', 'Barriers', 'opened by EdgeAI digital outputs'], ['💳', 'Pay by plate', 'app, kiosk or linked e-wallet'], ['🔀', 'IO Controller MQTT', 'loop detectors, signs, fans, fire alarm'], ['☁️', 'IRIV Edge', 'occupancy, revenue, plate history']],
+    say: 'This is the smart car park, and there are no tickets. An IRIV Edge A I computer reads every number plate from the C C T V camera at the entrance, records the time and opens the barrier. Cameras on every level count the free spaces. To pay, drivers just use their number plate, in the app, at the kiosk, or automatically from a linked e-wallet. At the exit, the plate is read again and the barrier opens. Watch the cars going in and out, and the live plate log in this panel.'
+  },
+  shops: {
+    icon: '🛍️', color: '#ec407a', kicker: 'Retail', title: 'High Street Shops',
+    sum: 'A street of small shops served by the smart car park next door. People counters at the doors show how busy each shop is, and shoppers pay for parking by plate.',
+    how: ['VS133 people counters at shop doors.', 'Shared multi-storey car park with pay-by-plate.', 'Footfall data helps shops plan staff and opening hours.'],
+    ben: ['Footfall insight', 'Easy parking', 'Busy street'],
+    m: [['Shoppers now', () => Math.round(wob(140, 15, .1))], ['Shops open', () => '9 / 10'], ['Busiest', () => 'Café'], ['Car park', () => (CP.cap - CP.inside) + ' free']],
+    say: 'This high street has small shops served by the smart car park next door. People counters at the doors tell each shop how busy it is, and shoppers simply pay for parking with their number plate.'
+  },
+  mall: {
+    icon: '🏬', color: '#5e35b1', kicker: 'Retail', title: 'Shopping Mall & Rooftop Parking',
+    sum: 'A shopping mall with parking on the roof. An IRIV EdgeAI CM5 uses the existing rooftop CCTV to count free spaces, so no sensor is needed in each bay.',
+    how: ['EdgeAI CM5 reads several IP CCTV streams over Ethernet and counts occupied bays.', 'Free-space signs at the ramp.', 'People counters at the mall entrances.'],
+    ben: ['Reuse existing CCTV', 'No in-ground sensors', 'Shorter search for parking'],
+    m: [['Roof spaces free', () => Math.round(wob(46, 6, .05)) + ' / 180'], ['Visitors now', () => fint(wob(1840, 80, .05))], ['Cameras used', () => '6 (existing CCTV)'], ['AI load', () => Math.round(wob(42, 5, .3)) + '%']],
+    say: 'This shopping mall has parking on the roof. Instead of a sensor in every bay, an IRIV Edge A I computer reads the existing C C T V cameras over the network and counts the free spaces.'
+  },
+  school: {
+    icon: '🏫', color: '#f57c00', kicker: 'Education', title: 'School Campus',
+    sum: 'A school with healthy classrooms and a safe drop-off zone. Air quality sensors keep classrooms fresh, and an AI camera watches the drop-off lane during school runs.',
+    how: ['AM319 in classrooms: CO₂ drives ventilation.', 'EdgeAI CM5 at the drop-off lane detects children near moving cars and illegal parking.', 'SOS buttons for staff.'],
+    ben: ['Better concentration', 'Safer school runs', 'Calmer traffic'],
+    m: [['Classroom CO₂', () => Math.round(wob(720, 60, .2)) + ' ppm'], ['Pupils on site', () => '640'], ['Drop-off alerts', () => '0'], ['Bus arrival', () => '3 min']],
+    say: 'This is the school campus. Air quality sensors keep the classrooms fresh, because high carbon dioxide makes children tired. At the drop-off lane, an A I camera warns staff when children walk near moving cars.'
+  },
+  suburb: { icon: '🏘️', color: '#8bc34a', kicker: 'Residential', title: 'Garden Homes', sum: 'More family homes with gardens and rooftop solar, each with a CT101 energy monitor and smart sockets.',
+    how: ['CT101 on each main cable.', 'Rooftop solar.', 'WS523 smart sockets.'], ben: ['Lower bills', 'More solar self-use'],
+    m: [['Homes', () => '6'], ['Solar now', () => (night > .5 ? 0 : wob(8.8, .7, .3)).toFixed(1) + ' kW'], ['Load', () => wob(12.6, 1.3, .4).toFixed(1) + ' kW'], ['Alerts', () => '0']],
+    say: 'More family homes with gardens and rooftop solar. Each home has a current sensor and smart sockets.' },
+  sportspark: { icon: '⚽', color: '#43a047', kicker: 'Leisure', title: 'Community Sports Park', sum: 'A football pitch, running track and trees. Smart lights switch on only when the pitch is booked.',
+    how: ['WS558 controls the floodlights by booking schedule.', 'Soil sensors water the grass only when dry.'], ben: ['Lower energy', 'Healthy community'],
+    m: [['Pitch', () => night > .5 ? 'Lights on · booked' : 'Open'], ['Visitors', () => Math.round(wob(85, 12, .1))], ['Grass moisture', () => Math.round(wob(41, 3, .1)) + '%'], ['Energy saved', () => '45%']],
+    say: 'This is the community sports park. Floodlights only switch on when the pitch is booked, and the grass is only watered when the soil is dry.' },
+  hub: {
+    icon: '🚉', color: '#00897b', kicker: 'Transport', title: 'Transport Hub · Train & Bus',
+    sum: 'The city\'s train station and bus interchange. An IRIV EdgeAI CM5 counts the crowd on the platform from CCTV, and people counters at the gates measure passenger flow.',
+    how: ['EdgeAI CM5 crowd counting on the platform CCTV: warnings before it gets too crowded.', 'VS133 people counters at the ticket gates.', 'Live arrival boards for trains and buses.'],
+    ben: ['Safer platforms', 'Better timetables', 'Live information'],
+    m: [['On the platform', () => Math.round(wob(120, 30, .15))], ['Gate entries / h', () => fint(wob(2400, 200, .1))], ['Next train', () => TRAIN.next], ['Crowd level', () => wob(120, 30, .15) > 140 ? 'Busy' : 'Normal']],
+    say: 'This is the transport hub, with the train station and the bus interchange. An IRIV Edge A I computer counts the crowd on the platform from the C C T V cameras, and people counters at the gates measure passenger flow, so the station can add trains or staff before it gets crowded.'
+  },
+  busdepot: { icon: '🚌', color: '#00acc1', kicker: 'Transport', title: 'E-Bus Depot', sum: 'Electric buses charge here overnight. CT105 sensors on the chargers make sure all buses are full by morning without overloading the grid.',
+    how: ['CT105 on every charger feed.', 'Smart charging spreads the load over the night.', 'Bus GPS shows which bus is where.'], ben: ['Clean buses', 'Lower peak demand'],
+    m: [['Buses charging', () => night > .5 ? '6 / 6' : '2 / 6'], ['Charging power', () => (night > .5 ? wob(720, 40, .2) : wob(210, 20, .2)).toFixed(0) + ' kW'], ['Fleet charged', () => Math.round(wob(82, 4, .05)) + '%'], ['Buses on route', () => night > .5 ? '0' : '4']],
+    say: 'This is the electric bus depot. Current sensors on the chargers make sure every bus is full by morning, without overloading the grid.' },
+  market: { icon: '🏪', color: '#e64a19', kicker: 'Retail', title: 'Market Street & Car Park', sum: 'Small shops and food stalls with their own compact multi-storey car park, using the same pay-by-plate system as the main car park.',
+    how: ['IRIV EdgeAI CM5 reads plates at the car park barrier.', 'Shared plate account with the main car park.', 'People counters at the market entrances.'], ben: ['One parking account for the city', 'Busy local shops'],
+    m: [['Car park', () => Math.round(wob(38, 5, .05)) + ' / 60'], ['Shoppers now', () => Math.round(wob(210, 20, .1))], ['Stalls open', () => '14 / 16'], ['Plates read today', () => fint(410 + time / 6)]],
+    say: 'This market street has small shops and food stalls, with a compact car park that uses the same pay by plate system as the main car park.' },
+  townhouses: { icon: '🏡', color: '#9ccc65', kicker: 'Residential', title: 'Townhouses', sum: 'Rows of townhouses with shared smart energy monitoring.', how: ['CT101 per house.', 'Smart sockets.'], ben: ['Lower bills'],
+    m: [['Homes', () => '12'], ['Load', () => wob(18, 2, .3).toFixed(1) + ' kW'], ['Solar', () => (night > .5 ? 0 : wob(6, .5, .3)).toFixed(1) + ' kW'], ['Alerts', () => '0']],
+    say: 'Rows of townhouses, with smart energy monitoring in every home.' },
+  parkride: { icon: '🅿️', color: '#3949ab', kicker: 'Transport', title: 'Park & Ride', sum: 'An open car park next to the transport hub. Number-plate cameras at the gate let commuters park and pay by plate, then take the train.',
+    how: ['IRIV EdgeAI CM5 ANPR at the gate.', 'AI space counting from a mast camera.', 'Combined parking + train ticket.'], ben: ['Fewer cars downtown', 'Easy commute'],
+    m: [['Spaces free', () => Math.round(wob(54, 6, .05)) + ' / 140'], ['Commuters today', () => fint(380 + time / 5)], ['Next train', () => TRAIN.next], ['Gate', () => 'ANPR · open']],
+    say: 'This park and ride lets commuters leave their car at the edge of the city. Number plate cameras open the gate, and parking is paid by plate together with the train ticket.' }
+});
+
 Object.assign(TOPICS, {
   substation: {
     icon: '🔌', color: '#f57f17', kicker: 'Power grid', title: 'Smart Substation',
@@ -534,17 +627,21 @@ const cv = document.getElementById('city'), ctx = cv.getContext('2d');
 let W, H, DPR, time = 0, night = 0, nightTarget = 0;
 const hsh = n => { const s = Math.sin(n * 12.9898) * 43758.5453; return s - Math.floor(s); };
 
-const WORLD = 38, CX = WORLD / 2;   // map is WORLD × WORLD units
-const B = [[0.4, 6.6], [8.4, 13.6], [15.4, 21.6], [23.4, 29.6], [31.4, 37.6]];
-const ROADS = [7.5, 14.5, 22.5, 30.5];
+const WORLD = 54, CX = WORLD / 2;   // map is WORLD × WORLD units
+const B = [[0.4, 6.6], [8.4, 13.6], [15.4, 21.6], [23.4, 29.6], [31.4, 37.6], [39.4, 45.6], [47.4, 53.6]];
+const ROADS = [7.5, 14.5, 22.5, 30.5, 38.5, 46.5];
 const ZONES = { '0,0': 'buildings', '1,0': 'iot', '2,0': 'homes', '0,1': 'green', '1,1': 'command', '2,1': 'health', '0,2': 'energy', '1,2': 'safety', '2,2': 'gov',
   '3,0': 'condo', '3,1': 'houses', '3,2': 'villas', '0,3': 'farm', '1,3': 'greenhouse', '2,3': 'water', '3,3': 'barn',
-  '4,0': 'substation', '4,1': 'gridstore', '4,2': 'factory', '4,3': 'forest', '0,4': 'reservoir', '1,4': 'wtp', '2,4': 'clearwater', '3,4': 'solarpark', '4,4': 'wwtp' };
+  '4,0': 'substation', '4,1': 'gridstore', '4,2': 'factory', '4,3': 'forest', '0,4': 'reservoir', '1,4': 'wtp', '2,4': 'clearwater', '3,4': 'solarpark', '4,4': 'wwtp',
+  '5,0': 'carpark', '5,1': 'shops', '5,2': 'mall', '5,3': 'school', '5,4': 'suburb', '5,5': 'sportspark', '0,5': 'hub', '1,5': 'busdepot', '2,5': 'market', '3,5': 'townhouses', '4,5': 'parkride',
+  '6,0': 'shoplots', '6,1': 'minimart', '6,2': 'township', '6,3': 'foodcourt', '6,4': 'township', '6,5': 'playground', '6,6': 'petrol', '0,6': 'township', '1,6': 'shoplots', '2,6': 'clinic', '3,6': 'township', '4,6': 'hall', '5,6': 'township' };
 const KIND = { buildings: 'plaza', iot: 'plaza', homes: 'grass', green: 'grass', command: 'plaza', health: 'plaza', energy: 'grass', safety: 'park', gov: 'grass',
   condo: 'plaza', houses: 'grass', villas: 'grass', farm: 'field', greenhouse: 'yard', water: 'grass', barn: 'yard',
-  substation: 'yard', gridstore: 'plaza', factory: 'plaza', forest: 'grass', reservoir: 'grass', wtp: 'plaza', clearwater: 'plaza', solarpark: 'grass', wwtp: 'plaza' };
+  substation: 'yard', gridstore: 'plaza', factory: 'plaza', forest: 'grass', reservoir: 'grass', wtp: 'plaza', clearwater: 'plaza', solarpark: 'grass', wwtp: 'plaza',
+  carpark: 'plaza', shops: 'plaza', mall: 'plaza', school: 'grass', suburb: 'grass', sportspark: 'grass', hub: 'plaza', busdepot: 'plaza', market: 'plaza', townhouses: 'grass', parkride: 'grass',
+  shoplots: 'plaza', minimart: 'plaza', township: 'grass', foodcourt: 'plaza', playground: 'grass', petrol: 'plaza', clinic: 'plaza', hall: 'grass' };
 const blocks = [];
-for (let i = 0; i < 5; i++) for (let j = 0; j < 5; j++) {
+for (let i = 0; i < 7; i++) for (let j = 0; j < 7; j++) {
   const zone = ZONES[i + ',' + j];
   blocks.push({ zone, x0: B[i][0], x1: B[i][1], y0: B[j][0], y1: B[j][1], kind: KIND[zone] });
 }
@@ -1068,16 +1165,188 @@ const DEVICES = [
     why: 'On the tower above the tree tops, with a view over the whole forest.',
     m: [['Model', () => 'Smoke & fire detection'], ['Coverage', () => '360° every 2 min'], ['Detections', () => '0'], ['Power', () => 'Solar · 92%']],
     say: 'This IRIV Edge A I camera on the fire-watch tower scans the forest for smoke and flames. It works on solar power and only sends an alert with a photo over 4 G when it sees something.' })
+,
+  fdev({ id: 'cp-anpr', cat: 'ai', brand: 'IRIV', model: 'IRIV EdgeAI CM5', name: 'ANPR · Number-Plate Reader', icon: '📷', zone: 'carpark', x: 40.0, y: 1.95, z: 2.2, qty: 1,
+    conn: 'Entry & exit CCTV over Gigabit Ethernet (IP cameras) · barriers on digital outputs · payment system over RS485 / MQTT', power: 'DC 10–30 V (surge-protected)',
+    path: ['CCTV cameras', 'Ethernet / MIPI', 'EdgeAI CM5 (ANPR)', 'Barrier + MQTT', 'IRIV Edge'],
+    loc: 'Car park entry and exit lanes', short: 'Car park gates',
+    what: 'An IRIV EdgeAI CM5 runs a number-plate recognition (ANPR) model on its Hailo-8 accelerator. It reads plates from the entry and exit CCTV cameras, logs entry and exit times, checks payment, and opens the barriers through its isolated digital outputs.',
+    why: 'In the barrier cabinet between the entry and exit lanes, close to both cameras and both barriers.',
+    m: [['Last plate', () => CP.lastPlate], ['Read confidence', () => (wob(98.6, .5, .5)).toFixed(1) + '%'], ['Cars inside', () => CP.inside + ' / ' + CP.cap], ['Entries today', () => fint(CP.entries)]],
+    say: 'This IRIV Edge A I computer is the number plate reader. It reads every plate from the entry and exit cameras on site, records the time, checks whether the parking is paid, and opens the barriers through its digital outputs. No tickets, and no video leaves the car park.' }),
+  fdev({ id: 'cp-ai', cat: 'ai', brand: 'IRIV', model: 'IRIV EdgeAI CM5', name: 'Bay Counting AI', icon: '📷', zone: 'carpark', x: 43.2, y: 6.15, z: 3.4, qty: 2,
+    conn: 'Level CCTV cameras over Ethernet · MQTT to IRIV Edge', power: 'DC 10–30 V (surge-protected)', path: ['Level cameras', 'Ethernet (RTSP)', 'EdgeAI CM5', 'MQTT', 'Guidance signs'],
+    loc: 'Car park, one unit per two levels', short: 'Car park levels',
+    what: 'An IRIV EdgeAI CM5 watches the ceiling CCTV cameras on each level and counts occupied and free bays with an AI model, so no sensor is needed in each bay.',
+    why: 'In the comms cabinet on the levels it covers, with the camera network.',
+    m: [['Level 1 free', () => Math.max(0, Math.round((CP.cap - CP.inside) * .15))], ['Level 2 free', () => Math.max(0, Math.round((CP.cap - CP.inside) * .25))], ['Level 3 free', () => Math.max(0, Math.round((CP.cap - CP.inside) * .3))], ['Roof free', () => Math.max(0, Math.round((CP.cap - CP.inside) * .3))]],
+    say: 'This IRIV Edge A I computer counts the free bays on each level from the ceiling cameras, so drivers are guided straight to a free space.' }),
+  fdev({ id: 'cp-ioc', cat: 'controller', brand: 'IRIV', model: 'IRIV IO Controller MQTT', name: 'Car Park I/O Gateway', icon: '🔀', zone: 'carpark', x: 41.0, y: 3.45, z: .8, qty: 1,
+    conn: 'Ethernet · MQTT to IRIV Edge', power: 'DC 10–30 V (surge-protected)', path: ['Loops, signs, fans, alarms', 'DI / DO / AI', 'IO Controller', 'MQTT', 'IRIV Edge'],
+    loc: 'Pay kiosk island between the lanes', short: 'Car park gates',
+    what: 'An IRIV IO Controller MQTT reads the vehicle loop detectors, the kiosk and the fire alarm, drives the FULL signs and ventilation fans, and reads the CO gas detector on an analog input.',
+    why: 'In the kiosk island, where the loop and sign cables meet.',
+    m: [['Loop detectors', () => '4 OK'], ['FULL sign', () => CP.inside >= CP.cap ? 'ON' : 'OFF'], ['Fans', () => 'Low speed'], ['CO level', () => Math.round(wob(12, 3, .3)) + ' ppm']],
+    say: 'This IRIV I O Controller with MQTT reads the loop detectors under the lanes and the fire alarm, switches the FULL signs and the ventilation fans, and reads the carbon monoxide detector.' }),
+  fdev({ id: 'cp-ct', model: 'CT103', name: 'EV Charger Current', icon: '⚡', zone: 'carpark', x: 44.6, y: 6.15, z: .6, qty: 8, power: 'Check datasheet (sources differ)',
+    loc: 'EV chargers on the ground floor', short: 'Car park EV chargers',
+    what: 'Clamp-on current sensors on each EV charger feed.', why: 'At the EV charging bays on the ground floor.',
+    m: [['Chargers busy', () => '5 / 8'], ['Charging', () => Math.round(wob(68, 5, .3)) + ' kW'], ['Energy today', () => fint(410 + time / 4) + ' kWh'], ['Status', () => 'Normal']],
+    say: 'These C T 103 sensors measure the E V chargers in the car park, so charging never overloads the building.' }),
+  fdev({ id: 'mall-ai', cat: 'ai', brand: 'IRIV', model: 'IRIV EdgeAI CM5', name: 'Rooftop Parking AI', icon: '📷', zone: 'mall', x: 42.5, y: 20.65, z: 2.4, qty: 1,
+    conn: '6 existing IP CCTV cameras over Gigabit Ethernet · MQTT', power: 'DC 10–30 V (surge-protected)', path: ['Existing CCTV', 'Ethernet (RTSP)', 'EdgeAI CM5', 'MQTT', 'Ramp signs'],
+    loc: 'Mall rooftop comms room', short: 'Mall roof',
+    what: 'An IRIV EdgeAI CM5 reuses the mall\'s existing rooftop CCTV, reading the camera streams over Ethernet and counting free spaces with AI.',
+    why: 'Next to the rooftop CCTV switch, so no new cameras or cables are needed.',
+    m: [['Roof free', () => Math.round(wob(46, 6, .05)) + ' / 180'], ['Streams', () => '6'], ['Inference', () => Math.round(wob(24, 2, .4)) + ' fps each'], ['AI load', () => Math.round(wob(42, 5, .3)) + '%']],
+    say: 'This IRIV Edge A I computer reuses the mall\'s existing C C T V cameras on the roof, and counts free parking spaces with A I, with no sensors in the bays.' }),
+  fdev({ id: 'shop-vs', model: 'VS133', name: 'Shop Door People Counter', icon: '👥', zone: 'shops', x: 40.45, y: 10.25, z: 1.0, qty: 10, power: 'DC / PoE',
+    loc: 'Above each shop door', short: 'High street',
+    what: 'A ceiling people counter above each shop door.', why: 'Every shopper walks under it.',
+    m: [['In today', () => fint(380 + time / 4)], ['In shop now', () => Math.round(wob(12, 4, .2))], ['Peak hour', () => '17:00'], ['Status', () => 'Online']],
+    say: 'These people counters above the shop doors tell each shop how many customers come in, and when the busy hours are.' }),
+  fdev({ id: 'school-ai', cat: 'ai', brand: 'IRIV', model: 'IRIV EdgeAI CM5', name: 'Drop-off Safety Camera', icon: '📷', zone: 'school', x: 40.0, y: 28.6, z: 2.2, qty: 1,
+    conn: 'MIPI camera + 1 IP CCTV · MQTT to IRIV Edge', power: 'DC 10–30 V (surge-protected)', path: ['Drop-off camera', 'MIPI / Ethernet', 'EdgeAI CM5', 'Beacon + MQTT', 'IRIV Edge'],
+    loc: 'School drop-off lane', short: 'School gate',
+    what: 'An IRIV EdgeAI CM5 watches the drop-off lane and flashes a warning beacon when a child walks near a moving car, and logs illegal parking.',
+    why: 'On a pole covering the whole drop-off lane.',
+    m: [['Children near cars', () => '0 alerts'], ['Illegal parking', () => '1 today'], ['Cars in lane', () => Math.round(wob(4, 2, .3))], ['Model', () => 'Person + vehicle']],
+    say: 'This A I camera at the school drop-off lane flashes a warning when a child walks near a moving car.' }),
+  fdev({ id: 'school-am', model: 'AM319', name: 'Classroom Air Quality', icon: '🌡️', zone: 'school', x: 42.4, y: 25.25, z: 1.0, qty: 24, power: 'DC adapter',
+    loc: 'Every classroom', short: 'Classrooms', what: 'Indoor air quality in every classroom.', why: 'High CO₂ makes pupils tired; ventilation follows the reading.',
+    m: [['Classroom CO₂', () => Math.round(wob(720, 60, .2)) + ' ppm'], ['Temperature', () => wob(24.5, .5, .2).toFixed(1) + ' °C'], ['Humidity', () => Math.round(wob(55, 3, .2)) + '%'], ['Rooms > 1000 ppm', () => '1']],
+    say: 'These A M 319 sensors measure the air in every classroom, and open the ventilation when carbon dioxide gets high.' }),
+  fdev({ id: 'hub-ai', cat: 'ai', brand: 'IRIV', model: 'IRIV EdgeAI CM5', name: 'Platform Crowd Counting', icon: '📷', zone: 'hub', x: 3.5, y: 41.65, z: 2.0, qty: 2,
+    conn: 'Platform IP CCTV over Gigabit Ethernet · MQTT to IRIV Edge', power: 'DC 10–30 V (surge-protected)', path: ['Platform CCTV', 'Ethernet (RTSP)', 'EdgeAI CM5', 'MQTT', 'IRIV Edge'],
+    loc: 'Station platform', short: 'Train station',
+    what: 'An IRIV EdgeAI CM5 counts people on the platform from the station CCTV and warns staff before it gets dangerously crowded.',
+    why: 'In the platform equipment room, next to the CCTV network switch.',
+    m: [['On the platform', () => Math.round(wob(120, 30, .15))], ['Crowd level', () => wob(120, 30, .15) > 140 ? 'Busy' : 'Normal'], ['Next train', () => TRAIN.next], ['Streams', () => '4']],
+    say: 'This IRIV Edge A I computer counts the crowd on the station platform from the C C T V cameras, and warns staff before it gets too crowded.' }),
+  fdev({ id: 'depot-ct', model: 'CT105', name: 'Bus Charger Current', icon: '⚡', zone: 'busdepot', x: 11.0, y: 42.3, z: .9, qty: 6, power: 'Check datasheet (sources differ)',
+    loc: 'E-bus charger feeds', short: 'Bus depot', what: 'Current transformers on each bus charger.', why: 'At the charger feeder board.',
+    m: [['Charging', () => (night > .5 ? wob(720, 40, .2) : wob(210, 20, .2)).toFixed(0) + ' kW'], ['Buses charging', () => night > .5 ? '6' : '2'], ['Peak today', () => '780 kW'], ['Status', () => 'Normal']],
+    say: 'These current sensors measure every bus charger, so the depot charges the whole fleet overnight without a power peak.' }),
+  fdev({ id: 'mk-anpr', cat: 'ai', brand: 'IRIV', model: 'IRIV EdgeAI CM5', name: 'Market Car Park ANPR', icon: '📷', zone: 'market', x: 18.7, y: 42.4, z: 2.0, qty: 1,
+    conn: 'Barrier CCTV over Ethernet · barrier on a digital output · MQTT', power: 'DC 10–30 V (surge-protected)', path: ['Barrier camera', 'Ethernet', 'EdgeAI CM5 (ANPR)', 'Barrier + MQTT', 'IRIV Edge'],
+    loc: 'Market car park barrier', short: 'Market car park', what: 'The same number-plate reader as the main car park, sharing one plate account across the city.', why: 'At the car park\'s single entry/exit barrier.',
+    m: [['Plates read today', () => fint(410 + time / 6)], ['Inside', () => Math.round(wob(38, 5, .05)) + ' / 60'], ['Last plate', () => CP.lastPlate], ['Barrier', () => 'OK']],
+    say: 'The market car park uses the same number plate reader, so one parking account works everywhere in the city.' }),
+  fdev({ id: 'pr-anpr', cat: 'ai', brand: 'IRIV', model: 'IRIV EdgeAI CM5', name: 'Park & Ride ANPR', icon: '📷', zone: 'parkride', x: 32.0, y: 40.0, z: 2.0, qty: 1,
+    conn: 'Gate CCTV + mast camera over Ethernet · MQTT', power: 'DC 10–30 V (surge-protected)', path: ['Gate & mast cameras', 'Ethernet', 'EdgeAI CM5', 'Barrier + MQTT', 'IRIV Edge'],
+    loc: 'Park & Ride gate', short: 'Park & Ride', what: 'Reads plates at the gate and counts free spaces from a mast camera.', why: 'At the gate, with a view over the whole lot.',
+    m: [['Spaces free', () => Math.round(wob(54, 6, .05)) + ' / 140'], ['Plates today', () => fint(380 + time / 5)], ['Train tickets linked', () => '71%'], ['Gate', () => 'Open']],
+    say: 'This number plate reader runs the park and ride gate, and counts free spaces from a camera on a mast.' }),
+  fdev({ id: 'jn-ai', cat: 'ai', brand: 'IRIV', model: 'IRIV EdgeAI CM5', name: 'AI Traffic Junction', icon: '📷', zone: 'mobility', x: 13.2, y: 13.25, z: 2.2, qty: 9,
+    conn: 'Junction CCTV (4 × IP cameras over Ethernet) · RS485 to the PiControl signal controller · MQTT', power: 'DC 10–30 V (surge-protected)', path: ['Junction CCTV', 'Ethernet (RTSP)', 'EdgeAI CM5', 'RS485 → PiControl', 'Signals'],
+    loc: 'Every junction, signal cabinet', short: 'Junctions',
+    what: 'An IRIV EdgeAI CM5 at each junction reads the junction CCTV, counts and classifies vehicles (car, bus, truck, motorbike), measures the queue in every direction, and spots red-light runners and waiting pedestrians. It sends the queues to the PiControl signal controller, which adapts the green time.',
+    why: 'In the signal cabinet, between the CCTV network and the PiControl traffic controller.',
+    m: [['Queue N–S', () => queueCount('y') + ' cars'], ['Queue E–W', () => queueCount('x') + ' cars'], ['Green split', () => `${SIG.gx.toFixed(0)} s / ${SIG.gy.toFixed(0)} s`], ['Mode', () => SIG.adapt ? 'Adaptive (AI)' : 'Fixed timing']],
+    say: 'This IRIV Edge A I computer sits in the junction cabinet. It reads the junction C C T V cameras, counts and classifies every vehicle, and measures the queue in each direction. The PiControl signal controller then gives more green time to the longer queue.' })
+,
+  fdev({ id: 'pos-shop', cat: 'edge', brand: 'IRIV', model: 'IRIV SmartHub CM5', name: 'Shop POS (cashier)', icon: '🧾', zone: 'shoplots', x: 48.55, y: 2.45, z: .6, qty: 12,
+    conn: 'Ethernet / Wi-Fi to the shop router · USB barcode scanner and receipt printer · HDMI customer display', power: 'Compact DC adapter (low power)',
+    path: ['Barcode scanner', 'USB', 'SmartHub CM5 (POS)', 'Internet · MQTT', 'IRIV Edge / cloud'],
+    loc: 'Cashier counter of each township shop', short: 'Township shops',
+    what: 'An IRIV SmartHub CM5, a compact fanless Raspberry Pi Compute Module 5 computer, runs the shop\'s point of sale. The cashier scans each barcode, the price appears on the customer display, the receipt prints, and every sale and stock change is sent to IRIV Edge.',
+    why: 'Under the cashier counter: silent, no fan to clog with dust, and running all day.',
+    m: [['Basket total', () => 'RM ' + basketTotal().toFixed(2)], ['Items scanned today', () => fint(POS.items)], ['Receipts today', () => fint(POS.receipts)], ['Sales today', () => 'RM ' + POS.sales.toFixed(2)]],
+    say: 'This is the IRIV SmartHub C M 5 running the shop\'s point of sale. The cashier scans each barcode, the price appears on the customer display, and the receipt prints. Every sale updates the stock, and low stock is reordered automatically.' }),
+  fdev({ id: 'shop-ct', model: 'CT101', name: 'Shop Energy Monitor', icon: '⚡', zone: 'shoplots', x: 49.65, y: 2.45, z: 1.4, qty: 12, power: 'Check datasheet (sources differ)',
+    loc: 'Main cable of each shophouse', short: 'Township shops', what: 'A clamp-on current sensor on each shop\'s main cable.', why: 'At the shop\'s distribution board.',
+    m: [['Shop load', () => wob(3.1, .5, .4).toFixed(1) + ' kW'], ['Chiller share', () => '41%'], ['After-hours use', () => '0.4 kW'], ['Today', () => wob(28, .3, .05).toFixed(1) + ' kWh']],
+    say: 'This current sensor shows each shop how much electricity it uses, including the fridges after closing time.' }),
+  fdev({ id: 'pos-mart', cat: 'edge', brand: 'IRIV', model: 'IRIV SmartHub CM5', name: 'Mini-Market POS & Stock', icon: '🧾', zone: 'minimart', x: 50.4, y: 11.45, z: .6, qty: 3,
+    conn: 'Ethernet to the store network · USB scanners and printers · HDMI customer displays', power: 'Compact DC adapter (low power)',
+    path: ['Barcode scanners', 'USB', 'SmartHub CM5', 'Node-RED stock + MQTT', 'IRIV Edge'],
+    loc: 'Checkouts of the mini-market', short: 'Mini-market',
+    what: 'IRIV SmartHub CM5 units run the mini-market checkouts and a Node-RED stock system: every scan reduces stock, and low-stock items are reordered.',
+    why: 'One per checkout, plus one in the back office for the stock database.',
+    m: [['Checkouts open', () => '2 / 3'], ['Sales today', () => 'RM ' + (POS.sales * 3.2).toFixed(0)], ['Low-stock items', () => POS.low.length], ['Reorders sent', () => POS.reorders]],
+    say: 'These SmartHub computers run the mini-market checkouts and the stock system. Every barcode scan reduces the stock, and low items are reordered automatically.' }),
+  fdev({ id: 'mart-th', model: 'EM300-TH', name: 'Chiller Temperature', icon: '🌡️', zone: 'minimart', x: 51.6, y: 11.45, z: 1.0, qty: 6,
+    loc: 'Inside each chiller and freezer', short: 'Mini-market chillers', what: 'Temperature and humidity in every chiller.', why: 'Food safety: alerts if a chiller warms up.',
+    m: [['Chiller', () => wob(3.6, .3, .2).toFixed(1) + ' °C'], ['Freezer', () => wob(-18.4, .4, .2).toFixed(1) + ' °C'], ['Door-open alerts', () => '0'], ['Battery', () => '95%']],
+    say: 'These sensors watch every chiller and freezer, so food is never sold warm.' }),
+  fdev({ id: 'pos-food', cat: 'edge', brand: 'IRIV', model: 'IRIV SmartHub CM5', name: 'Food Court Order Kiosk', icon: '🧾', zone: 'foodcourt', x: 50.5, y: 24.95, z: .6, qty: 4,
+    conn: 'Wi-Fi / Ethernet · HDMI order-number screen · USB receipt printer', power: 'Compact DC adapter (low power)',
+    path: ['Order kiosk', 'SmartHub CM5', 'Kitchen screens', 'MQTT', 'IRIV Edge'],
+    loc: 'Food court ordering points', short: 'Food court', what: 'SmartHub CM5 kiosks take orders, send them to the stall screens and show the queue numbers.', why: 'At each stall cluster, next to the order screens.',
+    m: [['Orders today', () => fint(620 + time / 3)], ['Now serving', () => 'No. ' + (100 + Math.floor(time / 9) % 90)], ['Avg. wait', () => Math.round(wob(6, 1, .3)) + ' min'], ['Stalls open', () => '8 / 9']],
+    say: 'These SmartHub kiosks take food orders, send them to the stalls, and show the queue numbers on the screens.' }),
+  fdev({ id: 'petrol-ws', model: 'WS101', name: 'Night Panic Button', icon: '🆘', zone: 'petrol', x: 52.5, y: 53.05, z: .8, qty: 2,
+    loc: 'Petrol station shop counter', short: 'Petrol station', what: 'A wireless panic button for the night shift.', why: 'Under the counter of the 24-hour shop.',
+    m: [['Buttons', () => '2 online'], ['Alerts this month', () => '0'], ['Battery', () => '90%'], ['Response', () => '< 5 min']],
+    say: 'This panic button protects the night-shift worker at the petrol station shop.' }),
+  fdev({ id: 'clinic-th', model: 'EM300-TH', name: 'Vaccine Fridge Monitor', icon: '🌡️', zone: 'clinic', x: 18.5, y: 51.05, z: .8, qty: 2,
+    loc: 'Community clinic vaccine fridge', short: 'Clinic', what: 'Keeps the vaccine fridge between 2 and 8 °C with alerts and a log.', why: 'Inside the vaccine fridge.',
+    m: [['Fridge', () => wob(4.4, .3, .2).toFixed(1) + ' °C'], ['Range', () => '2–8 °C OK'], ['Log', () => 'Every 5 min'], ['Battery', () => '96%']],
+    say: 'This sensor keeps the clinic\'s vaccine fridge between two and eight degrees, and logs every reading.' }),
+  fdev({ id: 'hall-am', model: 'AM319', name: 'Hall Air Quality', icon: '🌡️', zone: 'hall', x: 34.4, y: 51.45, z: .8, qty: 2, power: 'DC adapter',
+    loc: 'Community hall', short: 'Community hall', what: 'Air quality for events and gatherings.', why: 'On the hall wall at head height.',
+    m: [['CO₂', () => Math.round(wob(680, 60, .2)) + ' ppm'], ['Temperature', () => wob(26, .5, .2).toFixed(1) + ' °C'], ['People', () => Math.round(wob(40, 12, .1))], ['Fans', () => 'Auto']],
+    say: 'This sensor keeps the community hall\'s air fresh during events.' })
+,
+  fdev({ id: 'hw-anpr', cat: 'ai', brand: 'IRIV', model: 'IRIV EdgeAI CM5', name: 'Highway ANPR & Speed Camera', icon: '📷', zone: 'highway', x: 62.0, y: 30.5, z: 2.6, qty: 2,
+    conn: 'Gantry IP cameras over Gigabit Ethernet · 4G / fibre to IRIV Edge', power: 'DC 10–30 V (surge-protected)', path: ['Gantry cameras', 'Ethernet', 'EdgeAI CM5', 'MQTT', 'IRIV Edge'],
+    loc: 'Overhead gantry on the highway', short: 'Highway gantry',
+    what: 'An IRIV EdgeAI CM5 on the highway gantry reads number plates, measures speed between two cameras, counts and classifies vehicles, and spots stopped cars or wrong-way drivers.',
+    why: 'On the gantry above all four lanes, where every vehicle passes under the cameras.',
+    m: [['Vehicles / hour', () => fint(wob(2400, 200, .1))], ['Avg. speed', () => Math.round(wob(96, 4, .2)) + ' km/h'], ['Last plate', () => HW.last || '—'], ['Incidents', () => '0']],
+    say: 'This IRIV Edge A I computer on the highway gantry reads number plates, measures speed and counts traffic, and warns the control room about stopped cars or wrong-way drivers.' }),
+  fdev({ id: 'hw-ioc', cat: 'controller', brand: 'IRIV', model: 'IRIV IO Controller MQTT', name: 'Variable Message Sign Controller', icon: '🔀', zone: 'highway', x: 70.0, y: 33.2, z: .9, qty: 1,
+    conn: 'Ethernet · MQTT to IRIV Edge · RS485 to the sign', power: 'DC 10–30 V (surge-protected)', path: ['IRIV Edge', 'MQTT', 'IO Controller', 'RS485', 'Message sign'],
+    loc: 'Roadside cabinet at the message sign', short: 'Highway sign',
+    what: 'An IRIV IO Controller MQTT drives the variable message sign over RS485 and reads the cabinet door and power alarms.',
+    why: 'In the roadside cabinet under the sign gantry.',
+    m: [['Sign message', () => HW.msg], ['Cabinet', () => 'Closed'], ['Power', () => 'OK'], ['MQTT', () => 'Connected']],
+    say: 'This I O Controller drives the highway message sign. The edge computer decides the message, for example a fog warning or travel time.' }),
+  fdev({ id: 'hw-wts', model: 'WTS506', name: 'Road Weather Station', icon: '🌦️', zone: 'highway', x: 66.0, y: 27.9, z: 2.3, qty: 1, power: 'Solar + battery',
+    loc: 'Highway verge', short: 'Highway', what: 'Weather on the highway: rain, wind and temperature for safety warnings.', why: 'On the verge, in the open.',
+    m: [['Rain', () => '0.0 mm/h'], ['Wind', () => Math.round(wob(18, 4, .5)) + ' km/h'], ['Road temp.', () => wob(34, 1, .1).toFixed(0) + ' °C'], ['Warnings', () => 'None']],
+    say: 'This weather station on the highway verge sends rain and wind readings, so the message signs can warn drivers.' }),
+  fdev({ id: 'sat-gw', cat: 'gateway', brand: 'Milesight', model: 'UG65', name: 'Small Town LoRaWAN Gateway', icon: '📡', zone: 'satcentre', x: 80.4, y: 25.4, z: 2.6, qty: 1,
+    conn: 'LoRaWAN radio in · 4G back to IRIV Edge in the main city', power: 'PoE or DC supply', path: ['Town sensors', 'LoRaWAN', 'UG65', '4G · MQTT', 'IRIV Edge'],
+    loc: 'Roof of the small-town hall', short: 'Small town', what: 'A second UG65 gateway for the small town. Its sensors report to it by LoRaWAN, and it forwards everything to the IRIV Edge computer in the main city over 4G.',
+    why: 'The small town is too far from the main city gateway, so it gets its own, on the highest roof in town.',
+    m: [['Sensors linked', () => '18'], ['Uplinks / min', () => Math.round(wob(9, 2, .5))], ['4G signal', () => '-71 dBm'], ['Status', () => 'Online']],
+    say: 'This is the small town\'s own U G 65 LoRaWAN gateway. It collects all the town\'s sensors and sends them over 4 G to the edge computer in the main city.' }),
+  fdev({ id: 'sat-pos', cat: 'edge', brand: 'IRIV', model: 'IRIV SmartHub CM5', name: 'Town Shop POS', icon: '🧾', zone: 'satcentre', x: 82.0, y: 28.85, z: .6, qty: 4,
+    conn: 'Wi-Fi / Ethernet · USB scanner & printer · HDMI display', power: 'Compact DC adapter (low power)', path: ['Barcode scanner', 'USB', 'SmartHub CM5', '4G · MQTT', 'IRIV Edge'],
+    loc: 'Town centre shops', short: 'Small town shops', what: 'The same SmartHub CM5 cashier system as the township shops.', why: 'At each shop counter.',
+    m: [['Sales today', () => 'RM ' + (POS.sales * .4).toFixed(2)], ['Receipts', () => Math.round(POS.receipts * .35)], ['Low stock', () => POS.low.length], ['Sync', () => '4G OK']],
+    say: 'The small town\'s shops use the same SmartHub cashier system, synced over 4 G.' }),
+  fdev({ id: 'sat-vs', model: 'VS133', name: 'Town Hall Visitor Counter', icon: '👥', zone: 'satcentre', x: 80.4, y: 26.15, z: 1.1, qty: 1, power: 'DC / PoE', gw: 'sat-gw',
+    loc: 'Small-town hall entrance', short: 'Small town', what: 'Counts visitors to the town hall.', why: 'Above the main door.',
+    m: [['Visitors today', () => fint(140 + time / 8)], ['Inside now', () => Math.round(wob(8, 3, .2))], ['Peak', () => '10:00'], ['Status', () => 'Online']],
+    say: 'This people counter counts visitors to the small town hall.' }),
+  fdev({ id: 'sat-udl', model: 'EM500-UDL', name: 'Town Water Tank Level', icon: '🌊', zone: 'satwater', x: 88.5, y: 26.5, z: 2.0, qty: 1, gw: 'sat-gw',
+    loc: 'Small-town water tank', short: 'Small town water', what: 'Ultrasonic level of the town\'s water tank.', why: 'In the tank\'s roof hatch.',
+    m: [['Tank level', () => Math.round(wob(77, 3, .05)) + '%'], ['Trend', () => 'Stable'], ['Days of supply', () => '3.5'], ['Battery', () => '92%']],
+    say: 'This level sensor tells the town how full its water tank is.' }),
+  fdev({ id: 'sat-ioc', cat: 'controller', brand: 'IRIV', model: 'IRIV IO Controller MQTT', name: 'Town Pump Gateway', icon: '🔀', zone: 'satwater', x: 90.9, y: 28.45, z: .9, qty: 1,
+    conn: '4G router · MQTT to IRIV Edge', power: 'DC 10–30 V (surge-protected)', path: ['Pumps & pressure', 'DI / DO / AI', 'IO Controller', '4G · MQTT', 'IRIV Edge'],
+    loc: 'Small-town pump house', short: 'Small town water', what: 'Runs the town\'s two water pumps and reads the pressure.', why: 'In the pump house panel.',
+    m: [['Pumps running', () => '1 / 2'], ['Pressure', () => wob(2.9, .1, .3).toFixed(1) + ' bar'], ['Run hours', () => '1,284'], ['MQTT', () => 'Connected']],
+    say: 'This I O Controller runs the small town\'s water pumps over a 4 G link.' }),
+  fdev({ id: 'sat-ct', model: 'CT105', name: 'Town Solar Output', icon: '⚡', zone: 'satsolar', x: 92.15, y: 36.95, z: .9, qty: 1, power: 'Check datasheet (sources differ)', gw: 'sat-gw',
+    loc: 'Small-town solar inverter', short: 'Small town solar', what: 'Measures the small solar farm\'s output.', why: 'On the inverter output cable.',
+    m: [['Output', () => (night > .5 ? 0 : wob(820, 60, .3)).toFixed(0) + ' kW'], ['Today', () => fint(4200 + time) + ' kWh'], ['Battery', () => Math.round(wob(64, 5, .05)) + '%'], ['Status', () => 'Normal']],
+    say: 'This current sensor measures the small town\'s solar farm.' }),
+  fdev({ id: 'sat-am', model: 'AM319', name: 'Town School Air Quality', icon: '🌡️', zone: 'satschool', x: 81.4, y: 33.25, z: 1.0, qty: 8, power: 'DC adapter', gw: 'sat-gw',
+    loc: 'Small-town school classrooms', short: 'Small town school', what: 'Classroom air quality.', why: 'In every classroom.',
+    m: [['CO₂', () => Math.round(wob(740, 60, .2)) + ' ppm'], ['Temp.', () => wob(25, .5, .2).toFixed(1) + ' °C'], ['Rooms OK', () => '7 / 8'], ['Battery', () => '—']],
+    say: 'These sensors keep the small town\'s classrooms fresh.' })
 
 ];
 const DEV = Object.fromEntries(DEVICES.map(d => [d.id, d]));
 DEVICES.forEach(d => { if (DISTRICTS.includes(d.zone) && d.x !== undefined) { d.x = M(d.x); d.y = M(d.y); } });
-const TOTAL_DEVICES = DEVICES.reduce((a, d) => a + d.qty, 0);
 
 
 // Street furniture
 const lamps = [];
-for (const c of ROADS) for (const t of [2, 4.6, 11, 18, 26, 28.6, 34, 36.6]) { lamps.push([t, c + (c > 20 ? 1.0 : -1.0)], [c + 1.0, t]); }
+for (const c of ROADS) for (const t of [2, 4.6, 11, 18, 26, 28.6, 34, 36.6, 42, 44.6, 50, 52.6]) { lamps.push([t, c + (c > 20 ? 1.0 : -1.0)], [c + 1.0, t]); }
 lamps.forEach(l => add('lamp', 'mobility', l[0], l[1]));
 for (const a of ROADS) for (const b of ROADS) {
   add('tlight', 'mobility', a - 1, b - 1, { ax: 'x' }); add('tlight', 'mobility', a + 1, b + 1, { ax: 'x' });
@@ -1089,7 +1358,7 @@ const cars = [];
 const CARCOL = ['#e53935', '#1e88e5', '#fdd835', '#ffffff', '#43a047', '#fb8c00', '#8e24aa', '#546e7a', '#26c6da'];
 let ci = 0;
 for (const c of ROADS) for (const [ax, off, dir] of [['x', -.4, 1], ['x', .4, -1], ['y', .4, 1], ['y', -.4, -1]]) {
-  const n = 5;
+  const n = 4;
   for (let k = 0; k < n; k++) {
     const bus = (ci % 11 === 4);
     cars.push({ ax, lane: c + off, dir, pos: (k * (WORLD + 2) / n + hsh(ci * 3.3) * 5) % (WORLD + 2) - 1, v: 1.4, len: bus ? 1.15 : .62,
@@ -1100,11 +1369,11 @@ for (const c of ROADS) for (const [ax, off, dir] of [['x', -.4, 1], ['x', .4, -1
 const CYCLE = 12;
 function lightState(ax) {
   if (FX.corridor) return ax === FX.corridor ? 'g' : 'r';   // ambulance green corridor
-  const p = time % CYCLE;
-  if (ax === 'x') return p < 5 ? 'g' : p < 6 ? 'y' : 'r';
-  return p < 6 ? 'r' : p < 11 ? 'g' : 'y';
+  const p = sigPhase();   // green times come from SIG, which the junction AI can adapt
+  if (ax === 'x') return p < SIG.gx ? 'g' : p < SIG.gx + 1 ? 'y' : 'r';
+  return p < SIG.gx + 1 ? 'r' : p < SIG.gx + 1 + SIG.gy ? 'g' : 'y';
 }
-const phaseName = () => { const p = time % CYCLE; return p < 6 ? 'East–West ' + (p < 5 ? 'green' : 'amber') : 'North–South ' + (p < 11 ? 'green' : 'amber'); };
+const phaseName = () => { const p = sigPhase(); return p < SIG.gx + 1 ? 'East–West ' + (p < SIG.gx ? 'green' : 'amber') : 'North–South ' + (p < SIG.gx + 1 + SIG.gy ? 'green' : 'amber'); };
 
 function updateCars(dt) {
   for (const c of cars) {
@@ -1144,15 +1413,16 @@ const stars = Array.from({ length: 140 }, (_, i) => [hsh(i * 1.7), hsh(i * 3.1) 
    ================================================================ */
 const cam = { x: CX, y: CX, zoom: .5, th: Math.PI / 4, tx: CX, ty: CX, tz: 1, offX: 0, offY: 0 };
 const TILT = .5, ZK = .82;
-let S, C, sc, autoRot = true, rotPauseUntil = 0;
+let S, C, sc, autoRot = true, rotPauseUntil = 0, rotHold = false;   // rotHold: paused by a click
 function P(x, y, z) {
+  if (WALK.on && scene === 'city') return PW(x, y, z);
   const dx = x - cam.x, dy = y - cam.y;
   return [W / 2 + cam.offX + (dx * C - dy * S) * sc, H / 2 + cam.offY + (dx * S + dy * C) * sc * TILT - z * sc * ZK];
 }
-const depth = (x, y) => (x - cam.x) * S + (y - cam.y) * C;
+const depth = (x, y) => WALK.on && scene === 'city' ? walkDepth(x, y) : (x - cam.x) * S + (y - cam.y) * C;
 
 function resize() {
-  DPR = Math.min(2, window.devicePixelRatio || 1); W = innerWidth; H = innerHeight;
+  DPR = Math.min(1.5, window.devicePixelRatio || 1); W = innerWidth; H = innerHeight;
   cv.width = W * DPR; cv.height = H * DPR; cv.style.width = W + 'px'; cv.style.height = H + 'px';
 }
 addEventListener('resize', resize); resize();
@@ -1167,6 +1437,7 @@ function col(h, l = 1, a = 1) {
   return `rgba(${Math.min(255, r * f + 10 * night) | 0},${Math.min(255, g * f + 16 * night) | 0},${Math.min(255, b * f + 38 * night) | 0},${a})`;
 }
 function poly(pts, fill, stroke, path, lw = .7) {
+  if (pts.every(p => p.b)) return;   // fully behind the walking camera
   ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
   for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
   ctx.closePath();
@@ -1313,7 +1584,7 @@ function glow(x, y, r, color) {
   g.addColorStop(0, color); g.addColorStop(.25, color.replace(/[\d.]+\)$/, m => (parseFloat(m) * .5) + ')')); g.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
 }
-function line(a, b, color, w) { ctx.strokeStyle = color; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); }
+function line(a, b, color, w) { if (a.b && b.b) return; ctx.strokeStyle = color; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); }
 
 function drawTree(o, path) {
   const s = o.s, sway = Math.sin(time * 1.3 + o.cx * 1.7 + o.cy) * sc * .04;
@@ -1386,6 +1657,23 @@ function drawObj(o, path) {
     }
     case 'house': return drawHouse(o, path);
     case 'xfmr': return drawXfmr(o, path);
+    case 'mscp': return drawMSCP(o, path);
+    case 'pcar': return carTop(o.cx, o.cy, o.ax, o.col);
+    case 'tractor': return drawTractor(o);
+    case 'btractor': return drawBTractor(o);
+    case 'ftruck': return drawFTruck(o);
+    case 'farmer': return drawFarmer(o);
+    case 'hgantry': return drawHGantry(o, path);
+    case 'hwcar': return carTop(o.c.x, o.c.y, 'x', o.c.col);
+    case 'canopy': return drawCanopy(o);
+    case 'diner': return drawDiner(o);
+    case 'slide': return drawSlide(o);
+    case 'swing': return drawSwing(o);
+    case 'barrier': return drawBarrier(o);
+    case 'lot': return drawLot(o);
+    case 'train': return drawTrain();
+    case 'flood': return drawFlood(o);
+    case 'vcar': return carTop(o.c.x, o.c.y, o.c.ax, o.c.col);
     case 'firetower': return drawFireTower(o, path);
     case 'gantry': return drawGantry(o);
     case 'pylon': return drawPylon(o);
@@ -1454,16 +1742,19 @@ function drawSky() {
 }
 
 function drawGround() {
+  if (!WALK.on) {
   // animated dashed "data circuit" around the city
   const ring = [P(-1.4, -1.4, -.7), P(WORLD + 1.4, -1.4, -.7), P(WORLD + 1.4, WORLD + 1.4, -.7), P(-1.4, WORLD + 1.4, -.7)];
   ctx.setLineDash([6, 6]); ctx.lineDashOffset = -time * 18;
   ctx.strokeStyle = night > .5 ? 'rgba(80,200,255,.35)' : 'rgba(80,100,120,.35)'; ctx.lineWidth = 1.2;
   ctx.beginPath(); ring.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); ctx.stroke(); ctx.setLineDash([]);
   ring.forEach(p => { ctx.fillStyle = night > .5 ? '#4fc3f7' : '#90a4ae'; ctx.beginPath(); ctx.arc(p[0], p[1], 3, 0, 7); ctx.fill(); });
+  }
 
   const slab = new Path2D();
   drawBox({ x0: 0, y0: 0, x1: WORLD, y1: WORLD, z0: -.7, h: .7, color: '#dfe5ea', roof: '#7f8891' }, slab);
   hits.push({ path: slab, zone: 'mobility' });
+  worldSlabs();
 
   // lane markings + crosswalks
   for (const c of ROADS) for (let t = .3; t < WORLD - .3; t += .8) {
@@ -1513,6 +1804,7 @@ function drawGround() {
 
   // sensor-coverage ripples from the command center and the air sensor
   const ripple = (x, y, maxR, color, speed) => {
+    if (WALK.on) return;
     const c = P(x, y, .1);
     for (let k = 0; k < 3; k++) {
       const r = ((time * speed + k * maxR / 3) % maxR);
@@ -1524,7 +1816,7 @@ function drawGround() {
   ripple(2.0, 9.2, 1.6, '#43a047', .7);
 
   // night lamp pools
-  if (night > .05) {
+  if (night > .05 && !WALK.on) {
     ctx.globalCompositeOperation = 'lighter';
     lamps.forEach(l => {
       const c = P(l[0], l[1], 0), r = sc * 1.4;
@@ -1637,7 +1929,8 @@ function drawDeviceLinks() {
   DEVICES.forEach((d, i) => {
     if (d.x === undefined) return;
     const p = P(d.x, d.y, d.z);
-    if (d.cat === 'sensor') link(p, g, CAT.sensor.c, [2, 4], focus === d.id || focus === 'ug65', .35, 1, i);
+    if (d.cat === 'sensor') link(p, d.gw ? P(DEV[d.gw].x, DEV[d.gw].y, DEV[d.gw].z) : g, CAT.sensor.c, [2, 4], focus === d.id || focus === (d.gw || 'ug65'), .35, 1, i);
+    if (d.cat === 'gateway' && d.id !== 'ug65') link(p, e, CAT.gateway.c, [8, 5], focus === d.id || focus === 'edge', .4, 2, i);
     if (d.cat === 'controller') link(e, p, CAT.controller.c, [7, 4], focus === d.id || focus === 'edge', .45, 2, i);
     if (d.cat === 'ai') link(e, p, CAT.ai.c, [4, 3], focus === d.id || focus === 'edge', .5, 2, i);
   });
@@ -2197,6 +2490,7 @@ function updateWalkers(dt) {
   let near = false;
   walkers.forEach(w => {
     if (Math.hypot(w.x, w.y - 9) < 1.7) near = true;
+    if (w.cust) return;   // shop customers are moved by shopUpdate
     if (w.wait > 0) { w.wait -= dt; w.moving = false; return; }
     const n = w.r[(w.i + 1) % w.r.length], dx = n[0] - w.x, dy = n[1] - w.y, d = Math.hypot(dx, dy), step = 1.1 * dt, px = w.x;
     if (d <= step) { w.x = n[0]; w.y = n[1]; w.i = (w.i + 1) % w.r.length; w.wait = n[2]; }
@@ -2215,6 +2509,7 @@ function drawPerson(p) {
   ctx.fillStyle = 'rgba(0,0,0,.12)'; ctx.beginPath(); ctx.ellipse(g[0], g[1], sc * .2, sc * .1, 0, 0, 7); ctx.fill();
   drawBox({ x0: p.x - .15, x1: p.x + .15, y0: p.y - .11, y1: p.y + .11, z0: z0 + bob, h, color: p.col });
   drawHead(p.x, p.y, z0 + h + .17 + bob, p.skin);
+  drawCarry(p);
   ctx.globalAlpha = 1;
 }
 function drawHead(x, y, z, skin) {
@@ -2281,10 +2576,10 @@ function drawInterior() {
   S.overlay && S.overlay();
 
   // links: sensors → UG65 (LoRaWAN), edge ← UG65, controllers ← IRIV Edge
-  const badges = [GW_BADGE];
+  const GB = S.gw || GW_BADGE, badges = [GB];
   const hasEdge = S.devs.some(p => p.id === 'edge'), needEdgeBadge = !hasEdge && S.devs.some(p => ['controller', 'ai'].includes(DEV[p.id].cat));
   if (needEdgeBadge) badges.push(EDGE_BADGE);
-  const g = P(GW_BADGE.x, GW_BADGE.y, GW_BADGE.z), eb = P(EDGE_BADGE.x, EDGE_BADGE.y, EDGE_BADGE.z);
+  const g = P(GB.x, GB.y, GB.z), eb = P(EDGE_BADGE.x, EDGE_BADGE.y, EDGE_BADGE.z);
   S.devs.forEach((p, i) => {
     const cat = DEV[p.id].cat, a = P(p.x, p.y, p.z), tgt = (cat === 'controller' || cat === 'ai') ? (hasEdge ? P(...['x', 'y', 'z'].map(k => S.devs.find(q => q.id === 'edge')[k])) : eb) : g;
     const colr = cat === 'sensor' ? CAT.sensor.c : cat === 'edge' ? CAT.gateway.c : cat === 'ai' ? CAT.ai.c : CAT.controller.c;
@@ -2312,6 +2607,7 @@ function enterInside(zone) {
   setTimeout(() => {
     curZone = zone; curInt = S;
     walkers = (S.routes || []).map((r, i) => ({ r, i: 0, x: r[0][0], y: r[0][1], wait: r[0][2], moving: false, col: CLOTHES[(i * 4 + 1) % CLOTHES.length], skin: SKINS[(i + 2) % 5] }));
+    if (S.shop) shopInit(S);
     scene = 'inside'; cityTh = cam.th; cam.th = Math.PI / 4;
     cam.x = cam.tx = 7; cam.y = cam.ty = 5.5; cam.zoom = 2.4;
     bBack.hidden = false; bBack.querySelector('span').textContent = '· inside ' + S.short;
@@ -2599,10 +2895,10 @@ for (const c of ROADS) for (const s of [-1, 1]) {
 // a crossing along x crosses the north–south road, so it is safe while east–west traffic has green
 function canCross(ax) {
   if (FX.corridor) return false;
-  const p = time % CYCLE;
-  return ax === 'x' ? p < 1.8 : p >= 6 && p < 7.8;
+  const p = sigPhase();
+  return ax === 'x' ? p < SIG.gx - 3.2 : p >= SIG.gx + 1 && p < SIG.gx + 1 + SIG.gy - 3.2;
 }
-const peds = Array.from({ length: 96 }, (_, i) => {
+const peds = Array.from({ length: 130 }, (_, i) => {
   const n = Math.floor(Math.random() * PNODES.length);
   return { n, prev: -1, to: -1, edge: null, x: PNODES[n].x, y: PNODES[n].y, crossing: false, waiting: false, moving: false,
     sp: .45 + Math.random() * .25, ox: (Math.random() - .5) * .14, oy: (Math.random() - .5) * .14, ph: Math.random() * 6,
@@ -2729,6 +3025,11 @@ function pill(x, y, txt, bg, fg = '#fff', size = 12) {
 function fxGround() {
   worldGround();
   worldGround2();
+  worldGround3();
+  worldGround4();
+  worldGround5();
+  worldGround6();
+  worldGround7();
   if (FX.floodRoad) {
     const sh = .45 + .1 * Math.sin(time * 2);
     poly(quad(6.62, 9.2, 8.38, 12.8, .02), `rgba(70,140,205,${sh})`);
@@ -2849,6 +3150,7 @@ function resetFX() {
   pondT = 1.05; Object.keys(OVR).forEach(k => delete OVR[k]);
   FARM.auto = true;
   Object.assign(GRID, { manual: false, intruder: false }); Object.assign(WTP, { manual: false, aiAlert: false, turb: 4, dose: 'Normal' });
+  FX.jnAI = false; FX.rlr = null; clearRush();
 }
 function runScenario(id) {
   if (!Object.hasOwn(SCENARIOS, id)) return;
@@ -2900,6 +3202,7 @@ function showScenarios(silent = false, doneId) {
   const card = (act, icon, t, s, c) => `<button class="scard" ${act} style="--c:${c}"><span>${icon}</span><b>${t}</b><small>${s}</small></button>`;
   keepOpen(() => openPanel('#6d4c41', headHTML('🎬', 'Explore', 'Street view & scenarios') +
     (doneId ? `<p class="p-sum">✅ <b>${SCENARIOS[doneId].title}</b> complete. Run another one, or replay it.</p>` : `<p class="p-sum">Go down to street level, or watch one event travel through the whole system, from sensor to action.</p>`) +
+    card('data-walk="1"', '🧍', 'Walk around (first person)', 'Explore at eye level like Street View: drag to look around, click the ground to walk, click a building to go inside.', '#00897b') +
     card('data-street="1"', '🚶', 'Street view', 'Pedestrians, zebra crossings, bus stop, smart parking. Click any car to ride along.', '#ef6c00') +
     Object.entries(SCENARIOS).map(([id, s]) => card(`data-scen="${id}"`, s.icon, s.title, s.sub, s.color)).join(''), []));
   if (!silent) narrate('Choose street view to see pedestrians, crossings, the bus stop and smart parking up close, or pick a scenario: an emergency, a flash flood, or a power cut.', false);
@@ -3292,7 +3595,7 @@ function ioRows(d) {
 function ioHTML(d) {
   const S = SPEC[d.model];
   return `<h3>Hardware & I/O wiring</h3><p class="mut" style="font-size:12px;margin:0 0 8px">Orange terminals are wired in this project; the LEDs show the live state. Tap the photo above to see it large.</p>
-    <div id="term">${terminalSVG(d)}</div>
+    ${S.groups.length ? `<div id="term">${terminalSVG(d)}</div>` : ''}
     ${d.io ? `<table class="bom iotab"><thead><tr><th>Pin</th><th>Wired to</th><th class="q">Live</th></tr></thead><tbody id="iotb">${ioRows(d)}</tbody></table>` : ''}
     <h3>Key specifications</h3><ul class="spec">${S.hw.map(h => `<li>${h}</li>`).join('')}</ul>
     <p class="mut" style="font-size:11px">Specifications from Cytron's product page. The pin assignment is this project's design.</p>`;
@@ -3782,12 +4085,1201 @@ SCENES.clearwater = {
   ]
 };
 
+/* ================================================================
+   OUTER RING — car park with pay-by-plate (ANPR), shops, mall, school,
+   transport hub, AI traffic junctions
+   ================================================================ */
+Object.assign(ZINFO.carpark, { z: 5.0 }); Object.assign(ZINFO.mall, { z: 3.6 }); Object.assign(ZINFO.school, { z: 3.2 }); Object.assign(ZINFO.hub, { z: 3.0 });
+Object.assign(ZINFO.shops, { z: 2.6 }); Object.assign(ZINFO.market, { z: 3.0 }); Object.assign(ZINFO.parkride, { z: 2.2 }); Object.assign(ZINFO.busdepot, { z: 2.6 });
+Object.assign(ZINFO.suburb, { z: 3.2 }); Object.assign(ZINFO.townhouses, { z: 3.0 }); Object.assign(ZINFO.sportspark, { z: 2.2 });
+
+// ---------- buildings and street furniture ----------
+const SHOP_COL = [['#fce4ec', '#ec407a'], ['#e3f2fd', '#1e88e5'], ['#fff8e1', '#ffb300'], ['#e8f5e9', '#43a047'], ['#f3e5f5', '#8e24aa'], ['#fbe9e7', '#f4511e']];
+const shopRow = (zone, x0, y0, n, w, d, h) => { for (let k = 0; k < n; k++) { const [c, a] = SHOP_COL[(k + Math.round(x0)) % SHOP_COL.length]; box(zone, x0 + k * (w + .06), y0, x0 + k * (w + .06) + w, y0 + d, h, c, { win: 'grid', stripe: a, roof: '#cfd8dc' }); } };
+// car park: multi-storey building, gates, kiosk, cameras
+add('mscp', 'carpark', 43.25, 3.5, { x0: 41.3, y0: .9, x1: 45.2, y1: 6.1, levels: 4, h: 4 * .85 });
+add('barrier', 'carpark', 40.3, 2.15, { dir: 1, which: 'in' });
+add('barrier', 'carpark', 40.7, 4.45, { dir: -1, which: 'out' });
+box('carpark', 40.85, 3.15, 41.15, 3.45, .7, '#eceff1', { stripe: '#1565c0', deco: ['cabinet'] });
+add('aicam', 'carpark', 40.0, 1.95, { look: Math.PI * .75 });
+add('aicam', 'carpark', 40.9, 4.75, { look: -Math.PI * .75 });
+// high street shops
+shopRow('shops', 39.9, 8.9, 5, 1.06, 1.3, 1.0); shopRow('shops', 39.9, 11.8, 5, 1.06, 1.3, 1.1);
+[[40.4, 11.1], [42.0, 11.1], [43.6, 11.1], [45.2, 11.1]].forEach(([x, y]) => tree('shops', x, y, .55));
+// mall with rooftop parking
+box('mall', 40.0, 16.0, 45.1, 20.6, 2.0, '#ede7f6', { win: 'bands', roof: '#90a4ae', deco: ['roofcars'] });
+box('mall', 41.8, 20.6, 43.2, 21.2, .12, '#5e35b1', { z0: 1.1 });
+// school
+box('school', 40.0, 24.0, 44.8, 25.2, 1.6, '#ffe0b2', { win: 'grid', roof: '#ffcc80' });
+box('school', 40.0, 25.2, 41.2, 27.4, 1.6, '#ffe0b2', { win: 'grid', roof: '#ffcc80' });
+box('school', 40.3, 28.3, 41.7, 28.75, .45, '#fdd835', { win: 'grid' });
+add('aicam', 'school', 40.0, 28.6, { look: .4 });
+[[44.9, 23.8], [39.8, 23.8]].forEach(([x, y]) => tree('school', x, y, .7));
+// garden homes
+for (let r = 0; r < 2; r++) for (let k = 0; k < 3; k++) { const x0 = 39.9 + k * 2.0, y0 = r ? 34.8 : 32.0, [wall, roof] = HOUSE_COL[(r * 3 + k + 2) % 6];
+  add('house', 'suburb', x0 + .75, y0 + .65, { x0, y0, x1: x0 + 1.5, y1: y0 + 1.3, h: 1.1, rh: .7, wall, roof, solar: (r + k) % 2 === 1 }); tree('suburb', x0 + 1.75, y0 + .5, .6); }
+// sports park
+[[39.9, 39.9], [45.1, 39.9], [39.9, 45.1], [45.1, 45.1]].forEach(([x, y]) => add('flood', 'sportspark', x, y));
+for (let k = 0; k < 6; k++) { tree('sportspark', 39.8 + k * 1.1, 45.35, .6); }
+// transport hub: station, platform, tracks, buses
+box('hub', 1.0, 40.0, 6.0, 41.2, 1.6, '#cfd8dc', { win: 'bands', roof: '#90a4ae' });
+box('hub', .6, 41.5, 6.4, 42.0, .25, '#bdbdbd', { roof: '#e0e0e0' });
+box('hub', .8, 41.5, 6.2, 42.0, .08, '#78909c', { z0: 1.35 });
+add('train', 'hub', 3.5, 42.7);
+[[1.0, 44.4], [3.0, 44.4]].forEach(([x, y]) => box('hub', x, y, x + 1.5, y + .45, .42, '#14a3a3', { win: 'grid' }));
+add('aicam', 'hub', 3.5, 41.65, { look: Math.PI * .5 });
+// e-bus depot
+box('busdepot', 8.9, 40.0, 13.2, 41.0, 1.4, '#cfd8dc', { win: 'grid', roof: '#b0bec5' });
+for (let r = 0; r < 2; r++) for (let k = 0; k < 3; k++) { const x = 9.0 + k * 1.45, y = r ? 43.6 : 41.8;
+  box('busdepot', x, y, x + 1.25, y + .45, .42, '#14a3a3', { win: 'grid' }); box('busdepot', x + .55, y - .32, x + .7, y - .17, .6, '#eceff1', { deco: ['cabinet'] }); }
+// market street with a compact multi-storey car park
+shopRow('market', 15.9, 40.0, 3, .9, 1.2, .9); shopRow('market', 15.9, 42.6, 3, .9, 1.2, .9);
+add('mscp', 'market', 20.1, 43.8, { x0: 19.0, y0: 42.4, x1: 21.2, y1: 45.2, levels: 2, h: 2 * .85 });
+add('aicam', 'market', 18.7, 42.4, { look: 0 });
+// townhouses
+for (let r = 0; r < 2; r++) for (let k = 0; k < 5; k++) { const x0 = 23.9 + k * 1.1, y0 = r ? 43.0 : 40.0, [wall, roof] = HOUSE_COL[(k + r) % 6];
+  add('house', 'townhouses', x0 + .5, y0 + .6, { x0, y0, x1: x0 + 1.0, y1: y0 + 1.2, h: 1.2, rh: .6, wall, roof, solar: k % 2 === 0 }); }
+// park & ride
+add('lot', 'parkride', 34.6, 42.6);
+add('aicam', 'parkride', 32.0, 40.0, { look: .8 });
+// AI cameras at junctions
+[[13.2, 13.25, .8], [21.2, 21.25, .8], [29.2, 13.25, .8]].forEach(([x, y, l]) => add('aicam', 'mobility', x, y, { look: l }));
+
+// ---------- drawing ----------
+const carTop = (x, y, ax, colr, z0 = 0) => {   // a small parked or moving car
+  const hx = ax === 'x' ? .31 : .17, hy = ax === 'x' ? .17 : .31;
+  drawBox({ x0: x - hx, x1: x + hx, y0: y - hy, y1: y + hy, z0: z0 + .04, h: .17, color: colr });
+  drawBox({ x0: x - hx * .6, x1: x + hx * .6, y0: y - hy * .6, y1: y + hy * .6, z0: z0 + .21, h: .12, color: '#a9c7dc', roof: colr });
+};
+function drawMSCP(o, path) {
+  const nx = Math.floor((o.x1 - o.x0 - .3) / .45), occ = CP.inside / CP.cap;
+  for (let k = 0; k < o.levels; k++) {
+    const z = k * .85;
+    drawBox({ x0: o.x0, y0: o.y0, x1: o.x1, y1: o.y1, z0: z, h: .14, color: '#b0bec5', roof: '#9ea7ae' }, path);
+    for (let i = 0; i < nx; i++) for (const y of [o.y0 + .55, o.y1 - .55]) if (hsh(i * 13 + k * 31 + y + Math.floor(time / 25)) < occ) carTop(o.x0 + .35 + i * .45, y, 'y', CARCOL[(i + k * 3) % CARCOL.length], z + .14);
+    for (const x of [o.x0 + .05, (o.x0 + o.x1) / 2, o.x1 - .05]) for (const y of [o.y0 + .05, o.y1 - .05]) line(P(x, y, z + .14), P(x, y, z + .85), col('#90a4ae'), 2);
+  }
+  drawBox({ x0: o.x0, y0: o.y0, x1: o.x1, y1: o.y1, z0: o.levels * .85, h: .14, color: '#b0bec5', roof: '#9ea7ae' }, path);
+  drawBox({ x0: o.x0 + .05, y0: o.y1 - .05, x1: o.x1 - .05, y1: o.y1, z0: o.levels * .85 - .4, h: .35, color: '#1565c0' });
+}
+function drawBarrier(o) {
+  const open = o.which === 'in' ? CP.armIn : CP.armOut, a = open * Math.PI / 2 * .95, L = .95;
+  drawBox({ x0: o.cx - .1, y0: o.cy - .1, x1: o.cx + .1, y1: o.cy + .1, h: .8, color: '#eceff1', stripe: '#e53935' });
+  const s = P(o.cx, o.cy, .75), e = P(o.cx, o.cy + o.dir * L * Math.cos(a), .75 + L * Math.sin(a));
+  ctx.lineCap = 'round'; line(s, e, '#ffffff', Math.max(3, sc * .07)); ctx.setLineDash([sc * .08, sc * .08]); line(s, e, '#e53935', Math.max(3, sc * .07)); ctx.setLineDash([]); ctx.lineCap = 'butt';
+}
+function drawLot(o) {
+  poly(quad(32.0, 40.0, 37.2, 45.2, .086), col('#78838c'));
+  for (const y of [40.6, 41.9, 43.2, 44.5]) for (let x = 32.4; x < 37.0; x += .55) {
+    line(P(x - .27, y - .4, .09), P(x - .27, y + .4, .09), 'rgba(255,255,255,.6)', 1);
+    if (hsh(x * 3.1 + y * 7.7 + Math.floor(time / 30)) < .62) carTop(x, y, 'y', CARCOL[Math.floor(hsh(x + y) * CARCOL.length)]);
+  }
+}
+function drawTrain() {
+  for (let k = 0; k < 3; k++) {
+    const x1 = TRAIN.x - k * 1.8, x0 = x1 - 1.7;
+    if (x0 < .5 || x1 > 6.5) continue;
+    drawBox({ x0, y0: 42.45, x1, y1: 42.95, z0: .05, h: .55, color: '#fafafa', stripe: '#00897b', win: 'bands', id: 900 + k });
+  }
+}
+function drawFlood(o) {
+  const a = P(o.cx, o.cy, 0), b = P(o.cx, o.cy, 2.6); line(a, b, col('#90a4ae'), 2);
+  if (night > .3) { glow(b[0], b[1], sc * .6, `rgba(255,250,220,${.9 * night})`); const c = P(42.5, 42.5, 0); glow(c[0], c[1], sc * 2.5, `rgba(255,250,220,${.12 * night})`); }
+}
+Object.assign(DECO, {
+  roofcars(o, z) { for (let x = o.x0 + .35; x < o.x1 - .2; x += .45) for (const y of [o.y0 + .7, o.y0 + 1.8, o.y1 - 1.8, o.y1 - .7]) if (hsh(x * 9 + y * 3 + Math.floor(time / 30)) < .72) carTop(x, y, 'y', CARCOL[Math.floor(hsh(x * 5 + y) * CARCOL.length)], z); }
+});
+function worldGround3() {
+  // school pitch, sports park, rail tracks, car park lanes
+  poly(quad(42.0, 26.0, 45.1, 29.1, .087), col('#66bb6a'), 'rgba(255,255,255,.8)');
+  poly(quad(40.3, 40.3, 44.7, 44.7, .087), col('#c62828', .85)); poly(quad(40.9, 40.9, 44.1, 44.1, .088), col('#4caf50'), 'rgba(255,255,255,.9)');
+  line(P(42.5, 40.9, .09), P(42.5, 44.1, .09), 'rgba(255,255,255,.9)', 1.5);
+  for (const y of [42.5, 42.9, 43.3, 43.7]) line(P(.4, y, .09), P(6.6, y, .09), col('#5d4037'), 2);
+  poly(quad(39.5, 2.2, 41.25, 3.0, .086), 'rgba(21,101,192,.18)'); poly(quad(39.5, 3.6, 41.25, 4.4, .086), 'rgba(21,101,192,.12)');
+}
+
+// ---------- car park logic: entries, exits, pay by plate ----------
+const CP = { cap: 320, inside: 214, entries: 1840, exits: 1626, revenue: 4120, log: [], vcars: [], tIn: 1.5, tOut: 5, armIn: 0, armOut: 0, lastPlate: '—', readIn: null, readOut: null };
+const PLATE_LETTERS = 'ABCDEFGHJKLMNPQRSTUVWXY';
+const newPlate = () => { const r = () => PLATE_LETTERS[Math.floor(Math.random() * PLATE_LETTERS.length)]; return 'WBJPKANMV'[Math.floor(Math.random() * 9)] + r() + r() + ' ' + (1 + Math.floor(Math.random() * 9998)); };
+const hhmm = d => d.toTimeString().slice(0, 5);
+const fmtDur = h => `${Math.floor(h)}h ${String(Math.round((h % 1) * 60)).padStart(2, '0')}m`;
+const tariff = h => h <= 1 ? 2 : 2 + Math.ceil(h - 1);
+(() => {   // a few earlier records so the log is not empty
+  const now = Date.now();
+  for (let i = 0; i < 6; i++) {
+    const done = i % 2 === 0, hrs = .6 + i * .7, tin = new Date(now - (hrs + .3) * 3600e3);
+    CP.log.push(done ? { plate: newPlate(), tin: hhmm(tin), tout: hhmm(new Date(tin.getTime() + hrs * 3600e3)), dur: hrs, fee: tariff(hrs), pay: ['e-wallet (auto)', 'app', 'kiosk'][i % 3] } : { plate: newPlate(), tin: hhmm(tin), tout: null });
+  }
+})();
+const IN_PATH = [[38.9, -.6], [38.9, 2.6], [40.05, 2.6, 'gate'], [41.7, 2.6, 'end']];
+const OUT_PATH = [[41.7, 4.0], [40.95, 4.0, 'gate'], [38.1, 4.0], [38.1, -.6, 'end']];
+function spawnV(dir) { const path = dir === 'in' ? IN_PATH : OUT_PATH; CP.vcars.push({ dir, path, i: 0, x: path[0][0], y: path[0][1], ax: 'y', atGate: false, gateT: 0, plate: dir === 'in' ? newPlate() : null, col: CARCOL[Math.floor(Math.random() * CARCOL.length)] }); }
+function updatePark(dt) {
+  CP.tIn -= dt; CP.tOut -= dt;
+  if (CP.tIn < 0) { CP.tIn = 7 + Math.random() * 3; if (CP.inside < CP.cap) spawnV('in'); }
+  if (CP.tOut < 0) { CP.tOut = 8 + Math.random() * 3; if (CP.inside > 0) spawnV('out'); }
+  let openIn = false, openOut = false;
+  for (let k = CP.vcars.length - 1; k >= 0; k--) {
+    const c = CP.vcars[k];
+    if (c.atGate) {
+      c.gateT += dt;
+      if (!c.read && c.gateT > .6) {
+        c.read = true;
+        if (c.dir === 'in') { CP.log.unshift({ plate: c.plate, tin: hhmm(new Date()), tout: null }); CP.readIn = { plate: c.plate, t: time }; }
+        else {
+          const rec = CP.log.filter(r => !r.tout).pop() || { plate: newPlate(), tin: hhmm(new Date(Date.now() - 2 * 3600e3)) };
+          if (!CP.log.includes(rec)) CP.log.unshift(rec);
+          rec.dur = .4 + Math.random() * 4.2; rec.fee = tariff(rec.dur); rec.pay = Math.random() < .65 ? 'e-wallet (auto)' : Math.random() < .5 ? 'app' : 'kiosk'; rec.tout = hhmm(new Date());
+          c.plate = rec.plate; CP.revenue += rec.fee; CP.exits++; CP.readOut = { ...rec, t: time };
+        }
+        CP.lastPlate = c.plate; CP.log = CP.log.slice(0, 40);
+      }
+      if (c.gateT > (c.dir === 'in' ? 1.3 : 1.6)) c.dir === 'in' ? openIn = true : openOut = true;
+      if (c.gateT > (c.dir === 'in' ? 2.3 : 2.7)) c.atGate = false; else continue;
+    }
+    const n = c.path[c.i + 1];
+    if (!n) { if (c.dir === 'in') { CP.inside = Math.min(CP.cap, CP.inside + 1); CP.entries++; } else CP.inside = Math.max(0, CP.inside - 1); CP.vcars.splice(k, 1); continue; }
+    const dx = n[0] - c.x, dy = n[1] - c.y, d = Math.hypot(dx, dy), st = 1.5 * dt;
+    c.ax = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+    if (d <= st) { c.x = n[0]; c.y = n[1]; c.i++; if (n[2] === 'gate') { c.atGate = true; c.gateT = 0; } } else { c.x += dx / d * st; c.y += dy / d * st; }
+    if (c.dir === 'in' && c.read && c.x < 41.0) openIn = true;
+    if (c.dir === 'out' && c.read && c.x > 39.9) openOut = true;
+  }
+  CP.armIn += ((openIn ? 1 : 0) - CP.armIn) * Math.min(1, dt * 4);
+  CP.armOut += ((openOut ? 1 : 0) - CP.armOut) * Math.min(1, dt * 4);
+}
+function anprRows() {
+  return CP.log.slice(0, 8).map(r => `<tr><td><span class="plate">${r.plate}</span></td><td>${r.tin}</td><td>${r.tout || '<span class="mut">parked</span>'}</td>
+    <td class="q">${r.fee != null ? `<b>RM ${r.fee.toFixed(2)}</b><br><span class="mut">${fmtDur(r.dur)} · ${r.pay}</span>` : '<span class="mut">—</span>'}</td></tr>`).join('');
+}
+
+// ---------- train ----------
+const TRAIN = { x: -4, next: '—' };
+function updateTrain() {
+  const t = time % 26;
+  TRAIN.x = t < 6 ? -2 + 5.5 * (1 - Math.pow(1 - t / 6, 2)) + 2.0 : t < 12 ? 5.5 : t < 18 ? 5.5 + 7 * Math.pow((t - 12) / 6, 2) : -4;
+  TRAIN.next = t < 6 ? 'Arriving' : t < 12 ? 'Boarding now' : Math.max(1, Math.ceil((26 - t) / 4)) + ' min';
+}
+
+// ---------- adaptive traffic signals fed by the junction AI ----------
+const SIG = { gx: 5, gy: 5, start: 0, adapt: false };
+const sigPhase = () => time - SIG.start;
+const queueCount = ax => cars.filter(c => c.ax === ax && c.v < .2).length;
+function updateSignals() {
+  for (let guard = 0; guard < 50 && time - SIG.start >= SIG.gx + SIG.gy + 2; guard++) {
+    SIG.start += SIG.gx + SIG.gy + 2;
+    if (SIG.adapt) { const qx = queueCount('x') + 1, qy = queueCount('y') + 1; SIG.gx = Math.max(3, Math.min(8, Math.round(10 * qx / (qx + qy)))); SIG.gy = 10 - SIG.gx; }
+    else { SIG.gx = 5; SIG.gy = 5; }
+  }
+}
+function addRush(n) {
+  const lanes = [...new Set(cars.map(c => `${c.ax}|${c.lane}|${c.dir}`))];
+  for (let added = 0, tries = 0; added < n && tries < 800; tries++) {
+    const [ax, l, d] = lanes[Math.floor(Math.random() * lanes.length)].split('|'), lane = +l, dir = +d, pos = Math.random() * (WORLD + 2) - 1;
+    if (cars.some(c => c.ax === ax && c.lane === lane && Math.abs(c.pos - pos) < 1.3)) continue;
+    cars.push({ ax, lane, dir, pos, v: 1, len: .62, color: CARCOL[added % CARCOL.length], rush: true }); added++;
+  }
+}
+function clearRush() { for (let i = cars.length - 1; i >= 0; i--) if (cars[i].rush) cars.splice(i, 1); }
+function junctionQueues(a, b) {
+  let qx = 0, qy = 0;
+  cars.forEach(c => { if (c.v >= .2) return; if (c.ax === 'x' && Math.abs(c.lane - b) < .6 && Math.abs(c.pos - a) < 3.4) qx++; if (c.ax === 'y' && Math.abs(c.lane - a) < .6 && Math.abs(c.pos - b) < 3.4) qy++; });
+  return [qx, qy];
+}
+
+// ---------- overlays ----------
+function drawFX3() {
+  if (scene !== 'city') return;
+  // car park free-space sign and number-plate reads
+  { const s = P(43.25, 3.5, 4.4); pill(s[0], s[1], `🅿️ ${CP.cap - CP.inside} free · ANPR`, '#1565c0', '#fff', 11); }
+  if (CP.readIn && time - CP.readIn.t < 2.4) { const c = P(40.05, 2.6, .6); ctx.strokeStyle = '#76ff03'; ctx.lineWidth = 2; ctx.strokeRect(c[0] - sc * .4, c[1] - sc * .25, sc * .8, sc * .45); pill(c[0], c[1] - sc * .55, `📷 ANPR · ${CP.readIn.plate} · ✓ barrier open`, '#2e7d32', '#fff', 11); }
+  if (CP.readOut && time - CP.readOut.t < 2.8) { const c = P(40.95, 4.0, .6); ctx.strokeStyle = '#40c4ff'; ctx.lineWidth = 2; ctx.strokeRect(c[0] - sc * .4, c[1] - sc * .25, sc * .8, sc * .45); pill(c[0], c[1] + sc * .55, `${CP.readOut.plate} · ${fmtDur(CP.readOut.dur)} · RM ${CP.readOut.fee.toFixed(2)} · paid ✓ ${CP.readOut.pay}`, '#1565c0', '#fff', 11); }
+  // AI junction overlay: queues per direction and boxes around waiting cars
+  if (FX.jnAI || sel === 'mobility' || selDev === 'jn-ai') {
+    for (const a of ROADS) for (const b of ROADS) {
+      const [qx, qy] = junctionQueues(a, b); if (!qx && !qy) continue;
+      const p = P(a, b, 1.6); pill(p[0], p[1], `AI · N–S ${qy} · E–W ${qx}`, '#3949ab', '#fff', 10);
+    }
+    ctx.strokeStyle = 'rgba(124,77,255,.9)'; ctx.lineWidth = 1.5;
+    cars.forEach(c => { if (c.v >= .2) return; const x = c.ax === 'x' ? c.pos : c.lane, y = c.ax === 'x' ? c.lane : c.pos, h = P(x, y, .3); ctx.strokeRect(h[0] - sc * .3, h[1] - sc * .2, sc * .6, sc * .35); });
+    const p = P(14.5, 14.5, 3.2); pill(p[0], p[1], SIG.adapt ? `🧠 Adaptive green: E–W ${SIG.gx} s · N–S ${SIG.gy} s` : '⏱ Fixed timing 5 s / 5 s', SIG.adapt ? '#2e7d32' : '#546e7a', '#fff', 12);
+  }
+  if (FX.rlr) { const p = P(14.5, 13.0, 1.4); pill(p[0], p[1], `⚠ Red-light runner logged · ${FX.rlr}`, '#e53935', '#fff', 11); }
+}
+
+// ---------- device I/O ----------
+IO['cp-anpr'] = { ETH1: io('Entry + exit CCTV (IP cameras, RTSP)', () => '2 streams'), CSI0: io('Spare MIPI camera', null), DI1: io('Entry loop: car present', () => CP.vcars.some(c => c.dir === 'in' && c.atGate)), DI2: io('Exit loop: car present', () => CP.vcars.some(c => c.dir === 'out' && c.atGate)),
+  DO1: io('Entry barrier open', () => CP.armIn > .5), DO2: io('Exit barrier open', () => CP.armOut > .5), RS485: io('Payment terminal', () => 'Online') };
+IO['cp-ai'] = { ETH1: io('Level CCTV cameras (RTSP)', () => '8 streams'), DO1: io('Level 1 FULL sign', () => CP.inside >= CP.cap), DI1: io('Comms cabinet door', off), RS485: io('Guidance sign controller', () => (CP.cap - CP.inside) + ' free') };
+IO['cp-ioc'] = { DI1: io('Entry loop detector', () => CP.vcars.some(c => c.dir === 'in' && c.atGate)), DI2: io('Exit loop detector', () => CP.vcars.some(c => c.dir === 'out' && c.atGate)), DI3: io('Kiosk: payment taken', () => !!CP.readOut && time - CP.readOut.t < 2), DI4: io('Fire alarm', off), DI5: io('Height bar hit', off),
+  DO1: io('FULL sign', () => CP.inside >= CP.cap), DO2: io('Ventilation fans (high)', off), DO3: io('Entry lane light green', () => CP.armIn > .5), AI1: io('CO gas detector (4–20 mA)', () => Math.round(wob(12, 3, .3)) + ' ppm'), RS485: io('Guidance signs (Modbus)', () => '6 signs') };
+IO['mall-ai'] = { ETH1: io('6 existing rooftop IP cameras', () => '6 streams'), DO1: io('Roof FULL sign', off), RS485: io('Ramp sign', () => Math.round(wob(46, 6, .05)) + ' free') };
+IO['school-ai'] = { CSI0: io('Drop-off lane camera', () => 'AI: person + vehicle'), ETH1: io('Gate IP camera', () => '1 stream'), DO1: io('Warning beacon', () => Math.sin(time * .3) > .97), DI1: io('School gate open', () => Math.sin(time * .05) > 0) };
+IO['hub-ai'] = { ETH1: io('Platform IP CCTV', () => '4 streams'), DO1: io('Crowd warning light', () => wob(120, 30, .15) > 140), RS485: io('Platform display', () => 'Next: ' + TRAIN.next) };
+IO['mk-anpr'] = { ETH1: io('Barrier IP camera', () => '1 stream'), DO1: io('Barrier open', () => Math.sin(time * .7) > .6), DI1: io('Loop detector', () => Math.sin(time * .7) > .3) };
+IO['pr-anpr'] = { ETH1: io('Gate camera + mast camera', () => '2 streams'), DO1: io('Gate barrier', () => Math.sin(time * .6) > .6), DI1: io('Gate loop', () => Math.sin(time * .6) > .3) };
+IO['jn-ai'] = { ETH1: io('4 × junction IP CCTV (RTSP)', () => '4 streams'), RS485: io('PiControl signal controller', () => `split ${SIG.gx}/${SIG.gy} s`), DI1: io('Pedestrian push button', () => Math.sin(time) > .7), DO1: io('Red-light camera trigger', () => !!FX.rlr) };
+Object.keys(IO).forEach(id => { if (DEV[id] && !DEV[id].io) DEV[id].io = IO[id]; });
+
+// ---------- inside the car park ----------
+const BAYS = [];
+for (let i = 0; i < 12; i++) { BAYS.push({ x: 2.5 + i * .95, y: 1.15, i }); BAYS.push({ x: 2.5 + i * .95, y: 4.9, i: i + 20 }); BAYS.push({ x: 2.5 + i * .95, y: 6.6, i: i + 40 }); }
+const bayOcc = b => hsh(b.i * 7.7 + Math.floor(time / 20)) > .3;
+const levelFree = () => BAYS.filter(b => !bayOcc(b)).length;
+const INCAR = () => { const t = time % 12, cyc = Math.floor(time / 12); return { t, x: t < 2.2 ? -1.5 + t * 1.6 : t < 4.4 ? 2.0 : 2.0 + (t - 4.4) * 1.6, plate: 'WBJPKANMV'[Math.floor(hsh(cyc) * 9)] + PLATE_LETTERS[Math.floor(hsh(cyc * 3) * 23)] + PLATE_LETTERS[Math.floor(hsh(cyc * 5) * 23)] + ' ' + (1 + Math.floor(hsh(cyc * 7) * 9998)), col: CARCOL[cyc % CARCOL.length] }; };
+SCENES.carpark = {
+  title: 'Car Park · Level 2', short: 'the Car Park', kicker: 'Inside the Smart Car Park', icon: '🅿️', color: '#1565c0',
+  floor: '#aab3ba', tile: '#9aa3aa', wallA: '#cfd6dc', wallB: '#d6dce1', winA: [], sign: 'ENTRY · ANPR',
+  sum: 'One level of the car park. At the entry, the IRIV EdgeAI CM5 reads the plate and opens the barrier. Ceiling cameras with AI mark every bay green (free) or red (taken), and guidance signs count the free spaces.',
+  say: 'Welcome inside the car park. Watch the car at the entrance: the camera reads its number plate, the IRIV Edge A I computer checks it, and the barrier opens. No ticket. The ceiling cameras mark each bay green when it is free and red when it is taken, and the sign shows how many spaces are left on this level. The I O Controller with MQTT reads the loop detectors and the fire alarm, and drives the signs and fans.',
+  can: ['<b>Ticketless entry</b>: plate read, barrier opens (EdgeAI CM5 digital output).', '<b>Bay counting</b> from ceiling CCTV, no sensor in every bay.', '<b>Pay by plate</b> in the app, at a kiosk, or automatically.', '<b>Safety</b>: CO detector, fans and fire alarm on the IO Controller.'],
+  m: [['Free on this level', () => levelFree() + ' / ' + BAYS.length], ['Cars inside (all)', () => CP.inside + ' / ' + CP.cap], ['Last plate', () => INCAR().t > 3 ? INCAR().plate : CP.lastPlate], ['EV chargers busy', () => '2 / 2']],
+  build(O) {
+    BAYS.forEach(b => fnObj(O, b.x, b.y + .01, () => { if (bayOcc(b)) carTop(b.x, b.y, 'y', CARCOL[b.i % CARCOL.length]); }));
+    [4.4, 8.2, 12.0].forEach(x => Bx(O, { x0: x - .15, y0: 5.6, x1: x + .15, y1: 5.9, h: 3.2, color: '#cfd8dc' }));
+    Bx(O, { x0: 12.9, y0: .2, x1: 13.2, y1: .45, h: 1.0, color: '#eceff1', stripe: '#43a047' }, 13.05, .45);
+    irivPanel(.25, 1.9, 'IRIV · CAR PARK')(O);
+    fnObj(O, 2.2, 9.9, () => {
+      const c = INCAR(), open = c.t > 3.4 && c.t < 6.2 ? 1 : 0, a = open * Math.PI / 2 * .95;
+      if (c.x > -1 && c.x < 13.8) carTop(c.x, 9.0, 'x', c.col);
+      drawBox({ x0: 2.6, y0: 8.05, x1: 2.8, y1: 8.25, h: .8, color: '#eceff1', stripe: '#e53935' });
+      const s = P(2.7, 8.15, .75), e = P(2.7, 8.15 + 1.6 * Math.cos(a), .75 + 1.6 * Math.sin(a)); line(s, e, '#e53935', Math.max(3, sc * .06));
+      if (c.t > 2.8 && c.t < 6.2) { const h = P(2.0, 9.0, .5); ctx.strokeStyle = '#76ff03'; ctx.lineWidth = 2; ctx.strokeRect(h[0] - sc * .45, h[1] - sc * .3, sc * .9, sc * .5); pill(h[0], h[1] - sc * .6, `📷 ${c.plate} · 99.2% · ${c.t > 3.4 ? 'barrier open' : 'reading…'}`, '#2e7d32', '#fff', 12); }
+    });
+  },
+  floorDecor() {
+    BAYS.forEach(b => { const occ = bayOcc(b); poly(quad(b.x - .42, b.y - .75, b.x + .42, b.y + .75, .004), occ ? 'rgba(229,57,53,.16)' : 'rgba(118,255,3,.18)', occ ? 'rgba(229,57,53,.8)' : 'rgba(46,125,50,.9)', null, 1.5); });
+    for (let x = 3; x < 13; x += 2) poly([P(x, 2.85, .005), P(x + .6, 3.0, .005), P(x, 3.15, .005)], 'rgba(255,255,255,.7)');
+    poly(quad(0, 8.2, 14, 9.8, .003), 'rgba(255,255,255,.12)');
+  },
+  decor() { wtext(7.0, .01, 2.9, 'LEVEL 2', .3, col('#1565c0'), 800); },
+  overlay() { const p = P(7.0, 3.0, 3.1); pill(p[0], p[1], `LEVEL 2 · ${levelFree()} FREE →`, levelFree() ? '#2e7d32' : '#e53935', '#fff', 13); },
+  routes: [[[3.0, 3.0, 2], [12.8, 3.0, 3], [12.8, 8.0, 0], [-1.2, 9.0, 6], [3.0, 8.0, 0]]],
+  devs: [
+    { id: 'cp-anpr', x: 1.6, y: 9.0, z: 2.9, mount: 'ceil', qty: 1, where: 'Ceiling above the entry lane, with the camera', why: 'Sees every plate as the car stops at the barrier.',
+      can: ['Read the plate, log the time, open the barrier', 'Check payment at the exit', 'Blacklist / season-pass plates'], say: 'This is the number plate reader at the car park entry. The camera reads the plate, the IRIV Edge A I computer logs the time, and its digital output opens the barrier.' },
+    { id: 'cp-ai', x: 7.5, y: 3.0, z: 2.9, mount: 'ceil', qty: 1, where: 'Ceiling of the driving aisle', why: 'Ceiling cameras see every bay on the level.',
+      can: ['Free / taken status of every bay', 'Guidance signs per level', 'Overstay and wrong-bay alerts'], say: 'This A I unit uses the ceiling cameras to mark every bay free or taken, and updates the guidance signs.' },
+    { id: 'cp-ioc', x: 1.05, y: .88, z: 1.3, b: irivBox(1.05, 1.15, .7, '#212121', '#ff8f00'), qty: 1, where: 'IRIV panel on the level wall', why: 'Loop detectors, signs, fans and the fire alarm are wired here.',
+      can: ['Loop detectors and kiosk signals', 'FULL signs and fans on its outputs', 'CO detector on an analog input'], say: 'This IRIV I O Controller with MQTT reads the loop detectors and the fire alarm, and switches the signs and ventilation fans.' },
+    { id: 'cp-ct', x: 13.05, y: .55, z: 1.4, mount: 'clamp', qty: 2, where: 'EV charger feed on this level', why: 'Measures charging current.', can: ['Charging energy per bay', 'Fair sharing of building power'],
+      say: 'This C T 103 measures the E V charger on this level.' }
+  ]
+};
+
+/* ---------- scenarios ---------- */
+SCENARIOS.parking = {
+  icon: '🅿️', color: '#1565c0', title: 'Pay by number plate', sub: 'ANPR entry → guided to a bay → shop → pay by plate → drive out',
+  steps: [
+    { t: 'Arrive · plate read at the entry', cam: [40.3, 2.6, 3.2], dur: 9, text: 'A shopper drives up to the car park. The I R I V Edge A I computer reads the number plate from the entry camera, records the time, and opens the barrier. There is no ticket to take.' },
+    { t: 'Guided to a free bay', cam: [43.2, 3.5, 2.4], dur: 8, text: 'Ceiling cameras count the free bays on every level, and the signs show where to go. The big sign on the building shows the free spaces for the whole car park.' },
+    { t: 'Shopping on the high street', cam: [42.5, 11.0, 2.4], dur: 7, text: 'The shopper walks to the high street. People counters at the shop doors show the shops how busy they are.' },
+    { t: 'Pay by plate', cam: [41.0, 3.3, 3.4], dur: 9, text: 'To pay, the shopper types the number plate in the app or at the kiosk. Drivers with a linked e-wallet pay automatically. The fee is two ringgit for the first hour and one ringgit for each extra hour in this demo.' },
+    { t: 'Drive out · no ticket, no stopping', cam: [40.9, 4.0, 3.2], dur: 9, text: 'At the exit, the plate is read again. The parking is already paid, so the barrier opens straight away. Watch the live log in the car park panel: every plate, entry time, exit time and fee.' },
+    { t: 'All of it in IRIV Edge', cam: [42.5, 6.0, 1.6], dur: 8, text: 'Occupancy, revenue and the full plate history go to the IRIV Edge computer. The same plate account works in the market car park and at the park and ride.' }
+  ]
+};
+SCENARIOS.rush = {
+  icon: '🚦', color: '#ef6c00', title: 'Rush hour · AI junctions', sub: 'CCTV + EdgeAI count the queues → PiControl adapts the green time',
+  steps: [
+    { t: 'Rush hour begins', cam: [14.5, 14.5, 2.4], dur: 9, run() { addRush(40); SIG.adapt = false; FX.jnAI = false; },
+      text: 'It is five o\'clock and traffic floods into the city. With fixed signal timing, every direction gets five seconds of green, no matter how long the queue is.' },
+    { t: 'AI counts the queues', cam: [14.5, 14.5, 2.4], dur: 10, run() { FX.jnAI = true; },
+      text: 'At every junction, an IRIV Edge A I computer reads the C C T V cameras, over the network or on its camera ports. It counts and classifies every vehicle, and measures the queue in each direction. The purple boxes are the cars it sees waiting.' },
+    { t: 'Signals adapt', cam: [14.5, 14.5, 2.0], dur: 12, run() { SIG.adapt = true; },
+      text: 'The queue counts go to the IRIV PiControl signal controller over R S 485. Each cycle, the longer queue gets more green time, up to eight seconds, and the shorter one less. Watch the green split change.' },
+    { t: 'Red-light runners & pedestrians', cam: [14.5, 13.5, 2.8], dur: 9, run() { FX.rlr = newPlate(); },
+      text: 'The same cameras catch a car running the red light and log its number plate, and they see pedestrians waiting so the crossing phase is never skipped.' },
+    { t: 'Rush hour over', cam: [CX, CX, 1], dur: 9, run() { clearRush(); FX.rlr = null; },
+      text: 'The rush hour is over and the queues are gone. The A I keeps adapting the signals all day, and the traffic data goes to IRIV Edge for city planners.' }
+  ]
+};
+
+/* ================================================================
+   TOWNSHIP — small houses, shophouses with SmartHub POS, and
+   a first-person "walk around" mode
+   ================================================================ */
+Object.assign(TOPICS, {
+  shoplots: {
+    icon: '🏪', color: '#ff7043', kicker: 'Township', title: 'Township Shophouses',
+    sum: 'Rows of two-storey shophouses: shops downstairs, homes upstairs. Each shop runs its cashier on an IRIV SmartHub CM5: scan the barcode, show the price, print the receipt, update the stock.',
+    how: ['<b>Barcode scanner</b> (USB) → SmartHub CM5 POS software → price on the customer display.', '<b>Every sale updates stock</b>; low items are reordered automatically (e.g. Node-RED).',
+          '<b>Sales and stock</b> sync to IRIV Edge or the cloud for the owner\'s phone.', '<b>CT101</b> on each shop\'s main cable shows electricity use, including fridges after closing.'],
+    ben: ['Faster checkout', 'No stock surprises', 'Low-cost, fanless hardware'],
+    m: [['Basket total', () => 'RM ' + basketTotal().toFixed(2)], ['Receipts today', () => fint(POS.receipts)], ['Sales today', () => 'RM ' + POS.sales.toFixed(2)], ['Low-stock items', () => POS.low.length]],
+    extra: () => `<h3>Live cashier · IRIV SmartHub CM5</h3><div id="posLive">${posHTML()}</div>`,
+    tick: () => { const e = document.getElementById('posLive'); if (e) e.innerHTML = posHTML(); },
+    chain: [['🔦', 'Barcode scanner', 'USB'], ['🧾', 'IRIV SmartHub CM5', 'POS software, prices, stock'], ['🖥️', 'Customer display + receipt printer', 'HDMI / USB'], ['📦', 'Stock & reorders', 'Node-RED on the SmartHub'], ['☁️', 'IRIV Edge / cloud', 'sales report on the owner\'s phone']],
+    say: 'These are the township shophouses, with shops downstairs and homes upstairs. Each shop\'s cashier runs on an IRIV SmartHub C M 5. The cashier scans a barcode, the price appears on the customer display, the receipt prints, and the stock updates by itself. Click a shop to go inside and watch the cashier scan.'
+  },
+  minimart: {
+    icon: '🛒', color: '#43a047', kicker: 'Township', title: 'Mini-Market', sum: 'A neighbourhood mini-market with three SmartHub CM5 checkouts, a stock system that reorders automatically, and monitored chillers.',
+    how: ['SmartHub CM5 at every checkout.', 'Stock system reorders low items.', 'EM300-TH in every chiller and freezer.'], ben: ['Short queues', 'Fresh food', 'Always in stock'],
+    m: [['Checkouts open', () => '2 / 3'], ['Customers now', () => Math.round(wob(18, 5, .1))], ['Chiller', () => wob(3.6, .3, .2).toFixed(1) + ' °C'], ['Reorders today', () => POS.reorders]],
+    say: 'This is the neighbourhood mini-market. SmartHub computers run the checkouts and the stock, and sensors watch every chiller. Click it to go inside.'
+  },
+  township: {
+    icon: '🏘️', color: '#8d6e63', kicker: 'Township', title: 'Township Homes', sum: 'Small terrace and link houses: a friendly, walkable neighbourhood with shops, a food court, a clinic and a playground nearby.',
+    how: ['CT101 home energy monitors.', 'WS101 SOS buttons for elderly residents.', 'Street lights with WS558.'], ben: ['Affordable living', 'Everything within walking distance'],
+    m: [['Homes', () => '60'], ['Residents', () => '≈ 220'], ['Street lights', () => night > .5 ? 'On' : 'Off'], ['Alerts', () => '0']],
+    say: 'This is the township: small terrace houses, with the shops, food court, clinic and playground all within walking distance.'
+  },
+  foodcourt: {
+    icon: '🍜', color: '#f4511e', kicker: 'Township', title: 'Food Court', sum: 'An open-air food court with nine stalls. SmartHub CM5 kiosks take orders and show queue numbers.',
+    how: ['Order at a SmartHub kiosk.', 'Orders go to the stall\'s screen.', 'Queue number on the big screen.'], ben: ['Shorter waits', 'Fewer order mistakes'],
+    m: [['Orders today', () => fint(620 + time / 3)], ['Now serving', () => 'No. ' + (100 + Math.floor(time / 9) % 90)], ['Diners', () => Math.round(wob(70, 15, .1))], ['Avg. wait', () => Math.round(wob(6, 1, .3)) + ' min']],
+    say: 'This is the food court. SmartHub kiosks take orders, send them to the stalls and show the queue numbers.'
+  },
+  playground: { icon: '🛝', color: '#26a69a', kicker: 'Township', title: 'Playground & Park', sum: 'A small park with a playground for the township families.', how: ['Smart lights at dusk.', 'Soil sensors water the grass.'], ben: ['Happy kids'],
+    m: [['Children playing', () => Math.round(wob(12, 5, .1))], ['Lights', () => night > .5 ? 'On' : 'Off'], ['Grass moisture', () => Math.round(wob(44, 3, .1)) + '%'], ['Air quality', () => 'Good']],
+    say: 'A small park with a playground for the township families.' },
+  petrol: { icon: '⛽', color: '#e53935', kicker: 'Township', title: 'Petrol Station & EV Charging', sum: 'A petrol station with a 24-hour shop and EV fast chargers, with a panic button for the night shift.',
+    how: ['WS101 panic button under the counter.', 'SmartHub CM5 POS in the shop.', 'CT105 on the EV fast chargers.'], ben: ['Safe night shift', '24/7 service'],
+    m: [['Pumps busy', () => '3 / 6'], ['EV chargers', () => '1 / 2'], ['Shop sales', () => 'RM ' + fint(1840 + time)], ['Night alerts', () => '0']],
+    say: 'This petrol station has a twenty-four hour shop with a panic button for the night shift, and E V fast chargers.' },
+  clinic: { icon: '🩺', color: '#e53935', kicker: 'Township', title: 'Community Clinic', sum: 'The township clinic, with a monitored vaccine fridge.', how: ['EM300-TH in the vaccine fridge (2–8 °C).', 'VS133 counts patients in the waiting room.'], ben: ['Safe vaccines', 'Shorter waits'],
+    m: [['Patients waiting', () => Math.round(wob(9, 3, .1))], ['Vaccine fridge', () => wob(4.4, .3, .2).toFixed(1) + ' °C'], ['Doctors on duty', () => '2'], ['Wait time', () => Math.round(wob(18, 4, .1)) + ' min']],
+    say: 'This is the community clinic. Its vaccine fridge is monitored around the clock.' },
+  hall: { icon: '🏛️', color: '#6d4c41', kicker: 'Township', title: 'Community Hall', sum: 'A hall for weddings, classes and community events, with fresh-air control.', how: ['AM319 air quality.', 'Smart lights and fans.'], ben: ['Comfortable events'],
+    m: [['People', () => Math.round(wob(40, 12, .1))], ['CO₂', () => Math.round(wob(680, 60, .2)) + ' ppm'], ['Booking', () => 'Wedding · 7 pm'], ['Fans', () => 'Auto']],
+    say: 'The community hall hosts weddings, classes and events, with automatic fresh-air control.' }
+});
+ORDER.push('shoplots', 'minimart', 'foodcourt', 'township', 'clinic', 'petrol', 'playground', 'hall');
+[['shoplots', 2.6], ['minimart', 2.6], ['township', 2.4], ['foodcourt', 2.8], ['playground', 2.0], ['petrol', 2.8], ['clinic', 2.8], ['hall', 3.6]].forEach(([z, h]) => { if (ZINFO[z]) ZINFO[z].z = h; });
+
+// ---------- buildings ----------
+const shopHouses = (zone, x0, y0, n, w, d) => { for (let k = 0; k < n; k++) { const [c, a] = SHOP_COL[(k * 2 + Math.round(y0)) % SHOP_COL.length]; box(zone, x0 + k * (w + .05), y0, x0 + k * (w + .05) + w, y0 + d, 1.9, c, { win: 'grid', stripe: a, roof: '#b0bec5' }); } };
+const pcar = (zone, x, y, ax, i) => add('pcar', zone, x, y, { ax, col: CARCOL[i % CARCOL.length] });
+shopHouses('shoplots', 48.0, 1.0, 5, 1.05, 1.4); shopHouses('shoplots', 48.0, 4.4, 5, 1.05, 1.4);
+for (let k = 0; k < 5; k++) pcar('shoplots', 48.5 + k * 1.1, 3.4, 'y', k);
+shopHouses('shoplots', 8.9, 48.0, 5, .85, 1.4); shopHouses('shoplots', 8.9, 51.4, 5, .85, 1.4);
+for (let k = 0; k < 4; k++) pcar('shoplots', 9.3 + k * 1.0, 50.4, 'y', k + 2);
+box('minimart', 48.0, 9.0, 52.8, 11.4, 1.3, '#e8f5e9', { win: 'grid', stripe: '#e53935', roof: '#cfd8dc' });
+for (let k = 0; k < 7; k++) pcar('minimart', 48.3 + k * .7, 12.5, 'y', k);
+// township homes: small terrace houses
+const TOWN_BLOCKS = [[47.4, 15.4], [47.4, 31.4], [.4, 47.4], [23.4, 47.4], [39.4, 47.4]];
+TOWN_BLOCKS.forEach(([bx, by], b) => {
+  for (let r = 0; r < 2; r++) for (let k = 0; k < 5; k++) {
+    const x0 = bx + .55 + k * 1.15, y0 = by + (r ? 3.6 : .7), [wall, roof] = HOUSE_COL[(k + r + b) % 6];
+    add('house', 'township', x0 + .48, y0 + .5, { x0, y0, x1: x0 + .95, y1: y0 + 1.0, h: .85, rh: .45, wall, roof, solar: (k + b) % 3 === 0 });
+  }
+  for (let k = 0; k < 3; k++) { tree('township', bx + 1.2 + k * 2.1, by + 2.6, .55); pcar('township', bx + .8 + k * 2.2, by + 2.55, 'x', k + b); }
+});
+// food court: stalls, tables and a canopy
+for (let k = 0; k < 5; k++) box('foodcourt', 48.0 + k * 1.0, 24.0, 48.9 + k * 1.0, 24.9, .9, SHOP_COL[k][0], { stripe: SHOP_COL[k][1] });
+for (let r = 0; r < 3; r++) for (let k = 0; k < 4; k++) add('diner', 'foodcourt', 48.6 + k * 1.25, 25.8 + r * 1.0, { i: r * 4 + k });
+add('canopy', 'foodcourt', 50.5, 29.0, { x0: 47.9, y0: 25.3, x1: 53.1, y1: 28.9, z: 1.6, colr: '#ff7043' });
+// playground
+add('slide', 'playground', 49.5, 41.5); add('swing', 'playground', 51.8, 42.0);
+[[48.0, 40.0], [53.0, 40.0], [48.0, 45.0], [53.0, 45.0], [50.5, 44.8]].forEach(([x, y]) => tree('playground', x, y, .75));
+// petrol station
+add('canopy', 'petrol', 49.9, 50.5, { x0: 48.3, y0: 48.3, x1: 51.5, y1: 50.5, z: 1.5, colr: '#e53935' });
+[48.9, 49.9, 50.9].forEach((x, i) => { box('petrol', x - .15, 49.2, x + .15, 49.55, .6, '#eceff1', { stripe: '#e53935' }); pcar('petrol', x, 48.8, 'x', i + 4); });
+box('petrol', 51.8, 51.5, 53.2, 53.0, 1.1, '#fafafa', { win: 'grid', stripe: '#e53935' });
+[[48.4, 52.6], [49.2, 52.6]].forEach(([x, y]) => box('petrol', x - .1, y - .1, x + .1, y + .1, .7, '#eceff1', { deco: ['cabinet'], stripe: '#43a047' }));
+// clinic and community hall
+box('clinic', 16.2, 48.2, 20.8, 51.0, 1.4, '#f4f6f8', { win: 'grid', deco: ['cross'] });
+for (let k = 0; k < 4; k++) pcar('clinic', 16.6 + k * .8, 52.0, 'y', k + 1);
+add('house', 'hall', 34.4, 49.8, { x0: 32.2, y0: 48.2, x1: 36.6, y1: 51.4, h: 1.5, rh: 1.0, wall: '#fff3e0', roof: '#8d6e63' });
+function drawCanopy(o) {
+  for (const [x, y] of [[o.x0, o.y0], [o.x1, o.y0], [o.x0, o.y1], [o.x1, o.y1]]) line(P(x, y, 0), P(x, y, o.z), col('#9e9e9e'), 2);
+  drawBox({ x0: o.x0, y0: o.y0, x1: o.x1, y1: o.y1, z0: o.z, h: .12, color: o.colr, roof: o.colr, alpha: .9 });
+}
+function drawDiner(o) {
+  drawBox({ x0: o.cx - .25, y0: o.cy - .25, x1: o.cx + .25, y1: o.cy + .25, h: .5, color: '#8d6e63', roof: '#d7ccc8' });
+  if (hsh(o.i + Math.floor(time / 20)) > .35) [[-.4, 0], [.4, 0]].forEach(([dx], k) => drawPed({ x: o.cx + dx, y: o.cy, ox: 0, oy: 0, moving: false, col: CLOTHES[(o.i + k) % 9], skin: SKINS[(o.i + k) % 5] }));
+}
+function drawSlide(o) { drawBox({ x0: o.cx - .3, y0: o.cy - .3, x1: o.cx + .3, y1: o.cy + .3, h: 1.0, color: '#ffca28' }); line(P(o.cx + .3, o.cy, 1.0), P(o.cx + 1.4, o.cy, .1), '#e53935', Math.max(3, sc * .12)); }
+function drawSwing(o) { line(P(o.cx - .6, o.cy, 0), P(o.cx - .6, o.cy, 1.2), col('#546e7a'), 2); line(P(o.cx + .6, o.cy, 0), P(o.cx + .6, o.cy, 1.2), col('#546e7a'), 2); line(P(o.cx - .6, o.cy, 1.2), P(o.cx + .6, o.cy, 1.2), col('#546e7a'), 2);
+  const sw = Math.sin(time * 2) * .35; for (const s of [-.25, .25]) line(P(o.cx + s, o.cy, 1.2), P(o.cx + s, o.cy + sw, .35), col('#795548'), 1.5); }
+function worldGround4() {
+  poly(quad(47.9, 39.9, 53.1, 45.1, .087), col('#e6d3a3'));
+  poly(quad(32.0, 51.8, 37.0, 53.2, .087), col('#81c784'));
+  poly(quad(47.9, 2.5, 53.5, 4.3, .086), col('#78838c'));
+}
+
+// ---------- SmartHub POS simulation ----------
+const CATALOG = [['Milo 1 kg', 18.90], ['Bread loaf', 4.20], ['Eggs (10)', 5.50], ['Rice 5 kg', 26.00], ['Teh tarik sachets', 9.90], ['Cooking oil 2 kg', 12.60], ['Mineral water 1.5 L', 2.20], ['Instant noodles ×5', 5.80], ['Sugar 1 kg', 2.85], ['Condensed milk', 3.60], ['Detergent 2 kg', 15.90], ['Biscuits', 6.50]]
+  .map(([n, p], i) => ({ n, p, code: '955' + String(1000000000 + Math.floor(hsh(i * 17.3) * 8999999999)).slice(0, 10), stock: 6 + Math.floor(hsh(i * 3.7) * 20) }));
+const POS = { basket: [], target: 4, t: 1.2, log: [], receipts: 214, items: 1932, sales: 3820.5, low: [], reorders: 3, last: null };
+const basketTotal = () => POS.basket.reduce((s, it) => s + it.p, 0);
+function updatePOS(dt) {
+  if (scene === 'inside' && curInt && curInt.shop) return;   // inside a shop, real customers drive the till
+  POS.t -= dt; if (POS.t > 0) return;
+  if (POS.basket.length >= POS.target) {
+    const total = basketTotal(), pay = ['DuitNow QR', 'Card (tap)', 'Cash', 'e-wallet'][Math.floor(Math.random() * 4)];
+    POS.log.unshift({ no: ++POS.receipts, n: POS.basket.length, total, pay, time: hhmm(new Date()) }); POS.log = POS.log.slice(0, 6);
+    POS.sales += total; POS.last = { paid: total, pay, t: time }; POS.basket = []; POS.target = 2 + Math.floor(Math.random() * 5); POS.t = 3.4; return;
+  }
+  const it = CATALOG[Math.floor(Math.random() * CATALOG.length)];
+  POS.basket.push(it); POS.items++; it.stock--;
+  if (it.stock <= 3 && !POS.low.includes(it)) { POS.low.push(it); }
+  if (it.stock <= 0) { it.stock = 24; POS.low = POS.low.filter(x => x !== it); POS.reorders++; }
+  POS.last = { item: it, t: time }; POS.t = 1.3;
+}
+function posHTML() {
+  const rows = POS.basket.map(it => `<tr><td><code>${it.code}</code></td><td>${it.n}</td><td class="q">RM ${it.p.toFixed(2)}</td></tr>`).join('') || '<tr><td colspan="3" class="mut">Next customer…</td></tr>';
+  return `<table class="bom"><thead><tr><th>Barcode</th><th>Item</th><th class="q">Price</th></tr></thead><tbody>${rows}</tbody>
+    <tfoot><tr><td colspan="2">Total</td><td class="q">RM ${basketTotal().toFixed(2)}</td></tr></tfoot></table>
+    <h3>Last receipts</h3><table class="bom"><tbody>${POS.log.map(r => `<tr><td>#${r.no} · ${r.time}</td><td>${r.n} items · ${r.pay}</td><td class="q"><b>RM ${r.total.toFixed(2)}</b></td></tr>`).join('') || '<tr><td class="mut">—</td></tr>'}</tbody></table>
+    <h3>Stock alerts</h3><p style="margin:0;font-size:12.5px">${POS.low.length ? POS.low.map(i => `⚠ ${i.n}: ${i.stock} left → reorder`).join('<br>') : '✓ All items in stock'} · ${POS.reorders} reorders sent today</p>`;
+}
+SPEC['IRIV SmartHub CM5'] = { groups: [], hw: ['Raspberry Pi Compute Module 5 with Wi-Fi', '2 / 4 / 16 GB RAM with 16 / 32 / 64 GB eMMC (by variant)', 'Fanless metal enclosure, silent and maintenance-free, built for 24/7 use',
+  'Low power; onboard real-time clock for scheduled shutdown and power-on', 'Ethernet, USB and HDMI ports (see the photo) for scanners, printers and displays',
+  'Cytron shows it running POS, digital signage and Node-RED inventory systems'], photos: ['IRIV-SmartHub-CM5.png', 'IRIV-SmartHub-CM5-2.png', 'IRIV-SmartHub-CM5-3.png'] };
+const posIO = (extra = {}) => Object.assign({ USB1: io('Barcode scanner', () => POS.last && POS.last.item && time - POS.last.t < 1 ? 'BEEP · ' + POS.last.item.code : 'Ready'), USB2: io('Receipt printer', () => POS.last && POS.last.paid && time - POS.last.t < 2 ? 'Printing…' : 'Idle'),
+  HDMI: io('Customer display', () => 'RM ' + basketTotal().toFixed(2)), ETH: io('Shop router → IRIV Edge / cloud', () => 'Synced') }, extra);
+DEV['pos-shop'].io = posIO(); DEV['pos-mart'].io = posIO({ USB3: io('Second scanner (checkout 2)', () => 'Ready') });
+DEV['pos-food'].io = { HDMI: io('Queue number screen', () => 'No. ' + (100 + Math.floor(time / 9) % 90)), USB1: io('Receipt printer', () => 'Idle'), ETH: io('Stall screens (MQTT)', () => '8 online') };
+
+// ---------- inside a township shop ----------
+// ---------- inside a shop: customers browse, pick items, queue and pay ----------
+const PRODUCT_COL = ['#e53935', '#1e88e5', '#fdd835', '#43a047', '#8e24aa', '#fb8c00', '#00acc1', '#6d4c41', '#ec407a', '#3949ab', '#c0ca33', '#f4511e', '#ffffff', '#26a69a'];
+const AISLE_NAMES = ['RICE · OIL · SUGAR', 'SNACKS · BISCUITS', 'HOUSEHOLD · DETERGENT', 'DRINKS · COFFEE · TEA'];
+const shelfY = s => 1.6 + s * 1.9;          // shelf s runs from x 6.0 to 12.6, products face +y
+const aisleY = s => shelfY(s) + .95;        // where shoppers stand in front of shelf s
+const QUEUE_SPOTS = [[3.6, 7.3], [4.7, 7.6], [5.6, 7.95], [6.5, 8.3], [7.4, 8.65], [8.3, 9.0], [9.2, 9.35]];
+const qSpot = i => QUEUE_SPOTS[Math.min(i, QUEUE_SPOTS.length - 1)];
+const SHOP = { cust: [], queue: [], scanT: 0, payT: 0, shelves: 2, served: 0 };
+
+function shopInit(S) {
+  SHOP.shelves = S.shelves; SHOP.queue = []; SHOP.scanT = 1; SHOP.payT = 0;
+  POS.basket = [];
+  SHOP.cust = Array.from({ length: S.shelves > 2 ? 8 : 6 }, (_, i) => ({
+    cust: true, x: -1.5, y: 9, col: CLOTHES[(i * 2 + 3) % CLOTHES.length], skin: SKINS[(i + 1) % SKINS.length], moving: false,
+    state: 'wait', wait: i * 3.2 + .3, path: [], items: [], want: 0, pickT: 0, label: null, labelT: 0, basket: false, bag: false
+  }));
+  // start with a few shoppers already inside so the shop never looks empty
+  SHOP.cust.slice(0, 3).forEach((c, i) => { c.state = 'enter'; c.wait = 0; c.x = 1.5; c.y = 9; c.path = [[1.4, 7.7]]; c.want = 2 + i; });
+  walkers.push(...SHOP.cust);
+  // a staff member restocking the back aisle
+  walkers.push({ r: [[6.2, 1.2, 4], [12.6, 1.2, 5]], i: 0, x: 6.2, y: 1.2, wait: 2, moving: false, col: '#ff7043', skin: SKINS[4], staff: true });
+}
+function nextPick(c) {
+  const roll = Math.random(), from = [5.4, c.y];
+  if (roll < .18) { c.path = [from, [5.4, 3.6], [2.6, 3.4]]; return; }                      // fruit and vegetables
+  if (roll < .36) { c.path = [from, [5.4, 1.25], [9.6 + Math.random() * 3.4, 1.25]]; return; }  // drinks fridge
+  const s = Math.floor(Math.random() * SHOP.shelves), ay = aisleY(s);
+  c.path = [from, [5.4, ay], [6.5 + Math.random() * 5.6, ay]];
+}
+function stepTo(c, tx, ty, dt) {
+  const dx = tx - c.x, dy = ty - c.y, d = Math.hypot(dx, dy), st = 1.15 * dt;
+  if (d <= st) { c.x = tx; c.y = ty; c.moving = false; return true; }
+  c.x += dx / d * st; c.y += dy / d * st; c.moving = true; return false;
+}
+function payReceipt() {
+  const total = basketTotal(), pay = ['DuitNow QR', 'Card (tap)', 'Cash', 'e-wallet'][Math.floor(Math.random() * 4)];
+  POS.log.unshift({ no: ++POS.receipts, n: POS.basket.length, total, pay, time: hhmm(new Date()) }); POS.log = POS.log.slice(0, 6);
+  POS.sales += total; POS.last = { paid: total, pay, t: time }; POS.basket = []; SHOP.served++;
+}
+function shopUpdate(dt) {
+  if (scene !== 'inside' || !curInt || !curInt.shop) return;
+  SHOP.cust.forEach(c => {
+    if (c.state === 'wait') { c.wait -= dt; if (c.wait <= 0) { c.state = 'enter'; c.want = 1 + Math.floor(Math.random() * 5); c.path = [[1.5, 9], [1.4, 7.7]]; } return; }
+    if (c.state === 'pick') {
+      c.pickT -= dt; c.moving = false;
+      if (c.pickT <= 0) {
+        const it = CATALOG[Math.floor(Math.random() * CATALOG.length)]; c.items.push(it); c.label = '+ ' + it.n; c.labelT = time;
+        if (c.items.length >= c.want) { c.state = 'toQueue'; SHOP.queue.push(c); c.path = [[5.4, c.y], [5.4, 8.6]]; }
+        else { c.state = 'browse'; nextPick(c); }
+      }
+      return;
+    }
+    if (c.state === 'queue') {   // shuffle forward as the queue moves
+      const [qx, qy] = qSpot(SHOP.queue.indexOf(c)); stepTo(c, qx, qy, dt); return;
+    }
+    if (c.path.length) { if (stepTo(c, c.path[0][0], c.path[0][1], dt)) c.path.shift(); return; }
+    // arrived at the end of a path
+    if (c.state === 'enter') { c.basket = true; c.state = 'browse'; nextPick(c); }
+    else if (c.state === 'browse') { c.state = 'pick'; c.pickT = 1.4 + Math.random() * 1.6; }
+    else if (c.state === 'toQueue') c.state = 'queue';
+    else if (c.state === 'leave') Object.assign(c, { state: 'wait', wait: 2 + Math.random() * 7, x: -1.5, y: 9, items: [], basket: false, bag: false });
+  });
+  // the cashier scans the front customer's basket item by item, then takes payment
+  const f = SHOP.queue[0];
+  if (f && f.state === 'queue' && Math.hypot(f.x - qSpot(0)[0], f.y - qSpot(0)[1]) < .05) {
+    if (f.items.length) {
+      SHOP.scanT -= dt;
+      if (SHOP.scanT <= 0) {
+        const it = f.items.shift(); POS.basket.push(it); POS.items++; it.stock--;
+        if (it.stock <= 3 && !POS.low.includes(it)) POS.low.push(it);
+        if (it.stock <= 0) { it.stock = 24; POS.low = POS.low.filter(x => x !== it); POS.reorders++; }
+        POS.last = { item: it, t: time }; SHOP.scanT = 1.1;
+      }
+    } else if (POS.basket.length) {
+      SHOP.payT += dt;
+      if (SHOP.payT > 1.8) { SHOP.payT = 0; payReceipt(); SHOP.queue.shift(); Object.assign(f, { state: 'leave', basket: false, bag: true, path: [[1.6, 8.4], [-1.5, 8.6]] }); SHOP.scanT = 1.2; }
+    }
+  }
+}
+function drawCarry(p) {   // shopping basket or bag in the shopper's hand
+  if (!p.basket && !p.bag) return;
+  const x = p.x + .2, y = p.y + .05;
+  if (p.bag) { drawBox({ x0: x - .07, x1: x + .07, y0: y - .1, y1: y + .1, z0: .18, h: .26, color: '#fafafa' }); return; }
+  drawBox({ x0: x - .1, x1: x + .1, y0: y - .14, y1: y + .14, z0: .3, h: .14, color: '#e53935' });
+  (p.items || []).slice(0, 4).forEach((it, k) => drawBox({ x0: x - .07 + (k % 2) * .07, x1: x - .01 + (k % 2) * .07, y0: y - .1 + (k > 1) * .1, y1: y - .02 + (k > 1) * .1, z0: .44, h: .07, color: PRODUCT_COL[CATALOG.indexOf(it) % PRODUCT_COL.length] }));
+}
+
+function makeShop(posId, title, short, shelves) {
+  const mart = posId === 'pos-mart';
+  return {
+    shop: true, shelves, title, short, kicker: 'Inside the ' + short, icon: mart ? '🛒' : '🏪', color: mart ? '#43a047' : '#ff7043',
+    floor: '#ece6dc', tile: '#ddd5c7', wallA: '#f6efe6', wallB: '#faf5ee', winA: [[1, 3], [4.6, 6.6]], winZ: [1.0, 2.6], sign: short.toUpperCase(),
+    sum: 'Shoppers pick up a basket, walk the aisles and take items off the shelves, then queue at the till. The cashier scans every item into the IRIV SmartHub CM5, which shows the total, takes payment, prints the receipt and updates the stock.',
+    say: 'Welcome inside the shop. Watch the shoppers: they take a basket at the door, walk along the aisles and pick items from the shelves, the fridge and the fruit stand. Then they queue at the till. The cashier scans each item into the IRIV SmartHub C M 5. The price appears on the customer display, the customer pays by QR, card or cash, the receipt prints, and the stock goes down by itself. When an item runs low, it is reordered automatically.',
+    can: ['<b>Fast checkout</b>: USB barcode scanner → SmartHub CM5 POS.', '<b>Live stock</b>: every scan reduces stock; low items are reordered.', '<b>Queue length</b> visible to the owner, so a second till opens in time.', '<b>Safe food</b>: chiller temperature alerts.', '<b>Footfall vs sales</b>: people counter at the door.'],
+    m: [['Shoppers inside', () => SHOP.cust.filter(c => c.x > .5).length], ['In the queue', () => SHOP.queue.length + (SHOP.queue.length === 1 ? ' person' : ' people')],
+        ['At the till', () => POS.basket.length + ' items · RM ' + basketTotal().toFixed(2)], ['Sales today', () => 'RM ' + POS.sales.toFixed(2)]],
+    build(O) {
+      for (let s = 0; s < shelves; s++) {
+        const y = shelfY(s);
+        fnObj(O, 9.3, y + .25, () => {
+          drawBox({ x0: 6.0, y0: y, x1: 12.6, y1: y + .5, h: 1.55, color: '#cfd8dc', roof: '#eceff1' });
+          for (let lv = 0; lv < 4; lv++) {
+            const z = .1 + lv * .37;
+            poly(quad(6.0, y + .5, 12.6, y + .56, z), col('#90a4ae'));
+            for (let k = 0; k < 18; k++) {
+              const x = 6.15 + k * .36, h = .14 + hsh(k * 3.1 + lv * 7 + s * 11) * .17, w = hsh(k + lv * 5 + s) > .6 ? .1 : .14, c = PRODUCT_COL[Math.floor(hsh(k * 1.7 + lv * 2.3 + s * 5) * PRODUCT_COL.length)];
+              drawBox({ x0: x, y0: y + .35, x1: x + w * 2, y1: y + .5, z0: z + .02, h, color: c });
+            }
+            poly(quad(6.0, y + .5, 12.6, y + .52, z + .02), '#ffeb3b');   // price-tag strip
+          }
+        });
+        fnObj(O, 9.3, y + 1.3, () => { const p = P(9.3, y + .25, 2.4); pill(p[0], p[1], AISLE_NAMES[(s + (mart ? 0 : 1)) % AISLE_NAMES.length], '#37474f', '#fff', Math.max(9, Math.min(13, sc * .2))); });
+      }
+      // drinks fridge with bottles behind the glass
+      fnObj(O, 11.3, .95, () => {
+        drawBox({ x0: 9.0, y0: .2, x1: 13.6, y1: .95, h: 2.0, color: '#eceff1', roof: '#cfd8dc' });
+        for (let lv = 0; lv < 4; lv++) for (let k = 0; k < 15; k++) drawBox({ x0: 9.15 + k * .29, y0: .8, x1: 9.3 + k * .29, y1: .92, z0: .15 + lv * .46, h: .3, color: PRODUCT_COL[(k * 3 + lv) % PRODUCT_COL.length] });
+        poly([P(9.0, .96, .05), P(13.6, .96, .05), P(13.6, .96, 1.95), P(9.0, .96, 1.95)], 'rgba(200,230,255,.28)', 'rgba(120,144,156,.9)', null, 1.5);
+        for (const x of [10.15, 11.3, 12.45]) line(P(x, .97, .05), P(x, .97, 1.95), col('#90a4ae'), 1.5);
+      });
+      // fruit and vegetable stand
+      fnObj(O, 2.6, 2.95, () => {
+        drawBox({ x0: 1.6, y0: 2.1, x1: 3.6, y1: 2.9, h: .7, color: '#8d6e63', roof: '#a1887f' });
+        [['#ff9800', 1.85], ['#e53935', 2.35], ['#8bc34a', 2.85], ['#ffeb3b', 3.35]].forEach(([c, x]) => {
+          drawBox({ x0: x - .22, y0: 2.2, x1: x + .22, y1: 2.8, z0: .7, h: .12, color: '#bcaaa4' });
+          for (let k = 0; k < 6; k++) { const q = P(x - .12 + (k % 3) * .12, 2.35 + Math.floor(k / 3) * .22, .88); ctx.fillStyle = col(c); ctx.beginPath(); ctx.arc(q[0], q[1], Math.max(1.5, sc * .06), 0, 7); ctx.fill(); }
+        });
+      });
+      // basket stack by the door
+      fnObj(O, 1.0, 7.1, () => { for (let k = 0; k < 5; k++) drawBox({ x0: .8, y0: 6.9, x1: 1.2, y1: 7.3, z0: k * .09, h: .1, color: '#e53935' }); });
+      // checkout counter, till, scanner, customer display
+      Bx(O, { x0: 3.4, y0: 5.4, x1: 4.0, y1: 5.8, h: .45, color: '#455a64' }, 3.7, 5.6);
+      person(O, 3.7, 5.65, false, 3);
+      fnObj(O, 3.6, 6.8, () => {
+        drawBox({ x0: 2.4, y0: 6.1, x1: 4.8, y1: 6.8, h: 1.0, color: '#8d6e63', roof: '#efebe9' });
+        drawBox({ x0: 3.2, y0: 6.2, x1: 3.75, y1: 6.27, z0: 1.0, h: .38, color: '#1e3a5f' });
+        drawBox({ x0: 4.25, y0: 6.35, x1: 4.45, y1: 6.55, z0: 1.0, h: .12, color: '#263238' });
+        drawBox({ x0: 2.55, y0: 6.3, x1: 2.9, y1: 6.6, z0: 1.0, h: .18, color: '#eceff1' });
+        const L = POS.last;
+        if (L && L.item && time - L.t < 1.0) {
+          const u = Math.min(1, (time - L.t) / .8), x = 4.7 - u * 1.0;
+          drawBox({ x0: x - .14, y0: 6.35, x1: x + .14, y1: 6.6, z0: 1.0, h: .2, color: PRODUCT_COL[CATALOG.indexOf(L.item) % PRODUCT_COL.length] });
+          const s = P(4.35, 6.45, 1.15); glow(s[0], s[1], sc * .35, 'rgba(255,23,68,.9)');
+          const t = P(4.0, 6.45, 1.9); pill(t[0], t[1], `BEEP · ${L.item.n} · RM ${L.item.p.toFixed(2)}`, '#ff7043', '#fff', 12);
+        }
+        if (L && L.paid && time - L.t < 2.5) { const t = P(2.75, 6.45, 1.75); pill(t[0], t[1], `🧾 Paid RM ${L.paid.toFixed(2)} · ${L.pay}`, '#2e7d32', '#fff', 12); }
+        const d = P(3.9, 6.85, 1.45); pill(d[0], d[1], `RM ${basketTotal().toFixed(2)}`, '#0f1724', '#76ff03', 13);
+      });
+      if (mart) fnObj(O, 1.6, 5.2, () => {   // second till: self-checkout kiosk
+        drawBox({ x0: 1.2, y0: 4.8, x1: 2.0, y1: 5.4, h: 1.0, color: '#eceff1', stripe: '#43a047' });
+        drawBox({ x0: 1.3, y0: 4.85, x1: 1.9, y1: 4.9, z0: 1.0, h: .45, color: '#1e3a5f' });
+      });
+      [[.7, .7], [13.4, 10.3]].forEach(([x, y]) => plant(O, x, y));
+    },
+    floorDecor() {
+      poly(quad(.1, 7.9, 1.6, 10.1, .004), col('#5d4037'));
+      for (let s = 0; s < shelves; s++) poly(quad(5.9, aisleY(s) - .45, 12.7, aisleY(s) + .45, .003), 'rgba(255,255,255,.18)');
+      poly(quad(3.2, 7.0, 4.1, 7.6, .004), 'rgba(255,193,7,.35)');   // "wait here" marker
+    },
+    decor() {
+      wtext(5.0, .01, 3.05, title.toUpperCase(), .22, col('#e64a19'), 800);
+      poly(wallB(1.0, 3.6, 1.2, 2.5), '#e53935', col('#b71c1c'));
+      wtext(2.3, .01, 2.05, 'PROMO', .18, '#fff', 800); wtext(2.3, .01, 1.6, '2 for RM 5', .16, '#ffeb3b', 800);
+      wtext(.01, 7.1, 2.3, 'OPEN 7 AM – 11 PM', .12, col('#2e7d32'), 800);
+    },
+    overlay() {   // what each shopper just picked up
+      SHOP.cust.forEach(c => { if (c.label && time - c.labelT < 1.3) { const p = P(c.x, c.y, 1.7); pill(p[0], p[1], '🛒 ' + c.label, '#00897b', '#fff', 11); } });
+      const f = SHOP.queue[0];
+      if (SHOP.queue.length > 3) { const p = P(qSpot(3)[0], qSpot(3)[1], 1.9); pill(p[0], p[1], `⏳ ${SHOP.queue.length} in queue · open 2nd till?`, '#f57c00', '#fff', 11); }
+      if (f && !f.items.length && POS.basket.length) { const p = P(f.x, f.y, 1.6); pill(p[0], p[1], '💳 paying…', '#1565c0', '#fff', 11); }
+    },
+    devs: [
+      { id: posId, x: 2.72, y: 6.6, z: 1.25, b: { x0: 2.55, y0: 6.3, x1: 2.9, y1: 6.6, z0: 1.0, h: .18, color: '#263238', stripe: '#ff8f00' }, qty: 1, where: 'Cashier counter, next to the till', why: 'Within USB reach of the scanner, the printer and the displays.',
+        can: ['Barcode scanning and pricing', 'Receipts and e-payments', 'Live stock with automatic reorders', 'Sales report on the owner\'s phone'],
+        say: 'This IRIV SmartHub C M 5 sits on the cashier counter. The barcode scanner and receipt printer plug into its U S B ports, the customer display into H D M I, and the network port syncs sales and stock.' },
+      { id: 'em300th', x: 11.3, y: .99, z: 1.6, b: { x0: 11.2, y0: .97, x1: 11.4, y1: 1.02, z0: 1.5, h: .2 }, qty: 1, where: 'Inside the drinks chiller', why: 'Food safety and less waste.', can: ['Alert if the chiller warms up', 'Temperature log'],
+        say: 'This E M 300 sensor watches the chiller temperature, so cold drinks and dairy stay safe.' },
+      { id: 'vs133', x: 1.1, y: 9.0, z: 2.95, mount: 'ceil', qty: 1, where: 'Above the shop door', why: 'Counts every customer.', can: ['Customers per hour', 'Conversion: customers vs receipts'],
+        say: 'This people counter above the door counts customers, so the owner can compare visitors with sales.' }
+    ]
+  };
+}
+SCENES.shoplots = makeShop('pos-shop', 'Kedai Runcit', 'Township Shop', 2);
+SCENES.minimart = makeShop('pos-mart', 'Mini-Market', 'Mini-Market', 3);
+
+/* ================================================================
+   WALK AROUND — first-person view at eye level (like Street View)
+   ================================================================ */
+const WALK = { on: false, x: 47.55, y: 3.0, yaw: Math.PI / 2, pitch: -.05, eye: 1.05, F: 800, far: 26, keys: {}, target: null, ground: 0 };
+function PW(x, y, z) {
+  const dx = x - WALK.x, dy = y - WALK.y, dz = z - WALK.eye, cy = Math.cos(WALK.yaw), sy = Math.sin(WALK.yaw), cp = Math.cos(WALK.pitch), sp = Math.sin(WALK.pitch);
+  const f = dx * cy + dy * sy, r = -dx * sy + dy * cy;
+  let zc = f * cp + dz * sp; const yc = dz * cp - f * sp, b = zc < .12;
+  if (b) zc = .12;
+  const p = [W / 2 + r / zc * WALK.F, H / 2 - yc / zc * WALK.F]; if (b) p.b = true; return p;
+}
+function walkDepth(x, y) {
+  const dx = x - WALK.x, dy = y - WALK.y;
+  if (dx * Math.cos(WALK.yaw) + dy * Math.sin(WALK.yaw) < -1.5) return -1e9;
+  return -Math.hypot(dx, dy);
+}
+function walkBlocked(x, y) {
+  if (!onLand(x, y)) return true;
+  return objs.some(o => (o.t === 'box' || o.t === 'house' || o.t === 'mscp') && o.h > .5 && !o.z0 && x > o.x0 - .12 && x < o.x1 + .12 && y > o.y0 - .12 && y < o.y1 + .12);
+}
+const zoneAt = (x, y) => { const b = blocks.find(b => x >= b.x0 && x <= b.x1 && y >= b.y0 && y <= b.y1); return b ? b.zone : (x < 0 ? 'highway' : 'mobility'); };
+function updateWalk(dt) {
+  if (!WALK.on) return;
+  WALK.F = Math.max(W, H) * .62;
+  const k = WALK.keys, sp = (k.shift ? 4.2 : 2.2) * dt, turn = 1.6 * dt;
+  if (k.left) WALK.yaw -= turn; if (k.right) WALK.yaw += turn;
+  let fx = 0, fy = 0;
+  const cy = Math.cos(WALK.yaw), sy = Math.sin(WALK.yaw);
+  if (k.fwd) { fx += cy; fy += sy; } if (k.back) { fx -= cy; fy -= sy; }
+  if (k.sl) { fx += sy; fy -= cy; } if (k.sr) { fx -= sy; fy += cy; }
+  if (fx || fy) WALK.target = null;
+  if (WALK.target) {
+    const dx = WALK.target[0] - WALK.x, dy = WALK.target[1] - WALK.y, d = Math.hypot(dx, dy);
+    if (d < .1) WALK.target = null; else { fx = dx / d; fy = dy / d; }
+  }
+  const n = Math.hypot(fx, fy);
+  if (n) {
+    const nx = WALK.x + fx / n * sp, ny = WALK.y + fy / n * sp;
+    if (!walkBlocked(nx, WALK.y)) WALK.x = nx; else WALK.target = null;
+    if (!walkBlocked(WALK.x, ny)) WALK.y = ny; else WALK.target = null;
+    WALK.bob = (WALK.bob || 0) + dt * 9;
+  }
+  WALK.eye = 1.05 + (n ? Math.sin(WALK.bob) * .02 : 0);
+}
+function walkGroundPoint(mx, my) {
+  const rx = (mx - W / 2) / WALK.F, ry = -(my - H / 2) / WALK.F, cp = Math.cos(WALK.pitch), sp = Math.sin(WALK.pitch);
+  const fwd = cp - ry * sp, up = ry * cp + sp;
+  if (up >= -.01) return null;
+  const t = -WALK.eye / up, f = fwd * t, r = rx * t;
+  if (Math.hypot(f, r) > 14) return null;
+  return [WALK.x + f * Math.cos(WALK.yaw) - r * Math.sin(WALK.yaw), WALK.y + f * Math.sin(WALK.yaw) + r * Math.cos(WALK.yaw)];
+}
+function drawWalkSky() {
+  const hz = H / 2 + Math.tan(WALK.pitch) * WALK.F, n = night;
+  const g = ctx.createLinearGradient(0, 0, 0, hz);
+  g.addColorStop(0, n > .5 ? '#0a1430' : '#8ec5f0'); g.addColorStop(1, n > .5 ? '#1c2b4a' : '#e6f2fb');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, Math.max(0, hz));
+  ctx.fillStyle = n > .5 ? '#1b2418' : '#a9c48f'; ctx.fillRect(0, hz, W, H - hz);
+}
+function drawWalkHUD() {
+  // device markers close to you
+  const near = DEVICES.filter(d => d.x !== undefined && Math.hypot(d.x - WALK.x, d.y - WALK.y) < 16 && walkDepth(d.x, d.y) > -1e8);
+  if (showDev) drawDevMarkers(near); else devHits = [];
+  pins = []; cloudHits = []; carHits = [];
+  if (WALK.target) { const p = P(WALK.target[0], WALK.target[1], .02); if (!p.b) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(p[0], p[1], 22, 8, 0, 0, 7); ctx.stroke(); } }
+  // compass + location
+  const z = zoneAt(WALK.x, WALK.y), T = TOPICS[z], deg = ((WALK.yaw * 180 / Math.PI) % 360 + 360) % 360;
+  const dir = ['East', 'South-east', 'South', 'South-west', 'West', 'North-west', 'North', 'North-east'][Math.round(deg / 45) % 8];
+  pill(W / 2, 168, `📍 ${T ? T.title : 'Street'} · facing ${dir}`, 'rgba(15,23,36,.85)', '#fff', 13);
+  // mini-map
+  const S2 = 230 / (LAND_X - LAND_X0), ox = 16, oy = H - 210, MW = (LAND_X - LAND_X0) * S2, MH = LAND_Y * S2, X = v => ox + (v - LAND_X0) * S2;
+  ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.beginPath(); ctx.roundRect(ox - 6, oy - 6, MW + 12, MH + 12, 12); ctx.fill();
+  ctx.fillStyle = '#9aa3ab'; ctx.fillRect(X(0), oy, WORLD * S2, WORLD * S2); ctx.fillRect(X(HWY.x0), oy + HWY.y0 * S2, (HWY.x1 - HWY.x0) * S2, (HWY.y1 - HWY.y0) * S2); ctx.fillRect(X(SAT.x0), oy + SAT.y0 * S2, (SAT.x1 - SAT.x0) * S2, (SAT.y1 - SAT.y0) * S2);
+  blocks.forEach(b => { ctx.fillStyle = TOPICS[b.zone] ? hexA(TOPICS[b.zone].color, .55) : '#ccc'; ctx.fillRect(X(b.x0), oy + b.y0 * S2, (b.x1 - b.x0) * S2, (b.y1 - b.y0) * S2); });
+  const mx = X(WALK.x), my = oy + WALK.y * S2;
+  ctx.fillStyle = 'rgba(30,136,229,.3)'; ctx.beginPath(); ctx.moveTo(mx, my); ctx.arc(mx, my, 26, WALK.yaw - .6, WALK.yaw + .6); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#1e88e5'; ctx.beginPath(); ctx.arc(mx, my, 5, 0, 7); ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+  WALK.mini = { ox, oy, s: S2, w: MW, h: MH };
+}
+const walkHud = document.createElement('div');
+walkHud.id = 'walkHud'; walkHud.hidden = true;
+walkHud.innerHTML = `<div class="wh-top"><b>🧍 Walk mode</b><span>Drag to look around · click the ground to walk · W A S D / arrow keys · Shift to run · click a building to go inside</span><button id="walkExit">✕ Exit walk</button></div>
+  <div class="wh-pad"><button data-k="fwd">▲</button><button data-k="left">⟲</button><button data-k="back">▼</button><button data-k="right">⟳</button></div>`;
+document.body.appendChild(walkHud);
+function startWalk(x = 45.5, y = 1.2, yaw = Math.PI / 2) {   // sidewalk between the car park and the township shophouses
+  stopTour(); if (SC) stopScenario(true); if (scene === 'inside') leaveNow();
+  closePanel();
+  Object.assign(WALK, { on: true, x, y, yaw, pitch: -.05, target: null, keys: {} });
+  walkHud.hidden = false; document.body.classList.add('walking');
+  narrate('Walk mode. Drag to look around, click on the ground to walk there, or use the arrow keys. Click any building to go inside.', false);
+}
+function exitWalk() { WALK.on = false; walkHud.hidden = true; document.body.classList.remove('walking'); cam.tx = CX; cam.ty = CX; cam.tz = 1; }
+document.getElementById('walkExit').onclick = exitWalk;
+walkHud.querySelectorAll('[data-k]').forEach(b => {
+  const k = b.dataset.k, set = v => e => { e.preventDefault(); WALK.keys[k] = v; };
+  b.addEventListener('pointerdown', set(true)); b.addEventListener('pointerup', set(false)); b.addEventListener('pointerleave', set(false));
+});
+const WALK_KEYS = { KeyW: 'fwd', ArrowUp: 'fwd', KeyS: 'back', ArrowDown: 'back', KeyA: 'sl', KeyD: 'sr', ArrowLeft: 'left', ArrowRight: 'right', KeyQ: 'left', KeyE: 'right', ShiftLeft: 'shift', ShiftRight: 'shift' };
+for (const type of ['keydown', 'keyup']) addEventListener(type, e => {
+  if (!WALK.on || e.target.closest && e.target.closest('input, textarea, dialog')) return;
+  if (e.key === 'Escape' && type === 'keydown') { exitWalk(); e.stopImmediatePropagation(); return; }
+  const k = WALK_KEYS[e.code]; if (!k) return;
+  WALK.keys[k] = type === 'keydown'; e.preventDefault(); e.stopImmediatePropagation();
+}, true);
+function walkClick(mx, my) {
+  if (WALK.mini && mx > WALK.mini.ox && mx < WALK.mini.ox + WALK.mini.w && my > WALK.mini.oy && my < WALK.mini.oy + WALK.mini.h) {   // click the mini-map to jump there
+    const x = (mx - WALK.mini.ox) / WALK.mini.s + LAND_X0, y = (my - WALK.mini.oy) / WALK.mini.s;
+    if (!walkBlocked(x, y)) { WALK.x = x; WALK.y = y; WALK.target = null; } return;
+  }
+  for (let i = devHits.length - 1; i >= 0; i--) if (Math.hypot(mx - devHits[i].x, my - devHits[i].y) < devHits[i].r) { showDevice(devHits[i].id); return; }
+  for (let i = hits.length - 1; i >= groundHits; i--) if (ctx.isPointInPath(hits[i].path, mx * DPR, my * DPR)) {
+    const z = hits[i].zone; if (z === 'mobility') break;
+    if (SCENES[z]) { exitWalk(); enterInside(z); } else show(z);
+    return;
+  }
+  const g = walkGroundPoint(mx, my); if (g && !walkBlocked(g[0], g[1])) WALK.target = g;
+}
+let groundHits = 0;
+// a walk button next to the map controls, and a card in the scenarios menu
+{ const mt = document.querySelector('.map-tools'); const b = document.createElement('button'); b.id = 'bWalk'; b.title = 'Walk around at street level'; b.setAttribute('aria-label', 'Walk around at street level'); b.textContent = '🧍';
+  b.onclick = () => WALK.on ? exitWalk() : startWalk(); (mt || document.body).appendChild(b); if (!mt) b.classList.add('walk-float'); }
+document.getElementById('panel').addEventListener('click', e => { if (e.target.closest('[data-walk]')) startWalk(); });
+
+/* ================================================================
+   HIGHWAY + SMALL TOWN, rooms for every building, easier navigation
+   ================================================================ */
+const HWY = { x0: -22.6, x1: 0, y0: 27.6, y1: 33.4 };       // highway corridor west of the city, beside the farm            // highway corridor east of the city
+const SAT = { x0: -47.4, x1: -22.6, y0: 14.6, y1: 38.4 };   // the small town            // the small town
+const LAND_X0 = -70.2, LAND_X = WORLD, LAND_Y = WORLD;
+const onLand = (x, y) => (x > .3 && y > .3 && x < WORLD - .3 && y < WORLD - .3) || (x > -69.8 && x < -47.6 && y > 17.8 && y < 43.2) || (x > -22.4 && x < -.2 && y > 14.8 && y < 43.2 && (x < -13 || x > -9 || (y > 27.6 && y < 33.4))) || (x >= HWY.x0 - .5 && x <= HWY.x1 + .5 && y > HWY.y0 + .2 && y < HWY.y1 - .2) || (x > SAT.x0 + .2 && x < SAT.x1 - .2 && y > SAT.y0 + .2 && y < SAT.y1 - .2);
+
+Object.assign(TOPICS, {
+  highway: { icon: '🛣️', color: '#455a64', kicker: 'Transport', title: 'Highway to the Small Town',
+    sum: 'A four-lane highway links the city with a small satellite town. An IRIV EdgeAI CM5 on the gantry reads plates and speeds, a road weather station watches the conditions, and an IO Controller MQTT drives the message sign.',
+    how: ['EdgeAI CM5 on the gantry: plates, speed, vehicle counts, incidents.', 'WTS506 road weather: rain and wind warnings.', 'IO Controller MQTT drives the message sign over RS485.'], ben: ['Safer roads', 'Live travel times'],
+    m: [['Vehicles / hour', () => fint(wob(2400, 200, .1))], ['Avg. speed', () => Math.round(wob(96, 4, .2)) + ' km/h'], ['Travel time', () => '9 min'], ['Sign', () => HW.msg]],
+    chain: [['📷', 'Gantry cameras', 'IP cameras → EdgeAI CM5'], ['🌦️', 'Road weather', 'LoRaWAN'], ['🧠', 'IRIV Edge', 'decides the warning'], ['🔀', 'IO Controller MQTT', 'RS485 → message sign']],
+    say: 'This highway links the city with a small satellite town. An IRIV Edge A I camera on the gantry reads number plates and measures speed, a weather station warns about rain and wind, and an I O Controller shows the warnings on the message sign. Follow the highway east to visit the small town.' },
+  satcentre: { icon: '🏛️', color: '#6d4c41', kicker: 'Small town', title: 'Small Town Centre', sum: 'The town hall and a row of small shops. The town has its own UG65 LoRaWAN gateway, sending everything to the city over 4G.',
+    how: ['UG65 gateway on the town hall roof (4G backhaul).', 'SmartHub CM5 cashiers in the shops.', 'VS133 at the town hall door.'], ben: ['Connected without fibre', 'Same platform as the city'],
+    m: [['Shops open', () => '4 / 4'], ['Visitors', () => Math.round(wob(60, 10, .1))], ['Gateway', () => 'Online · 4G'], ['Sensors', () => '18']],
+    say: 'This is the small town centre, with the town hall and a row of shops. The town has its own LoRaWAN gateway that sends all its data to the city over 4 G.' },
+  sattown: { icon: '🏡', color: '#a1887f', kicker: 'Small town', title: 'Small Town Homes', sum: 'Quiet streets of small family homes.', how: ['CT101 energy monitors.', 'WS101 SOS buttons.'], ben: ['Quiet living'],
+    m: [['Homes', () => '32'], ['Solar', () => (night > .5 ? 0 : wob(14, 1, .3)).toFixed(0) + ' kW'], ['Alerts', () => '0'], ['Gateway', () => 'sat UG65']], say: 'These are the small town\'s homes.' },
+  satschool: { icon: '🏫', color: '#fb8c00', kicker: 'Small town', title: 'Small Town School', sum: 'A primary school with air quality sensors in every classroom.', how: ['AM319 per classroom.'], ben: ['Healthy classrooms'],
+    m: [['Pupils', () => '240'], ['CO₂', () => Math.round(wob(740, 60, .2)) + ' ppm'], ['Rooms OK', () => '7 / 8'], ['Bus', () => 'On time']], say: 'The small town\'s primary school, with fresh-air monitoring in every classroom.' },
+  satwater: { icon: '💧', color: '#0288d1', kicker: 'Small town', title: 'Town Water Tank & Pumps', sum: 'The town\'s water tank and pump house, run by an IRIV IO Controller MQTT over 4G.', how: ['EM500-UDL tank level.', 'IO Controller MQTT for the pumps.'], ben: ['Reliable water'],
+    m: [['Tank', () => Math.round(wob(77, 3, .05)) + '%'], ['Pressure', () => wob(2.9, .1, .3).toFixed(1) + ' bar'], ['Pumps', () => '1 / 2'], ['Link', () => '4G']], say: 'This is the small town\'s water tank and pump house.' },
+  satsolar: { icon: '☀️', color: '#f9a825', kicker: 'Small town', title: 'Town Solar Farm', sum: 'A small solar farm with a battery that powers the town during the day.', how: ['CT105 on the inverter output.'], ben: ['Local clean power'],
+    m: [['Output', () => (night > .5 ? 0 : wob(820, 60, .3)).toFixed(0) + ' kW'], ['Battery', () => Math.round(wob(64, 5, .05)) + '%'], ['Today', () => fint(4200 + time) + ' kWh'], ['Status', () => 'Normal']], say: 'The small town\'s solar farm and battery.' },
+  satpark: { icon: '🌳', color: '#43a047', kicker: 'Small town', title: 'Town Park', sum: 'A park with a pond and a playground.', how: ['Smart lights at dusk.'], ben: ['Green space'],
+    m: [['Visitors', () => Math.round(wob(25, 8, .1))], ['Lights', () => night > .5 ? 'On' : 'Off'], ['Pond', () => 'Normal'], ['Air', () => 'Good']], say: 'The small town\'s park, with a pond and a playground.' }
+});
+ORDER.push('highway', 'satcentre', 'satwater', 'satsolar', 'satschool', 'sattown', 'satpark');
+
+// small-town blocks: 3 × 3, with roads at x 85.5 / 93.5 and y 22.5 / 30.5 (the highway joins at y 30.5)
+const SAT_X = [[78.4, 84.6], [86.4, 92.6], [94.4, 100.6]], SAT_Y = [[15.4, 21.6], [23.4, 29.6], [31.4, 37.6]];
+const SAT_Z = [['sattown', 'satcentre', 'satschool'], ['sattown', 'satwater', 'satsolar'], ['sattown', 'satpark', 'sattown']];   // [column][row]
+const SAT_KIND = { sattown: 'grass', satcentre: 'plaza', satschool: 'grass', satwater: 'grass', satsolar: 'grass', satpark: 'grass' };
+for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) { const zone = SAT_Z[i][j]; blocks.push({ zone, x0: SAT_X[i][0], x1: SAT_X[i][1], y0: SAT_Y[j][0], y1: SAT_Y[j][1], kind: SAT_KIND[zone] }); }
+blocks.filter(b => b.zone.startsWith('sat')).forEach(b => { ZINFO[b.zone] = { x: (b.x0 + b.x1) / 2, y: (b.y0 + b.y1) / 2, z: 3 }; });
+ZINFO.highway = { x: 66, y: 30.5, z: 4.2 }; ZINFO.satcentre.z = 4.2;
+
+// small-town buildings
+blocks.filter(b => b.zone === 'sattown').forEach((b, n) => {
+  for (let r = 0; r < 2; r++) for (let k = 0; k < 4; k++) { const x0 = b.x0 + .5 + k * 1.45, y0 = b.y0 + (r ? 3.7 : .6), [wall, roof] = HOUSE_COL[(k + r + n) % 6];
+    add('house', 'sattown', x0 + .55, y0 + .55, { x0, y0, x1: x0 + 1.1, y1: y0 + 1.1, h: .9, rh: .5, wall, roof, solar: (k + n) % 3 === 0 }); }
+  for (let k = 0; k < 3; k++) tree('sattown', b.x0 + 1.2 + k * 2.0, b.y0 + 2.9, .6);
+});
+add('house', 'satcentre', 80.4, 24.9, { x0: 79.0, y0: 24.0, x1: 81.8, y1: 26.1, h: 1.5, rh: .9, wall: '#fff8e1', roof: '#8d6e63' });
+shopRow('satcentre', 79.0, 27.6, 4, 1.25, 1.2, 1.0);
+[[83.6, 24.4], [83.6, 26.0]].forEach(([x, y]) => tree('satcentre', x, y, .65));
+box('satschool', 79.0, 31.9, 83.8, 33.2, 1.3, '#ffe0b2', { win: 'grid', roof: '#ffcc80' });
+add('tank', 'satwater', 88.5, 26.5, { r: 1.2, h: 1.8 });
+box('satwater', 90.2, 27.4, 91.6, 28.4, 1.0, '#cfd8dc', { win: 'grid', deco: ['cabinet'] });
+for (let r = 0; r < 4; r++) for (let k = 0; k < 2; k++) box('satsolar', 86.9 + k * 2.6, 31.9 + r * 1.2, 89.2 + k * 2.6, 32.6 + r * 1.2, .22, '#c9d0d6', { roof: '#23477f', deco: ['panel'] });
+box('satsolar', 91.9, 36.4, 92.4, 36.9, .8, '#cfd8dc', { deco: ['cabinet'] });
+[[95.5, 24.5], [99.5, 24.5], [95.5, 28.8], [99.6, 28.8], [97.5, 23.9]].forEach(([x, y]) => tree('satpark', x, y, .75));
+add('slide', 'satpark', 99.0, 26.8);
+// highway: gantry with the ANPR camera, message sign, weather station
+add('hgantry', 'highway', 62.0, 30.5, { label: '← Small Town 4 km · Farmland 9 km' });
+add('hgantry', 'highway', 70.0, 30.5, { sign: true });
+add('wstation', 'highway', 66.0, 27.9);
+box('highway', 69.7, 33.0, 70.3, 33.35, .8, '#cfd8dc', { deco: ['cabinet'] });
+for (let x = 56; x < 76; x += 4) { add('lamp', 'highway', x, 27.8); add('lamp', 'highway', x + 2, 33.2); }
+
+// highway traffic
+const HW = { last: null, msg: 'Small Town 9 min', reads: 0, tRead: 0 };
+const HWCARS = [];
+[[29.15, 1], [29.85, 1], [31.15, -1], [31.85, -1]].forEach(([y, dir], l) => { for (let k = 0; k < 4; k++) HWCARS.push({ y, dir, x: HWY.x0 + 1 + k * 5.5 + l * 1.3, v: 3 + Math.random() * .8, col: CARCOL[(k * 3 + l) % CARCOL.length] }); });
+function updateHighway(dt) {
+  HWCARS.forEach(c => { c.x += c.v * c.dir * dt; if (c.dir > 0 && c.x > HWY.x1 + .5) c.x = HWY.x0 - 1; if (c.dir < 0 && c.x < HWY.x0 - 1) c.x = HWY.x1 + .5; });
+  HW.tRead -= dt;
+  if (HW.tRead < 0) { HW.tRead = 2.5 + Math.random() * 2; HW.last = `${newPlate()} · ${Math.round(88 + Math.random() * 24)} km/h`; HW.reads++; HW.readT = time; }
+  HW.msg = night > .5 ? 'Drive safely · lights on' : 'Small Town 9 min';
+}
+function drawHGantry(o, path) {
+  for (const y of [HWY.y0 + .25, HWY.y1 - .25]) { drawBox({ x0: o.cx - .08, y0: y - .08, x1: o.cx + .08, y1: y + .08, h: 2.6, color: '#90a4ae' }, path); }
+  drawBox({ x0: o.cx - .1, y0: HWY.y0 + .2, x1: o.cx + .1, y1: HWY.y1 - .2, z0: 2.55, h: .15, color: '#78909c' }, path);
+  if (o.sign) { drawBox({ x0: o.cx - .05, y0: 29.0, x1: o.cx + .05, y1: 32.0, z0: 1.85, h: .7, color: '#111' }); const p = P(o.cx + .06, 30.5, 2.2); if (!p.b) pill(p[0], p[1], HW.msg, '#111', '#ffb300', Math.max(8, Math.min(14, sc * .25))); }
+  else { drawBox({ x0: o.cx - .05, y0: 30.6, x1: o.cx + .05, y1: 32.6, z0: 1.9, h: .6, color: '#2e7d32' }); const p = P(o.cx + .06, 31.6, 2.2); if (!p.b && sc > 10) pill(p[0], p[1], o.label, '#2e7d32', '#fff', Math.max(7, Math.min(12, sc * .2)));
+    for (const y of [29.5, 31.5]) { drawBox({ x0: o.cx - .12, y0: y - .1, x1: o.cx + .12, y1: y + .1, z0: 2.35, h: .18, color: '#263238' }); } }
+}
+function worldSlabs() {   // highway and small-town ground, drawn right after the city slab
+  const hp = new Path2D(); drawBox({ x0: HWY.x0 - .05, y0: HWY.y0, x1: HWY.x1, y1: HWY.y1, z0: -.7, h: .7, color: '#dfe5ea', roof: '#7f8891' }, hp); hits.push({ path: hp, zone: 'highway' });
+  const sp = new Path2D(); drawBox({ x0: SAT.x0, y0: SAT.y0, x1: SAT.x1, y1: SAT.y1, z0: -.7, h: .7, color: '#dfe5ea', roof: '#7f8891' }, sp); hits.push({ path: sp, zone: 'highway' });
+  bridgeSlabs();
+  BELTS.forEach(b => drawBox({ x0: b.x0, y0: b.y0, x1: b.x1, y1: b.y1, z0: -.7, h: .7, color: '#dfe5ea', roof: '#7f8891' }));
+}
+function worldGround5() {
+  poly(quad(HWY.x0, HWY.y0, HWY.x1, HWY.y0 + 1.0, .004), col('#93c25f')); poly(quad(HWY.x0, HWY.y1 - 1.0, HWY.x1, HWY.y1, .004), col('#93c25f'));
+  poly(quad(HWY.x0, 30.4, HWY.x1, 30.6, .01), col('#cfd8dc'));
+  for (const y of [28.6, 32.4]) line(P(HWY.x0, y, .3), P(HWY.x1, y, .3), col('#b0bec5'), 2);
+  for (let x = HWY.x0 + .3; x < HWY.x1; x += 1.2) for (const y of [29.5, 31.5]) poly(quad(x, y - .03, x + .6, y + .03, .006), 'rgba(255,255,255,.8)');
+  for (let t = SAT.x0 + .3; t < SAT.x1; t += .8) for (const c of [22.5, 30.5]) if (Math.abs(t + 38.5) > 1 && Math.abs(t + 30.5) > 1) poly(quad(t, c - .035, t + .4, c + .035, .004), 'rgba(255,255,255,.75)');
+  for (let t = SAT.y0 + .3; t < SAT.y1; t += .8) for (const c of [-38.5, -30.5]) if (Math.abs(t - 22.5) > 1 && Math.abs(t - 30.5) > 1) poly(quad(c - .035, t, c + .035, t + .4, .004), 'rgba(255,255,255,.75)');
+  poly(circ(-26.5, 27.0, .09, 1.0, 24), col('#5fa8d8'), col('#3d8ac0'));
+  // small-town blocks are in the shared blocks list, so drawGround already drew them
+}
+function drawHWOverlay() {
+  if (HW.readT && time - HW.readT < 1.6) { const p = P(-14.6, 30.5, 3.1); if (!p.b) pill(p[0], p[1], '📷 ' + HW.last, '#3949ab', '#fff', 11); }
+  const s = P(SAT.x1 - 1.2, 30.5, 1.6), f = P(-58.7, 18.0, 1.3); if (!s.b && scene === 'city' && !WALK.on) { pill(s[0], s[1], '🏘️ Small Town', '#6d4c41', '#fff', 12); pill(f[0], f[1], '🌾 Farmland', '#9e9d24', '#fff', 12); }
+}
+
+/* ---------- a room for every building ---------- */
+function autoDevs(zone, max = 5) {
+  let s = 0, k = 0;
+  return DEVICES.filter(d => d.zone === zone).slice(0, max).map(d => {
+    const base = { id: d.id, qty: d.qty, where: d.loc, why: d.why, can: CAN[d.id] || [], say: d.say };
+    if (['controller', 'edge', 'ai', 'gateway'].includes(d.cat)) { const x = 12.0 + (k++ % 3) * .62; return Object.assign(base, { x, y: .88, z: 1.3, b: irivBox(x, 1.15, .5, '#212121', d.cat === 'ai' ? '#18ffff' : d.cat === 'gateway' ? '#b388ff' : '#ff8f00') }); }
+    return Object.assign(base, { x: 2.2 + (s++) * 1.7, y: .03, z: 1.6, mount: 'B' });
+  });
+}
+const LAYOUTS = {
+  office: { name: 'Office', floor: '#d9dee3', tile: '#c9d0d6', build(O) { [[3.2, 4.3], [5.6, 4.3], [8.0, 4.3], [3.2, 7.0], [5.6, 7.0], [8.0, 7.0]].forEach(([x, y], i) => workstation(O, x, y, i % 4 ? i : null, 2)); }, decor() { screenTile(wallB(3.6, 9.6, 2.2, 3.3), 'line', 3); } },
+  classroom: { name: 'Classroom', floor: '#e6d7bf', tile: '#d8c7aa', build(O) {
+      for (let r = 0; r < 3; r++) for (let k = 0; k < 4; k++) { const x = 3.2 + k * 2.1, y = 4.4 + r * 1.7; Bx(O, { x0: x - .4, y0: y - .25, x1: x + .4, y1: y + .25, h: .55, color: '#bcaaa4', roof: '#d7ccc8' }); chair(O, x, y + .6, '#1e88e5', r * 4 + k); }
+      person(O, 6.3, 2.4, false, 7); },
+    decor() { poly(wallB(3.6, 9.6, 1.2, 2.7), '#fafafa', col('#90a4ae'), null, 2); for (let i = 0; i < 4; i++) line(P(4.0, .01, 2.4 - i * .3), P(7.5 - i * .6, .01, 2.4 - i * .3), '#1e88e5', 2); } },
+  hall: { name: 'Hall', floor: '#d7b98e', tile: '#c9a97c', build(O) {
+      Bx(O, { x0: 2.0, y0: .3, x1: 11.5, y1: 2.0, h: .45, color: '#6d4c41', roof: '#8d6e63' });
+      for (let r = 0; r < 4; r++) for (let k = 0; k < 9; k++) { const x = 2.6 + k * 1.0, y = 4.0 + r * 1.2; chair(O, x, y, '#c62828', hsh(x * 3 + y) > .4 ? k + r : null); } },
+    decor() { screenTile(wallB(4.5, 9.0, 1.4, 3.0), 'slides'); } },
+  mall: { name: 'Mall atrium', floor: '#ece9e4', tile: '#dcd8d1', build(O) {
+      for (let k = 0; k < 5; k++) Bx(O, { x0: 1.2 + k * 2.4, y0: .15, x1: 3.3 + k * 2.4, y1: 1.4, h: 2.4, color: SHOP_COL[k][0], stripe: SHOP_COL[k][1], win: 'grid', id: 970 + k });
+      Bx(O, { x0: 6.0, y0: 4.6, x1: 7.0, y1: 8.0, h: .6, color: '#b0bec5', roof: '#cfd8dc' });
+      [[3.5, 6.5], [10.5, 6.5]].forEach(([x, y]) => { Bx(O, { x0: x - .8, y0: y - .2, x1: x + .8, y1: y + .2, h: .45, color: '#8d6e63' }); plant(O, x, y + 1.0); }); },
+    routes: [[[2.0, 3.0, 2], [12.5, 3.0, 3]], [[12.5, 8.6, 2], [2.0, 8.6, 3]], [[-1.2, 9, 4], [1.5, 9, 0], [9.0, 5.0, 3], [1.5, 9.1, 0], [-1.2, 9.1, 5]]] },
+  station: { name: 'Station concourse', floor: '#dfe3e6', tile: '#cfd5da', build(O) {
+      for (let k = 0; k < 6; k++) Bx(O, { x0: 3.0 + k * 1.3, y0: 5.0, x1: 3.3 + k * 1.3, y1: 5.6, h: .9, color: '#90a4ae', stripe: '#00897b' });
+      for (const x of [3.0, 7.0, 11.0]) Bx(O, { x0: x - .9, y0: 7.8, x1: x + .9, y1: 8.2, h: .45, color: '#546e7a' }); },
+    decor() { const q = wallB(3.0, 10.0, 1.8, 3.2); poly(q, '#0f1724', '#37474f', null, 2);
+      ['08:15  Main City        On time', '08:24  Small Town      On time', '08:31  Airport Link    +2 min'].forEach((t, i) => { const p = fp(q, .5, .8 - i * .28); ctx.fillStyle = '#ffd54f'; ctx.font = `700 ${Math.max(8, sc * .15)}px ui-monospace,Consolas,monospace`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(t, p[0], p[1]); }); },
+    routes: [[[-1.2, 9, 3], [1.5, 9, 0], [4.3, 6.4, 0], [4.3, 3.0, 4], [1.5, 9.1, 0], [-1.2, 9.1, 5]], [[-1.2, 8.7, 7], [1.5, 8.7, 0], [8.2, 6.4, 0], [8.2, 3.0, 3], [1.5, 8.7, 0], [-1.2, 8.7, 4]], [[12.5, 3.0, 2], [2.5, 3.0, 2]]] },
+  depot: { name: 'Workshop', floor: '#cfd5da', tile: '#bcc4ca', build(O) {
+      Bx(O, { x0: 2.0, y0: 3.4, x1: 9.5, y1: 4.6, h: 1.4, color: '#14a3a3', roof: '#26a69a', win: 'bands', id: 980 });
+      for (const x of [3.0, 6.0, 9.0]) Bx(O, { x0: x - .15, y0: 2.6, x1: x + .15, y1: 2.9, h: 1.0, color: '#eceff1', stripe: '#43a047' });
+      Bx(O, { x0: 10.4, y0: .2, x1: 11.4, y1: .8, h: 1.8, color: '#e53935' }); person(O, 6.0, 6.0, false, 5); } },
+  pumphouse: { name: 'Pump house', floor: '#d9dfe3', tile: '#c8cfd4', build(O) { [3.0, 5.6, 8.2].forEach((x, i) => plinth(O, x, 4.0, i ? '#9eacb6' : '#78909c')); },
+    overlay() { ctx.setLineDash([12, 6]); ctx.lineDashOffset = -time * 30; pline([P(1.5, 4.0, .55), P(10.2, 4.0, .55), P(10.2, 4.0, 2.8)], '#0277bd', Math.max(6, sc * .2)); ctx.setLineDash([]); } },
+  barn: { name: 'Barn', floor: '#bcaaa4', tile: '#a1887f', build(O) {
+      for (let k = 0; k < 6; k++) fnObj(O, 3.0 + k * 1.6, 5.0, () => { const x = 3.0 + k * 1.6, y = 5.6 + Math.sin(time * .3 + k) * .15;   // full-size cows for the room scale
+        drawBox({ x0: x - .55, x1: x + .55, y0: y - .28, y1: y + .28, z0: .45, h: .5, color: '#fafafa', stripe: '#263238' });
+        for (const [dx, dy] of [[-.4, -.18], [.4, -.18], [-.4, .18], [.4, .18]]) drawBox({ x0: x + dx - .06, x1: x + dx + .06, y0: y + dy - .06, y1: y + dy + .06, h: .45, color: '#eceff1' });
+        drawBox({ x0: x - .85, x1: x - .55, y0: y - .15, y1: y + .15, z0: .7, h: .3, color: '#fafafa' }); });
+      for (let k = 0; k < 7; k++) fnObj(O, 2.2 + k * 1.6, 4.2, () => line(P(2.2 + k * 1.6, 4.2, 0), P(2.2 + k * 1.6, 4.2, .8), col('#6d4c41'), 2));
+      [[11.5, 8.5], [12.6, 8.5], [12.0, 7.6]].forEach(([x, y]) => Bx(O, { x0: x - .4, y0: y - .3, x1: x + .4, y1: y + .3, h: .55, color: '#fdd835', roof: '#fbc02d' })); },
+    decor() { for (const x of [4, 10]) { const c = P(x, .01, 2.4), r = sc * .45; ctx.fillStyle = col('#90a4ae'); ctx.beginPath(); ctx.arc(c[0], c[1], r, 0, 7); ctx.fill(); ctx.strokeStyle = col('#37474f'); ctx.lineWidth = 3; for (let k = 0; k < 3; k++) { const a = time * 6 + k * 2.09; ctx.beginPath(); ctx.moveTo(c[0], c[1]); ctx.lineTo(c[0] + Math.cos(a) * r * .9, c[1] + Math.sin(a) * r * .9); ctx.stroke(); } } } },
+  clinic: { name: 'Clinic', floor: '#e3eef0', tile: '#d2e0e3', build(O) {
+      Bx(O, { x0: 2.4, y0: 6.6, x1: 5.0, y1: 7.3, h: 1.0, color: '#90a4ae', roof: '#eceff1' }); person(O, 3.7, 6.1, false, 6);
+      for (let k = 0; k < 5; k++) chair(O, 7.0 + k * .9, 7.0, '#26a69a', k % 2 ? k : null);
+      bed(O, 9.8, 2.0, 2); Bx(O, { x0: 12.6, y0: .2, x1: 13.6, y1: 1.0, h: 1.7, color: '#f5f7f8' }); } },
+  kiosk: { name: 'Control office', floor: '#d9dee3', tile: '#c9d0d6', build(O) { workstation(O, 5.0, 4.5, 1, 3); workstation(O, 8.0, 4.5, null, 2); Bx(O, { x0: 2.0, y0: 7.0, x1: 4.0, y1: 7.6, h: .45, color: '#546e7a' }); },
+    decor() { screenTile(wallB(3.4, 6.4, 1.8, 3.1), 'cam', 2); screenTile(wallB(6.6, 9.6, 1.8, 3.1), 'map', 5); } }
+};
+const ROOM_FOR = { barn: 'barn', water: 'pumphouse', reservoir: 'pumphouse', wwtp: 'pumphouse', satwater: 'pumphouse', mall: 'mall', school: 'classroom', satschool: 'classroom', hub: 'station', busdepot: 'depot',
+  hall: 'hall', sportspark: 'hall', clinic: 'clinic', satcentre: 'office', highway: 'kiosk', parkride: 'kiosk', farm: 'kiosk', green: 'kiosk', forest: 'kiosk', playground: 'kiosk', satsolar: 'kiosk', satpark: 'kiosk', foodcourt: 'kiosk' };
+const SAT_GW_BADGE = { id: 'sat-gw', x: -1.8, y: 1.2, z: 3.4, label: 'UG65 · small-town hall roof' };
+function makeRoom(zone, layout) {
+  const T = TOPICS[zone], L = LAYOUTS[layout], devs = autoDevs(zone), names = devs.map(p => DEV[p.id].model).join(', ');
+  return {
+    title: `${T.title} · ${L.name}`, short: T.title, kicker: 'Inside · ' + T.title, icon: T.icon, color: T.color,
+    floor: L.floor, tile: L.tile, wallA: '#eef1f3', wallB: '#f3f5f6', winA: [[1, 3], [4.6, 6.6]], winZ: [1.3, 3.0], sign: T.title.toUpperCase().slice(0, 18),
+    sum: `${T.sum}${names ? ` Installed in this room: ${names}. Click any of them to see what it does.` : ''}`,
+    say: `Welcome inside ${T.title}. ${T.say.split('. ').slice(0, 2).join('. ')}.${names ? ' Click any device in the room to see what it does.' : ''}`,
+    can: T.how, m: T.m, build: L.build, decor: L.decor, overlay: L.overlay, floorDecor: L.floorDecor,
+    routes: L.routes || [[[-1.2, 9, 5], [1.5, 9, 0], [7.0, 7.6, 3], [1.5, 9.1, 0], [-1.2, 9.1, 7]]],
+    devs, gw: zone.startsWith('sat') ? SAT_GW_BADGE : undefined
+  };
+}
+Object.entries(ROOM_FOR).forEach(([z, l]) => { if (!SCENES[z] && TOPICS[z]) SCENES[z] = makeRoom(z, l); });
+SCENES.shops = makeShop('pos-shop', 'High Street Shop', 'High Street Shop', 2);
+SCENES.market = makeShop('pos-shop', 'Market Shop', 'Market Shop', 2);
+SCENES.petrol = makeShop('pos-shop', 'Petrol Station Shop', 'Petrol Station Shop', 2);
+SCENES.petrol.devs.push({ id: 'petrol-ws', x: 2.4, y: 6.82, z: .6, b: { x0: 2.3, y0: 6.8, x1: 2.5, y1: 6.86, z0: .5, h: .15 }, qty: 2, where: 'Under the shop counter', why: DEV['petrol-ws'].why, can: CAN['petrol-ws'] || ['Silent alarm for the night shift'], say: DEV['petrol-ws'].say });
+['suburb', 'townhouses', 'township', 'sattown'].forEach(z => { SCENES[z] = SCENES.homes; });
+
+/* ---------- navigation: drag to pan, zoom toward the mouse, full screen ---------- */
+function panBy(dxs, dys) {
+  const a = dxs / sc, b = dys / (sc * TILT), wx = a * C + b * S, wy = -a * S + b * C;
+  cam.x -= wx; cam.y -= wy; cam.tx = cam.x; cam.ty = cam.y; clampCam();
+  rotPauseUntil = performance.now() + 6000;
+}
+function clampCam() { cam.tx = Math.max(LAND_X0 - 4, Math.min(LAND_X + 4, cam.tx)); cam.ty = Math.max(-4, Math.min(LAND_Y + 4, cam.ty)); cam.x = Math.max(LAND_X0 - 6, Math.min(LAND_X + 6, cam.x)); cam.y = Math.max(-6, Math.min(LAND_Y + 6, cam.y)); }
+function zoomAt(mx, my, f) {
+  const z2 = Math.max(.35, Math.min(5, cam.tz * f)), a = (mx - W / 2 - cam.offX) / sc, b = (my - H / 2 - cam.offY) / (sc * TILT);
+  const wx = cam.x + a * C + b * S, wy = cam.y - a * S + b * C, r = cam.zoom / z2;
+  cam.x = cam.tx = wx + (cam.x - wx) * r; cam.y = cam.ty = wy + (cam.y - wy) * r; cam.zoom = cam.tz = z2; clampCam();
+  rotPauseUntil = performance.now() + 6000;
+}
+cv.addEventListener('contextmenu', e => e.preventDefault());
+function toggleFullscreen() {
+  if (!document.fullscreenElement) (document.documentElement.requestFullscreen ? document.documentElement.requestFullscreen() : Promise.reject()).catch(() => document.body.classList.toggle('fs'));
+  else document.exitFullscreen();
+}
+document.addEventListener('fullscreenchange', () => document.body.classList.toggle('fs', !!document.fullscreenElement));
+{ const mt = document.querySelector('.map-tools'), b = document.createElement('button');
+  b.id = 'bFull'; b.title = 'Full screen (F)'; b.setAttribute('aria-label', 'Full screen'); b.textContent = '⛶'; b.onclick = toggleFullscreen;
+  (mt || document.body).appendChild(b); if (!mt) b.classList.add('walk-float'); }
+addEventListener('keydown', e => { if ((e.key === 'f' || e.key === 'F') && !WALK.on && !(e.target.closest && e.target.closest('input, textarea, dialog'))) toggleFullscreen(); });
+
+/* ================================================================
+   SHOPFRONTS, small-town shops, farm life, rotation and mini-world look
+   ================================================================ */
+// every shop building gets a door, a striped awning and a signboard, and can be entered
+DECO.shopfront = (o, z) => {
+  const ya = o.y1, xm = (o.x0 + o.x1) / 2, face = [P(o.x1, ya, 0), P(o.x0, ya, 0), P(o.x0, ya, z), P(o.x1, ya, z)];
+  if (area(face) > 0) {   // only when the shop's front faces the camera
+    poly([P(xm + .16, ya + .01, 0), P(xm - .16, ya + .01, 0), P(xm - .16, ya + .01, Math.min(.6, z * .5)), P(xm + .16, ya + .01, Math.min(.6, z * .5))], night > .5 ? '#ffe082' : col('#37474f'));
+    poly([P(o.x1 - .05, ya + .01, z * .93), P(o.x0 + .05, ya + .01, z * .93), P(o.x0 + .05, ya + .01, z * .78), P(o.x1 - .05, ya + .01, z * .78)], col(o.stripe));
+  }
+  const za = Math.min(.75, z * .62), zb = za - .14, n = Math.max(3, Math.round((o.x1 - o.x0) / .18));
+  for (let k = 0; k < n; k++) {
+    const x0 = o.x0 + (o.x1 - o.x0) * k / n, x1 = o.x0 + (o.x1 - o.x0) * (k + 1) / n;
+    poly([P(x0, ya, za), P(x1, ya, za), P(x1, ya + .3, zb), P(x0, ya + .3, zb)], k % 2 ? '#ffffff' : col(o.stripe));
+  }
+};
+objs.forEach(o => { if (o.t === 'box' && o.stripe && o.win === 'grid' && SHOP_COL.some(c => c[1] === o.stripe) && ['shops', 'market', 'satcentre', 'shoplots'].includes(o.zone)) { o.deco = (o.deco || []).concat('shopfront'); if (o.zone === 'satcentre') o.room = 'satshop'; } });
+TOPICS.satshop = { icon: '🏪', color: '#ff7043', kicker: 'Small town', title: 'Small Town Shops',
+  sum: 'The small town\'s row of shops: a grocer, a pharmacy, a hardware shop and a café. Each cashier runs on an IRIV SmartHub CM5, synced to the city over 4G.',
+  how: ['SmartHub CM5 cashier with a USB barcode scanner.', 'Stock and sales sync over 4G.', 'Same system as the city shops.'], ben: ['Modern checkout in a small town'],
+  m: TOPICS.shoplots.m, say: 'These are the small town\'s shops. Each one has a SmartHub cashier with a barcode scanner, synced to the city over 4 G. Click a shop to go inside.' };
+ZINFO.satshop = { x: 81.5, y: 28.2, z: 2.0 };
+ORDER.push('satshop');
+SCENES.satshop = makeShop('sat-pos', 'Town Grocer', 'Town Shop', 2);
+
+/* ---------- farm: tractor, farmers, and a packing shed to walk into ---------- */
+add('tractor', 'farm', 3.5, 29.0);
+[[1.6, 25.2], [2.6, 27.6], [4.8, 26.4]].forEach(([x, y], i) => add('farmer', 'farm', x, y, { i }));
+const tractorPos = () => { const u = (time * .05) % 2, f = u < 1 ? u : 2 - u; return { x: 1.0 + f * 4.9, dir: u < 1 ? 1 : -1 }; };
+function drawTractor(o) {
+  const t = o.park ? { x: o.park, dir: 1 } : tractorPos(), x = t.x, y = o.cy;
+  if (!o.park) for (let k = 0; k < 6; k++) { const px = x - t.dir * (.6 + k * .25); if (px > .6 && px < 6.4) { const p = P(px, y, .05); ctx.fillStyle = `rgba(141,110,99,${.35 - k * .05})`; ctx.beginPath(); ctx.ellipse(p[0], p[1], sc * .18, sc * .06, 0, 0, 7); ctx.fill(); } }
+  drawBox({ x0: x - .35, x1: x + .35, y0: y - .2, y1: y + .2, z0: .18, h: .25, color: '#2e7d32' });
+  drawBox({ x0: x - (t.dir > 0 ? .3 : -.05), x1: x + (t.dir > 0 ? .05 : .3), y0: y - .17, y1: y + .17, z0: .43, h: .32, color: '#e8f5e9', roof: '#2e7d32' });
+  for (const dx of [-.22, .22]) for (const dy of [-.22, .22]) drawBox({ x0: x + dx - (dx * t.dir < 0 ? .12 : .08), x1: x + dx + (dx * t.dir < 0 ? .12 : .08), y0: y + dy - .04, y1: y + dy + .04, h: dx * t.dir < 0 ? .3 : .2, color: '#212121' });
+  drawBox({ x0: x - t.dir * .55 - .08, x1: x - t.dir * .55 + .08, y0: y - .3, y1: y + .3, z0: .05, h: .1, color: '#757575' });
+}
+function drawFarmer(o) {
+  const bend = Math.max(0, Math.sin(time * 1.5 + o.i * 2));
+  drawPed({ x: o.cx, y: o.cy, ox: 0, oy: 0, moving: false, col: ['#795548', '#1565c0', '#558b2f'][o.i], skin: SKINS[o.i + 1] });
+  const h = P(o.cx, o.cy, .5 - bend * .06); ctx.fillStyle = col('#f9a825'); ctx.beginPath(); ctx.ellipse(h[0], h[1] - sc * .05, sc * .13, sc * .05, 0, 0, 7); ctx.fill();
+  drawBox({ x0: o.cx + .12, x1: o.cx + .3, y0: o.cy - .08, y1: o.cy + .08, h: .14, color: '#a1887f' });
+}
+// packing shed SmartHub: weighs each crate and prints a traceability label
+DEVICES.push(fdev({ id: 'farm-hub', cat: 'edge', brand: 'IRIV', model: 'IRIV SmartHub CM5', name: 'Harvest Weighing & Labels', icon: '🧾', zone: 'farm', qty: 1,
+  conn: 'USB weighing scale and label printer · Wi-Fi / 4G to IRIV Edge', power: 'Compact DC adapter (low power)', path: ['Scale', 'USB', 'SmartHub CM5', 'Label + MQTT', 'IRIV Edge'],
+  loc: 'Packing shed, weighing station', short: 'Farm packing shed',
+  what: 'An IRIV SmartHub CM5 at the packing table weighs every harvest crate on a USB scale, prints a label with crop, field and date, and logs it for traceability and sales.',
+  why: 'At the weighing station, where every crate passes before it goes on the truck.',
+  m: [['Crates today', () => FARMSHED.crates], ['Harvest today', () => FARMSHED.kg.toFixed(0) + ' kg'], ['Last crate', () => FARMSHED.last || '—'], ['Truck load', () => Math.min(100, Math.round(FARMSHED.crates % 40 * 2.5)) + '%']],
+  say: 'This IRIV SmartHub C M 5 weighs every crate of vegetables on a U S B scale, prints a label with the crop, the field and the date, and logs it, so every crate can be traced back to its field.' }));
+DEV['farm-hub'] = DEVICES[DEVICES.length - 1];
+DEV['farm-hub'].io = { USB1: io('Weighing scale', () => FARMSHED.last ? FARMSHED.last.split(' · ')[1] : 'Ready'), USB2: io('Label printer', () => FARMSHED.t > 2.6 ? 'Printing…' : 'Idle'), HDMI: io('Packing screen', () => FARMSHED.crates + ' crates'), ETH: io('Wi-Fi / 4G → IRIV Edge', () => 'Synced') };
+CAN['farm-hub'] = ['Weigh every crate', 'Traceability labels (crop · field · date)', 'Harvest totals per field'];
+const FARMSHED = { crates: 46, kg: 498, last: null, t: 0 };
+const CROPS = [['Chillies', '#e53935'], ['Lettuce', '#7cb342'], ['Tomatoes', '#f4511e'], ['Okra', '#558b2f'], ['Corn', '#fdd835']];
+const SHED_ROUTE = [[13.0, 6.0, 1.2], [5.2, 5.0, 2.4], [2.8, 7.4, 1.4]];   // field door → weighing table → pallets
+function shedUpdate(dt) {
+  if (!(scene === 'inside' && curZone === 'farm')) return;
+  FARMSHED.t += dt;
+  if (FARMSHED.t > 3.6) { FARMSHED.t = 0; const c = CROPS[Math.floor(Math.random() * CROPS.length)], kg = 8 + Math.random() * 6; FARMSHED.crates++; FARMSHED.kg += kg; FARMSHED.last = `${c[0]} · ${kg.toFixed(1)} kg · Field ${1 + Math.floor(Math.random() * 4)}`; FARMSHED.crop = c; }
+}
+SCENES.farm = {
+  title: 'Packing Shed', short: 'the Farm', kicker: 'Inside the Smart Farm', icon: '🌾', color: '#9e9d24',
+  floor: '#cdb79e', tile: '#bfa98f', wallA: '#e9dcc6', wallB: '#efe4d0', winA: [[1, 3]], winZ: [1.4, 2.8], sign: 'PACKING SHED',
+  sum: 'Harvest comes in from the fields, every crate is weighed and labelled on an IRIV SmartHub CM5, and stacked for the truck. On the wall, the irrigation dashboard shows soil moisture from the Milesight sensors.',
+  say: 'Welcome to the farm\'s packing shed. Workers bring crates of vegetables in from the field. At the weighing table, an IRIV SmartHub C M 5 weighs each crate, prints a traceability label and logs it. On the wall, the dashboard shows soil moisture and the irrigation pump, from the Milesight sensors and the PiControl in the pump house. The tractor is parked here between field runs.',
+  can: ['<b>Traceability</b>: every crate labelled with crop, field and date.', '<b>Harvest totals</b> per field and per day.', '<b>Irrigation</b> dashboard from soil sensors and the pump PiControl.', '<b>Cold room</b> temperature alarms.'],
+  m: [['Crates today', () => FARMSHED.crates], ['Harvest today', () => FARMSHED.kg.toFixed(0) + ' kg'], ['Soil moisture', () => FARM.soil.toFixed(0) + '%'], ['Irrigation', () => FARM.pump ? '💧 Running' : 'Off']],
+  build(O) {
+    fnObj(O, 10.0, 3.0, () => drawTractor({ cy: 3.0, park: 10.0 }));
+    fnObj(O, 5.2, 5.3, () => {
+      drawBox({ x0: 4.0, y0: 4.6, x1: 6.4, y1: 5.3, h: .9, color: '#8d6e63', roof: '#d7ccc8' });
+      drawBox({ x0: 4.3, y0: 4.75, x1: 4.9, y1: 5.15, z0: .9, h: .06, color: '#cfd8dc' });
+      drawBox({ x0: 5.6, y0: 4.7, x1: 5.95, y1: 4.76, z0: .9, h: .3, color: '#1e3a5f' });
+      if (FARMSHED.crop && FARMSHED.t > .8) { const c = FARMSHED.crop[1]; drawBox({ x0: 4.35, y0: 4.8, x1: 4.85, y1: 5.1, z0: .96, h: .22, color: '#a1887f' }); drawBox({ x0: 4.4, y0: 4.85, x1: 4.8, y1: 5.05, z0: 1.15, h: .05, color: c }); }
+      if (FARMSHED.last && FARMSHED.t > .8) { const p = P(5.2, 5.0, 1.8); pill(p[0], p[1], '⚖️ ' + FARMSHED.last + ' · 🏷️ label printed', '#9e9d24', '#fff', 12); }
+    });
+    person(O, 5.2, 4.2, false, 2);
+    for (let r = 0; r < 2; r++) for (let k = 0; k < 4; k++) fnObj(O, 1.6 + k * .7, 7.2 + r * .8, () => {
+      const filled = (k + r * 4) < (FARMSHED.crates % 9);
+      for (let lv = 0; lv < 3; lv++) { drawBox({ x0: 1.35 + k * .7, y0: 6.95 + r * .8, x1: 1.85 + k * .7, y1: 7.45 + r * .8, z0: lv * .25, h: .22, color: '#a1887f' }); if (filled || lv < 2) drawBox({ x0: 1.42 + k * .7, y0: 7.02 + r * .8, x1: 1.78 + k * .7, y1: 7.38 + r * .8, z0: lv * .25 + .2, h: .04, color: CROPS[(k + lv + r) % 5][1] }); }
+    });
+    Bx(O, { x0: 11.6, y0: .2, x1: 13.8, y1: 1.4, h: 2.2, color: '#e3f2fd', roof: '#bbdefb', stripe: '#0288d1' });
+    [[.7, .7]].forEach(([x, y]) => plant(O, x, y));
+  },
+  floorDecor() { poly(quad(12.4, 4.6, 14.0, 7.4, .003), 'rgba(141,110,99,.35)'); },
+  decor() {
+    screenTile(wallB(3.6, 8.0, 1.6, 2.9), 'bars', 7);
+    wtext(5.8, .01, 3.1, `SOIL ${FARM.soil.toFixed(0)}% · PUMP ${FARM.pump ? 'ON' : 'OFF'} · TANK ${FARM.tank.toFixed(0)}%`, .16, col('#33691e'), 800);
+    wtext(12.7, .01, 2.5, 'COLD ROOM 4 °C', .12, col('#0277bd'), 800);
+  },
+  routes: SHED_ROUTE.map((_, k) => SHED_ROUTE.slice(k).concat(SHED_ROUTE.slice(0, k))).slice(0, 3),
+  devs: [
+    { id: 'farm-hub', x: 5.77, y: 4.7, z: 1.25, b: { x0: 5.6, y0: 4.62, x1: 5.95, y1: 4.7, z0: .9, h: .15, color: '#263238', stripe: '#ff8f00' }, qty: 1, where: 'Weighing table in the packing shed', why: DEV['farm-hub'].why, can: CAN['farm-hub'], say: DEV['farm-hub'].say },
+    { id: 'farm-smtc', x: .03, y: 6.0, z: 1.4, mount: 'A', qty: 12, where: 'In the fields (dashboard shown on the shed wall)', why: DEV['farm-smtc'].why, can: CAN['farm-smtc'], say: DEV['farm-smtc'].say },
+    { id: 'em300th', x: 12.7, y: 1.47, z: 1.4, b: { x0: 12.6, y0: 1.4, x1: 12.8, y1: 1.47, z0: 1.3, h: .2 }, qty: 1, where: 'Cold room door', why: 'Harvest must stay cool until the truck leaves.', can: ['Cold room alarms', 'Temperature log for buyers'],
+      say: 'This E M 300 sensor watches the cold room, so the harvest stays fresh until the truck collects it.' }
+  ]
+};
+
+{ const mt = document.querySelector('.map-tools'), b = document.createElement('button');
+  b.id = 'bTilt'; b.title = 'Miniature look (tilt-shift)'; b.setAttribute('aria-label', 'Miniature look'); b.textContent = '◐';
+  b.onclick = () => document.body.classList.toggle('no-tilt'); (mt || document.body).appendChild(b); }
+{ const SHIFT = z => z === 'highway' ? -76.6 : z && z.startsWith('sat') ? -124 : 0;
+  const mv = (o, d) => { ['cx', 'x0', 'x1', 'xa', 'xb'].forEach(k => { if (typeof o[k] === 'number') o[k] += d; }); if (o.kids) o.kids.forEach(k => mv(k, d)); };
+  objs.forEach(o => { const d = SHIFT(o.zone); if (d) mv(o, d); });
+  blocks.forEach(b => { const d = SHIFT(b.zone); if (d) { b.x0 += d; b.x1 += d; } });
+  Object.keys(ZINFO).forEach(z => { const d = SHIFT(z); if (d) ZINFO[z].x += d; });
+  DEVICES.forEach(dv => { const d = SHIFT(dv.zone); if (d && dv.x !== undefined) dv.x += d; }); }
+/* ================================================================
+   FARMLAND BELT — fields on both sides of the highway, from the city
+   farm out to the small town
+   ================================================================ */
+const BELTS = [{ x0: -70.0, x1: -47.4, y0: 17.6, y1: 27.6 }, { x0: -70.0, x1: -47.4, y0: 33.4, y1: 43.4 }];   // west of the small town
+BELTS.forEach(b => blocks.push({ zone: 'farmbelt', x0: b.x0 + .2, x1: b.x1 - .2, y0: b.y0 + .2, y1: b.y1 - .2, kind: 'field' }));
+TOPICS.farmbelt = {
+  icon: '🌾', color: '#9e9d24', kicker: 'Agriculture', title: 'Farmland along the Highway',
+  sum: 'Rice paddies, vegetable fields, an oil palm plantation, an orchard and a farmyard line the highway between the city and the small town. Milesight soil and water-level sensors report to the small town\'s UG65 gateway, and the harvest goes by highway to the city.',
+  how: ['EM500-SMTC soil sensors in the vegetable fields decide when to irrigate.', 'EM500-UDL measures the water level in the rice paddies.', 'The weather station on the highway warns of heavy rain.', 'Crates are weighed and labelled on a SmartHub CM5 in the packing shed.'],
+  ben: ['Less water and fertiliser', 'Higher yields', 'Traceable harvest', 'Short trip to city markets'],
+  m: [['Soil moisture', () => FARM.soil.toFixed(0) + '%'], ['Paddy water', () => wob(6.2, .4, .1).toFixed(1) + ' cm'], ['Irrigation', () => FARM.pump ? '💧 Running' : 'Off'], ['Harvest today', () => FARMSHED.kg.toFixed(0) + ' kg']],
+  chain: [['🌱', 'Soil & paddy sensors', 'EM500-SMTC, EM500-UDL'], ['📡', 'Small-town UG65', 'LoRaWAN → 4G'], ['🧠', 'IRIV Edge', 'irrigation rules'], ['🎛️', 'PiControl pump', 'opens valves and pumps'], ['🧾', 'SmartHub CM5', 'weighs & labels crates'], ['🛣️', 'Highway', 'harvest to the city']],
+  say: 'Along the highway between the city and the small town is the farmland: rice paddies, vegetable fields, an oil palm plantation, an orchard and a farmyard. Soil and water level sensors report to the small town\'s gateway, and the harvest is weighed and labelled before it travels by highway to the city. Click the fields to go inside the packing shed.'
+};
+ZINFO.farmbelt = { x: -11.3, y: 22.6, z: 2.6 };
+ORDER.push('farmbelt');
+SCENES.farmbelt = SCENES.farm;
+// crops and farm buildings
+add('pivot', 'farmbelt', -11.5, 22.6);
+for (let x = -7.2; x < -.8; x += 1.3) for (let y = 18.4; y < 27.0; y += 1.3) tree('farmbelt', x + (hsh(x * 3 + y) - .5) * .2, y, .75, 'round');            // oil palms
+for (let x = -21.6; x < -16.0; x += 1.2) for (let y = 34.2; y < 42.8; y += 1.2) tree('farmbelt', x, y + (hsh(x + y * 2) - .5) * .2, .65, 'round');           // orchard
+for (let x = -22.0; x < -.4; x += 1.6) { tree('farmbelt', x, 27.25, .5, 'cone'); tree('farmbelt', x + .8, 33.75, .5, 'cone'); }                          // windbreak along the highway
+add('house', 'farmbelt', -5.2, 35.5, { x0: -6.2, y0: 34.8, x1: -4.2, y1: 36.2, h: 1.0, rh: .6, wall: '#fff3e0', roof: '#6d4c41' });
+add('house', 'farmbelt', -2.6, 38.6, { x0: -4.0, y0: 37.6, x1: -1.2, y1: 39.6, h: 1.5, rh: 1.0, wall: '#b03a2e', roof: '#5d4037', nowin: true });
+add('silo', 'farmbelt', -6.4, 39.4, { h: 2.6, r: .5 }); add('silo', 'farmbelt', -5.3, 39.4, { h: 2.2, r: .45 });
+add('btractor', 'farmbelt', -11.5, 40.6, { xa: -14.4, xb: -8.6, ph: 0 });
+add('btractor', 'farmbelt', -18.8, 25.6, { xa: -21.6, xb: -16.0, ph: 7 });
+[[-12.6, 36.2], [-10.0, 38.0], [-19.5, 20.2]].forEach(([x, y], i) => add('farmer', 'farmbelt', x, y, { i }));
+function drawBTractor(o) {
+  const u = ((time * .05 + o.ph) % 2), f = u < 1 ? u : 2 - u;
+  drawTractor({ cy: o.cy, park: o.xa + f * (o.xb - o.xa) });
+}
+// farmland coordinates sit beyond the small town (x -70 … -47.4)
+function worldGround6() {
+  const rows = (x0, x1, y0, y1, c1, c2, step = .42) => { for (let y = y0, k = 0; y < y1; y += step, k++) poly(quad(x0, y, x1, y + step * .55, .086), col(k % 2 ? c1 : c2)); };
+  // north belt: rice paddies, vegetables under the pivot, oil palm plantation
+  poly(quad(-69.6, 18.0, -62.8, 27.0, .085), col('#7fb0c9'));
+  rows(-69.4, -63, 18.2, 26.8, '#a5d66b', '#8bc34a', .5);
+  for (let k = 0; k < 4; k++) { const y = 18.6 + ((time * .3 + k * 2.1) % 8); poly(quad(-69.2, y, -63.2, y + .06, .088), 'rgba(255,255,255,.35)'); }
+  rows(-62.4, -55.4, 18.2, 26.8, '#7cb342', '#5d8a2e');
+  poly(circ(-58.9, 22.6, .089, 2.75, 40), FARM.pump ? 'rgba(40,110,190,.16)' : 'rgba(40,110,190,.05)', 'rgba(255,255,255,.35)');
+  poly(quad(-55, 18.0, -48, 27.0, .086), col('#6d8b3a'));
+  // south belt: orchard, vegetables with a tractor, farmyard
+  poly(quad(-69.6, 33.8, -62.8, 43.0, .086), col('#7da453'));
+  rows(-62.4, -55.4, 34.0, 42.8, '#c0ca33', '#9e9d24');
+  poly(quad(-55, 33.8, -48, 43.0, .086), col('#cdbb94'));
+  for (const [x, y] of [[-55, 33.8], [-48, 33.8], [-48, 43.0], [-55, 43.0]]) line(P(x, y, .1), P(x, y, .35), col('#8d6e63'), 1.5);
+}
+DEVICES.push(fdev({ id: 'belt-smtc', model: 'EM500-SMTC', name: 'Highway Farm Soil Sensor', icon: '🌱', zone: 'farmbelt', x: -12.8, y: 24.6, z: .3, qty: 10, gw: 'sat-gw',
+  loc: 'Vegetable fields beside the highway', short: 'Farmland', what: 'Soil moisture, temperature and conductivity in the vegetable fields.', why: 'One per irrigation zone, in the root zone.',
+  m: [['Soil moisture', () => FARM.soil.toFixed(0) + '%'], ['Soil temp.', () => wob(24, .6, .1).toFixed(1) + ' °C'], ['EC', () => Math.round(wob(610, 30, .1)) + ' µS/cm'], ['Battery', () => '93%']],
+  say: 'These soil sensors in the fields beside the highway tell the edge computer when the vegetables need water.' }));
+DEVICES.push(fdev({ id: 'belt-udl', model: 'EM500-UDL', name: 'Paddy Water Level', icon: '🌊', zone: 'farmbelt', x: -18.8, y: 21.5, z: .8, qty: 4, gw: 'sat-gw',
+  loc: 'Rice paddies, on a post above the water', short: 'Farmland', what: 'An ultrasonic sensor measuring the water depth in the rice paddy.', why: 'Rice needs a steady water depth; the gates open or close from these readings.',
+  m: [['Water depth', () => wob(6.2, .4, .1).toFixed(1) + ' cm'], ['Target', () => '5–8 cm'], ['Inlet gate', () => 'Closed'], ['Battery', () => '90%']],
+  say: 'This ultrasonic sensor measures the water depth in the rice paddy, so the inlet gates keep the water at the right level.' }));
+['belt-smtc', 'belt-udl'].forEach(id => { DEV[id] = DEVICES.find(d => d.id === id); });
+CAN['belt-smtc'] = ['Irrigate only dry zones', 'Fertiliser (EC) monitoring']; CAN['belt-udl'] = ['Keep paddy water at the right depth', 'Alerts for flooding or dry fields'];
+
+/* ================================================================
+   RIVER & BRIDGE between the city and the small town; the farmland now
+   lies beyond the small town, along the farm road
+   ================================================================ */
+const RIVER = { x0: -13, x1: -9, y0: 14.6, y1: 43.4 };
+const BANKS = [{ x0: -22.6, x1: RIVER.x0, y0: 14.6, y1: 43.4 }, { x0: RIVER.x1, x1: 0, y0: 14.6, y1: 43.4 }];
+const FARMROAD = { x0: -70.0, x1: -47.4, y0: 27.6, y1: 33.4 };
+// move the farmland objects, devices and pin beyond the small town
+{ const d = -47.4;
+  objs.forEach(o => { if (o.zone === 'farmbelt') { ['cx', 'x0', 'x1', 'xa', 'xb'].forEach(k => { if (typeof o[k] === 'number') o[k] += d; }); } });
+  DEVICES.forEach(dv => { if (dv.zone === 'farmbelt' && dv.x !== undefined) dv.x += d; });
+  ZINFO.farmbelt.x += d; }
+// the highway weather station stands on the west bank, not over the river
+objs.forEach(o => { if (o.t === 'wstation' && o.zone === 'highway') o.cx = -17.0; });
+if (DEV['hw-wts']) DEV['hw-wts'].x = -17.0;
+TOPICS.farmbelt.sum = TOPICS.farmbelt.sum.replace('line the highway between the city and the small town', 'lie along the farm road beyond the small town');
+TOPICS.farmbelt.title = 'Farmland beyond the Small Town';
+TOPICS.highway.sum = 'A four-lane highway crosses the river on a bridge and links the city with the small town. An IRIV EdgeAI CM5 on the gantry reads plates and speeds, a road weather station watches the conditions, and an IO Controller MQTT drives the message sign.';
+TOPICS.bridge = {
+  icon: '🌉', color: '#0277bd', kicker: 'Transport', title: 'River Bridge',
+  sum: 'The highway crosses the river on a bridge between the city and the small town. A Milesight ultrasonic sensor under the bridge measures the river level for flood warnings, and the riverside parks line both banks.',
+  how: ['EM500-UDL under the bridge deck measures the river level.', 'IRIV Edge warns drivers on the message sign if the river rises.', 'Riverside parks with trees on both banks.'],
+  ben: ['Early flood warning', 'Safe crossing'],
+  m: [['River level', () => wob(1.8, .1, .1).toFixed(2) + ' m'], ['Flood risk', () => 'Low'], ['Traffic on bridge', () => Math.round(wob(36, 6, .3)) + ' veh/min'], ['Bridge status', () => 'Open']],
+  chain: [['🌊', 'River', 'EM500-UDL under the deck'], ['📡', 'UG65 gateway', 'LoRaWAN'], ['🧠', 'IRIV Edge', 'flood rules'], ['🔀', 'IO Controller MQTT', 'message sign: "Flood warning"']],
+  say: 'This is the river bridge between the city and the small town. An ultrasonic sensor under the deck measures the river level, so the message sign can warn drivers if the river floods.'
+};
+ZINFO.bridge = { x: -11, y: 22, z: 2.2 };
+ORDER.push('bridge');
+DEVICES.push(fdev({ id: 'river-udl', model: 'EM500-UDL', name: 'River Level under the Bridge', icon: '🌊', zone: 'bridge', x: -11.0, y: 33.6, z: .4, qty: 1,
+  loc: 'Under the bridge deck, looking down at the river', short: 'River bridge', what: 'An ultrasonic sensor measuring the river level from the bridge deck.', why: 'Directly above the water, with nothing touching the river.',
+  m: [['River level', () => wob(1.8, .1, .1).toFixed(2) + ' m'], ['Trend', () => 'Stable'], ['Warning level', () => '3.20 m'], ['Battery', () => '91%']],
+  say: 'This ultrasonic sensor under the bridge measures the river level. If the river rises towards the warning level, the message sign tells drivers and the city gets a flood alert.' }));
+DEV['river-udl'] = DEVICES[DEVICES.length - 1];
+CAN['river-udl'] = ['Flood warnings for the bridge', 'River level history'];
+SCENES.bridge = makeRoom('bridge', 'kiosk');
+// riverside trees and farm-road traffic
+for (const b of BANKS) for (let x = b.x0 + 1; x < b.x1 - .5; x += 1.6) for (const y of [16, 18.5, 21, 24, 36.5, 39, 41.5]) if (hsh(x * 7 + y) > .3) tree('bridge', x + (hsh(x + y) - .5) * .6, y, .6 + hsh(x * y) * .3);
+add('ftruck', 'farmbelt', -58, 29.85, { dir: 1, ph: 0 });
+add('ftruck', 'farmbelt', -58, 31.15, { dir: -1, ph: 9 });
+function drawFTruck(o) {
+  const u = ((time * .04 + o.ph * .1) % 1), x = o.dir > 0 ? FARMROAD.x0 + .5 + u * 22 : FARMROAD.x1 - .5 - u * 22, y = o.cy;
+  drawBox({ x0: x - .55, x1: x + .25, y0: y - .22, y1: y + .22, z0: .05, h: .4, color: '#8d6e63', roof: '#a1887f' });
+  for (let k = 0; k < 3; k++) drawBox({ x0: x - .5 + k * .24, x1: x - .3 + k * .24, y0: y - .15, y1: y + .15, z0: .45, h: .1, color: CROPS[(k + o.ph) % 5][1] });
+  drawBox({ x0: x + .25 * (o.dir > 0 ? 1 : -1) - (o.dir > 0 ? 0 : .3), x1: x + (o.dir > 0 ? .55 : -.25), y0: y - .2, y1: y + .2, z0: .05, h: .45, color: '#eceff1', roof: '#1e88e5' });
+}
+function bridgeSlabs() {   // drawn under the highway corridor
+  BANKS.forEach(b => { const p = new Path2D(); drawBox({ x0: b.x0, y0: b.y0, x1: b.x1, y1: b.y1, z0: -.7, h: .7, color: '#dfe5ea', roof: '#8bc34a' }, p); hits.push({ path: p, zone: 'bridge' }); });
+  drawBox({ x0: RIVER.x0, y0: RIVER.y0, x1: RIVER.x1, y1: RIVER.y1, z0: -.7, h: .25, color: '#90a4ae', roof: '#4f9fd6' });
+  const fr = new Path2D(); drawBox({ x0: FARMROAD.x0, y0: FARMROAD.y0, x1: FARMROAD.x1, y1: FARMROAD.y1, z0: -.7, h: .7, color: '#dfe5ea', roof: '#7f8891' }, fr); hits.push({ path: fr, zone: 'farmbelt' });
+}
+function worldGround7() {
+  // river ripples
+  for (let k = 0; k < 9; k++) { const y = RIVER.y0 + ((time * .8 + k * 3.3) % (RIVER.y1 - RIVER.y0)); poly(quad(RIVER.x0 + .5 + (k % 3) * 1.1, y, RIVER.x0 + 1.2 + (k % 3) * 1.1, y + .08, -.44), 'rgba(255,255,255,.4)'); }
+  // bridge: railings, lamp-lit deck edge and piers in the river
+  for (const y of [HWY.y0 + .15, HWY.y1 - .15]) { line(P(RIVER.x0 - .5, y, .45), P(RIVER.x1 + .5, y, .45), col('#eceff1'), 2.5); for (let x = RIVER.x0 - .5; x <= RIVER.x1 + .5; x += .5) line(P(x, y, 0), P(x, y, .45), col('#cfd8dc'), 1.2); }
+  for (const x of [RIVER.x0 + 1.3, RIVER.x1 - 1.3]) for (const y of [HWY.y0 + .6, HWY.y1 - .6]) drawBox({ x0: x - .25, y0: y - .25, x1: x + .25, y1: y + .25, z0: -.45, h: .45, color: '#b0bec5' });
+  // farm road between the small town and the farmland
+  poly(quad(FARMROAD.x0, FARMROAD.y0, FARMROAD.x1, FARMROAD.y0 + 1.2, .004), col('#93c25f')); poly(quad(FARMROAD.x0, FARMROAD.y1 - 1.2, FARMROAD.x1, FARMROAD.y1, .004), col('#93c25f'));
+  for (let x = FARMROAD.x0 + .3; x < FARMROAD.x1; x += 1.2) poly(quad(x, 30.47, x + .6, 30.53, .006), 'rgba(255,255,255,.85)');
+  const t = P(-48.5, 29.0, 1.2); if (!t.b && !WALK.on) pill(t[0], t[1], '🚜 Farm road', '#795548', '#fff', 11);
+}
+
 let last = performance.now();
 function frame(now) {
   const dt = Math.min(.05, (now - last) / 1000); last = now; time += dt;
   night += (nightTarget - night) * Math.min(1, dt * 2.5);
   if (scene === 'inside') { if (autoRot && !dragging && now > rotPauseUntil) cam.th += (Math.PI / 4 + Math.sin(time * .2) * .2 - cam.th) * Math.min(1, dt * .8); }
-  else if (autoRot && !dragging && now > rotPauseUntil) cam.th += dt * .06;
+  else if (autoRot && !rotHold && !dragging && now > rotPauseUntil && !WALK.on) cam.th += dt * .06;
   const k = Math.min(1, dt * 2.6);
   cam.x += (cam.tx - cam.x) * k; cam.y += (cam.ty - cam.y) * k; cam.zoom += (cam.tz - cam.zoom) * k;
   const wide = W > 820, panelOpen = panel.classList.contains('open');
@@ -3799,32 +5291,42 @@ function frame(now) {
   cam.offY += (offYT - cam.offY) * k;
   updateCars(dt);
   updateWalkers(dt);
+  shopUpdate(dt);
+  shedUpdate(dt);
   updatePeds(dt);
   fxUpdate(dt);
   updateFarm(dt);
   updateInfra(dt);
+  updateSignals();
+  updatePark(dt);
+  updateTrain();
+  updateWalk(dt);
+  updatePOS(dt);
+  updateHighway(dt);
 
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   hits = [];
-  drawSky();
+  if (WALK.on && scene === 'city') { drawWalkSky(); sc = WALK.F / 8; } else drawSky();
   if (scene === 'inside') { drawInterior(); requestAnimationFrame(frame); return; }
   drawGround();
+  groundHits = hits.length;
   const list = objs.map(o => ({ o, d: depth(o.cx, o.cy) }));
   cars.forEach(c => { const x = c.ax === 'x' ? c.pos : c.lane, y = c.ax === 'x' ? c.lane : c.pos; list.push({ o: { t: 'car', car: c, zone: 'mobility' }, d: depth(x, y) }); });
   peds.forEach(p => list.push({ o: { t: 'ped', p }, d: depth(p.x, p.y) }));
   COWS.forEach(c => list.push({ o: { t: 'cow', c }, d: depth(c.x, c.y) }));
+  CP.vcars.forEach(c => list.push({ o: { t: 'vcar', c }, d: depth(c.x, c.y) }));
+  HWCARS.forEach(c => list.push({ o: { t: 'hwcar', c }, d: depth(c.x, c.y) }));
   if (FX.amb) list.push({ o: { t: 'amb' }, d: depth(FX.amb.x, FX.amb.y) });
   carHits = [];
   list.sort((a, b) => a.d - b.d);
-  for (const { o } of list) {
+  for (const { o, d } of list) {
+    if (WALK.on) { if (d < -WALK.far) continue; sc = WALK.F / Math.max(.8, -d); }   // perspective size per object
     if (o.hide && o.hide()) continue;
     const p = new Path2D(); drawObj(o, p);
-    if (o.zone) hits.push({ path: p, zone: o.zone });
+    if (o.zone) hits.push({ path: p, zone: o.room || o.zone });
   }
-  drawOverlay();
-  drawFX();
-  drawWires();
-  drawFX2();
+  if (WALK.on) drawWalkHUD();
+  else { drawOverlay(); drawFX(); drawWires(); drawFX2(); drawFX3(); drawHWOverlay(); }
   requestAnimationFrame(frame);
 }
 
@@ -3848,12 +5350,17 @@ function pick(mx, my) {
 }
 let dragging = false, down = null;
 const tip = document.getElementById('tip');
-cv.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY, th: cam.th, moved: false }; cv.setPointerCapture(e.pointerId); });
+cv.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, rotate: e.shiftKey || e.button === 2, th: cam.th, yaw: WALK.yaw, pitch: WALK.pitch, moved: false }; cv.setPointerCapture(e.pointerId); });
 cv.addEventListener('pointermove', e => {
   if (down) {
     const dx = e.clientX - down.x;
     if (Math.abs(dx) + Math.abs(e.clientY - down.y) > 6) { down.moved = true; dragging = true; cv.classList.add('drag'); }
-    if (dragging) { cam.th = down.th + dx * .007; if (scene === 'inside') cam.th = Math.max(.3, Math.min(1.27, cam.th)); tip.style.opacity = 0; }
+    if (dragging && WALK.on) { WALK.yaw = down.yaw - dx * .005; WALK.pitch = Math.max(-.7, Math.min(.5, down.pitch + (e.clientY - down.y) * .004)); WALK.target = null; tip.style.opacity = 0; return; }
+    if (dragging) {
+      if (down.rotate) { cam.th = down.th + dx * .007; if (scene === 'inside') cam.th = Math.max(.3, Math.min(1.27, cam.th)); }
+      else panBy(e.clientX - down.lx, e.clientY - down.ly);
+      down.lx = e.clientX; down.ly = e.clientY; tip.style.opacity = 0;
+    }
     return;
   }
   const z = pick(e.clientX, e.clientY);
@@ -3872,8 +5379,11 @@ cv.addEventListener('pointermove', e => {
   } else tip.style.opacity = 0;
 });
 cv.addEventListener('pointerup', e => {
-  if (down && !down.moved) {
+  if (down && !down.moved && WALK.on && scene === 'city') walkClick(e.clientX, e.clientY);
+  else if (down && !down.moved) {
     const z = pick(e.clientX, e.clientY);
+    rotHold = z ? true : !rotHold;
+    if (!z) { tip.textContent = rotHold ? '⏸ Rotation paused · click the map again to resume' : '▶ Rotation resumed'; tip.style.left = e.clientX + 'px'; tip.style.top = e.clientY + 'px'; tip.style.opacity = 1; setTimeout(() => { tip.style.opacity = 0; }, 1400); }
     if (z) z.startsWith('car:') ? followCar(cars[+z.slice(4)]) : z.startsWith('dev:') ? showDevice(z.slice(4)) : SCENES[z] && !lastPickPin ? enterInside(z) : show(z);
   }
   if (dragging) rotPauseUntil = performance.now() + 4000;
@@ -3881,7 +5391,7 @@ cv.addEventListener('pointerup', e => {
 });
 cv.addEventListener('pointerleave', () => { hoverZone = null; hoverDev = null; cv.classList.remove('hover'); tip.style.opacity = 0; });
 cv.addEventListener('pointercancel', () => { down = null; dragging = false; cv.classList.remove('drag'); tip.style.opacity = 0; });
-cv.addEventListener('wheel', e => { e.preventDefault(); cam.tz = Math.max(.6, Math.min(5, cam.tz * Math.exp(-e.deltaY * .0012))); }, { passive: false });
+cv.addEventListener('wheel', e => { e.preventDefault(); if (WALK.on) { const st = -e.deltaY * .01, nx = WALK.x + Math.cos(WALK.yaw) * st, ny = WALK.y + Math.sin(WALK.yaw) * st; if (!walkBlocked(nx, ny)) { WALK.x = nx; WALK.y = ny; } return; } zoomAt(e.clientX, e.clientY, Math.exp(-e.deltaY * .0012)); }, { passive: false });
 
 /* ================================================================
    PANEL + VOICE + TOUR
@@ -3947,7 +5457,8 @@ function show(id, fromTour = false, silent = false) {
     (here.length ? `<h3>Project devices here</h3><div class="chips">${here.map(d => `<span data-dev="${d.id}">${d.icon} ${d.model} · ${d.name}</span>`).join('')}</div>` : '') +
     (id === 'intro' && !tourList ? '<button class="tourbtn" data-act="tour">▶ Start guided tour</button>' : '') +
     (SCENES[id] ? `<button class="tourbtn" data-act="enter">🚪 Go inside · ${SCENES[id].title}</button>` : '') +
-    navHTML(idx, ORDER.length), T.m);
+    (T.extra ? T.extra() : '') +
+    navHTML(idx, ORDER.length), T.m, T.tick);
   const zi = ZINFO[id];
   if (zi && id !== 'mobility') { cam.tx = zi.x; cam.ty = zi.y; cam.tz = T.chain ? (W > 820 ? 2.8 : 2.2) : W > 820 ? 1.6 : 1.35; }   // zoom closer where connections are drawn
   else { cam.tx = CX; cam.ty = CX; cam.tz = id === 'mobility' ? 1.25 : 1; }
@@ -4015,6 +5526,7 @@ function showProject(fromTour = false) {
 }
 
 function closePanel() {
+  rotHold = false;
   FX.follow = null; if (SC) stopScenario(false);
   stopTour(); stopSpeech(); sel = null; selDev = null; nav = null; clearInterval(metricTimer);
   panel.classList.remove('open'); document.body.classList.remove('panel-open');
@@ -4084,8 +5596,10 @@ function updTicker() {
 }
 setInterval(updTicker, 1000);
 
+// Include devices appended by every district and interior expansion.
+const TOTAL_DEVICES = DEVICES.reduce((a, d) => a + d.qty, 0);
 initUI();
-requestAnimationFrame(t => { last = t; frame(t); updTicker(); setTimeout(() => { const h = location.hash.slice(1); if (h === 'project') showProject(); else if (h === 'energy') showEnergy(); else if (h === 'street') streetView(); else if (h.startsWith('scenario=') && Object.hasOwn(SCENARIOS, h.slice(9))) runScenario(h.slice(9)); else if (h === 'hall') enterInside('gov'); else if (h.startsWith('inside=') && Object.hasOwn(SCENES, h.slice(7))) enterInside(h.slice(7)); else if (Object.hasOwn(DEV, h.replace('dev=', ''))) showDevice(h.replace('dev=', '')); else if (Object.hasOwn(TOPICS, h)) show(h, false, true); }, 900); });
+requestAnimationFrame(t => { last = t; frame(t); updTicker(); setTimeout(() => { const h = location.hash.slice(1); if (h === 'project') showProject(); else if (h === 'energy') showEnergy(); else if (h === 'street') streetView(); else if (h === 'walk') startWalk(); else if (h.startsWith('scenario=') && Object.hasOwn(SCENARIOS, h.slice(9))) runScenario(h.slice(9)); else if (h === 'hall') enterInside('gov'); else if (h.startsWith('inside=') && Object.hasOwn(SCENES, h.slice(7))) enterInside(h.slice(7)); else if (Object.hasOwn(DEV, h.replace('dev=', ''))) showDevice(h.replace('dev=', '')); else if (Object.hasOwn(TOPICS, h)) show(h, false, true); }, 900); });
 </script>
 </body>
 </html>

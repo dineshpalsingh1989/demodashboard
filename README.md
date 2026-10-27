@@ -1,6 +1,6 @@
 # Smart City Demo Dashboard
 
-An interactive smart city simulation built with HTML, CSS, and JavaScript. Explore 25 districts, 181 deployed demo devices, building interiors, energy monitoring, and guided scenarios.
+An interactive smart city simulation built with HTML, CSS, and JavaScript. Explore 60 districts, 328 deployed demo devices, building interiors, energy monitoring, and guided scenarios.
 
 **[Open the live demo](https://dineshpalsingh1989.github.io/demodashboard/)**
 
@@ -8,7 +8,8 @@ An interactive smart city simulation built with HTML, CSS, and JavaScript. Explo
 
 - Search for districts, devices, and scenarios using the search button or `/`.
 - Click buildings and device markers for details, or start the guided tour.
-- Drag the map to rotate; scroll or use the map controls to zoom.
+- Drag the map to move; Shift-drag to rotate. Scroll or use the map controls to zoom.
+- Enter walk mode to explore at street level, visit shops, or follow the highway to the small town and farms.
 - Switch between day and night, toggle device markers, and enable optional narration.
 - Try emergency response, flash flood, power cut, irrigation, water treatment, and power grid scenarios.
 
