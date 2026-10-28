@@ -1927,7 +1927,9 @@ function bez(a, m, b, u) { const v = 1 - u; return [v * v * a[0] + 2 * v * u * m
 function drawDeviceLinks() {
   const g = P(DEV.ug65.x, DEV.ug65.y, DEV.ug65.z), e = P(DEV.edge.x, DEV.edge.y, DEV.edge.z);
   const focus = selDev || hoverDev;
+  let linkDown = false;   // set per device; offline devices draw a red link with no packets
   const link = (a, b, color, dash, on, speed, n, i) => {
+    if (linkDown) { color = '#e53935'; dash = [3, 6]; n = 0; }
     const m = [(a[0] + b[0]) / 2, Math.min(a[1], b[1]) - 30 - Math.abs(a[0] - b[0]) * .12];
     ctx.setLineDash(dash); ctx.lineDashOffset = -time * 20;
     ctx.strokeStyle = hexA(color, on ? .95 : focus ? .12 : .4); ctx.lineWidth = on ? 2.2 : 1.3;
@@ -1940,6 +1942,7 @@ function drawDeviceLinks() {
   };
   DEVICES.forEach((d, i) => {
     if (d.x === undefined) return;
+    linkDown = netDown(d.id);
     const p = P(d.x, d.y, d.z);
     if (d.cat === 'sensor') link(p, d.gw ? P(DEV[d.gw].x, DEV[d.gw].y, DEV[d.gw].z) : g, CAT.sensor.c, [2, 4], focus === d.id || focus === (d.gw || 'ug65'), .35, 1, i);
     if (d.cat === 'gateway' && d.id !== 'ug65') link(p, e, CAT.gateway.c, [8, 5], focus === d.id || focus === 'edge', .4, 2, i);
@@ -1950,6 +1953,7 @@ function drawDeviceLinks() {
     }
     if (d.cat === 'ai') link(e, p, CAT.ai.c, [4, 3], focus === d.id || focus === 'edge', .5, 2, i);
   });
+  linkDown = false;
   link(g, e, CAT.gateway.c, [], focus === 'ug65' || focus === 'edge', .6, 3, 0);
   const dist = c => Math.hypot(c.x - DEV.edge.x, c.y - DEV.edge.y);
   const cl = clouds.reduce((best, c) => dist(c) < dist(best) ? c : best);
@@ -5443,7 +5447,7 @@ function frame(now) {
     if (o.zone) hits.push({ path: p, zone: o.room || o.zone });
   }
   if (WALK.on) drawWalkHUD();
-  else { drawOverlay(); drawFX(); drawWires(); drawFX2(); drawFX3(); drawHWOverlay(); drawUtilityLabels(); if (SC?.def.draw) SC.def.draw(); }
+  else { drawOverlay(); drawFX(); drawWires(); drawFX2(); drawFX3(); drawHWOverlay(); drawUtilityLabels(); drawDeviceBadges(); if (SC?.def.draw) SC.def.draw(); }
   requestAnimationFrame(frame);
 }
 
@@ -5611,15 +5615,16 @@ function showDevice(id, fromTour = false) {
     `<p class="p-sum">${inside && ip.what || d.what}</p>` + ACTIONS +
     `<dl class="p-meta"><dt>Installed at</dt><dd>${inside ? ip.where : d.loc}</dd><dt>Quantity</dt><dd>${inside ? ip.qty + ' in ' + curInt.short : d.qty}</dd><dt>Connectivity</dt><dd>${d.conn}</dd><dt>Power</dt><dd>${d.power}</dd></dl>` +
     (can.length ? `<h3>What we can do with it</h3><ul>${can.map(x => `<li>${x}</li>`).join('')}</ul>` : '') +
+    insightTop(d) +
     (SPEC[d.model] ? ioHTML(d) : '') +
     `<h3>${d.productUrl ? 'Simulated readings' : 'Live readings'}</h3>` + metricsHTML(d.m) +
     (d.demoScenario ? `<button class="tourbtn" data-scen="${d.demoScenario}">▶ Run ${d.demoTitle}</button>` : '') +
     `<h3>Data path</h3><div class="p-flow">${d.path.map(x => `<span>${x}</span>`).join('<i>→</i>')}</div>` +
-    `<h3>Why it is installed here</h3><p class="p-sum" style="margin:0">${inside ? ip.why : d.why}</p>` +
+    `<h3>Why it is installed here</h3><p class="p-sum" style="margin:0">${inside ? ip.why : d.why}</p>` + insightBottom(d) +
     `<h3>${d.productUrl ? 'Sample demo telemetry (JSON)' : 'Sample decoded uplink (JSON)'}</h3>${d.productUrl ? '<p class="product-note">Illustrative application fields for this simulated installation.</p>' : ''}<pre class="payload" id="payload"></pre>` +
     (inside ? '<button class="tourbtn alt" data-act="hall">⬅ Back to the room overview</button>' : '') +
     navHTML(idx, ids.length), d.m,
-    () => { const el = document.getElementById('payload'); if (el) el.textContent = JSON.stringify(d.payload(), null, 2); updIO(d); });
+    () => { const el = document.getElementById('payload'); if (el) el.textContent = JSON.stringify(d.payload(), null, 2); updIO(d); insightTick(d); });
   const p = inside ? ip : d;
   cam.tx = p.x; cam.ty = p.y; cam.tz = inside ? (W > 820 ? 2.2 : 1.6) : (W > 820 ? 1.9 : 1.5);
   narrate(inside ? ip.say : d.say, fromTour);
@@ -5728,6 +5733,7 @@ function updTicker() {
 </script>
 <script src="milesight-devices.js"></script>
 <script src="utilities.js"></script>
+<script src="device-insights.js"></script>
 <script>
 // Include devices appended by every district and interior expansion.
 const TOTAL_DEVICES = DEVICES.reduce((a, d) => a + d.qty, 0);

@@ -16,6 +16,7 @@ An interactive smart city simulation built with HTML, CSS, and JavaScript. Explo
 - Try emergency response, flash flood, power cut, irrigation, water treatment, and power grid scenarios.
 - Search for the **City Power Station** or **Water Treatment** to follow a remote **50 MW power station** and **1,000 m³/h water treatment plant** feeding the city. Both sit beyond a planted buffer; yellow lines carry power, blue lines carry treated water, and brown lines return wastewater. Click either plant for simulated capacity, output, flow, and pressure readings.
 - Open the [Milesight collection](https://dineshpalsingh1989.github.io/demodashboard/#milesight) for eight additional models, or choose **Project → Explore 8 new Milesight products**.
+- Open any IRIV PiControl, IO Controller or EdgeAI device to see what it is wired to, the automation rules it runs (live), its MQTT messages and health, and where else the model is installed. Test its outputs, or cut its network to compare how each controller behaves offline. EdgeAI panels start with a live camera view, since cameras and CCTV analytics are their main job.
 - Run the water-leak and cold-storage response scenarios. Search for bin fill, pipe pressure, desk occupancy, classroom sound, solar irrigation, or the SG50 farm gateway.
 
 All readings, events, and device quantities are simulated for demonstration. This dashboard does not connect to live city systems.
@@ -48,6 +49,7 @@ The map is drawn on a canvas that is fully redrawn every frame, so most of the w
 - `ui.js` — search, keyboard access, camera controls, and preferences
 - `milesight-devices.js` — additional products, room placements, and leak/cold-storage scenarios
 - `utilities.js` — remote power and water facilities, supply routes, and simulated capacity readings
+- `device-insights.js` — IRIV device panels: connection map, live rules, MQTT feed, health, output tests, network failover, camera view, and model comparison
 - `images/` — device illustrations and product photos
 - `serve.js` — optional local preview server
 
