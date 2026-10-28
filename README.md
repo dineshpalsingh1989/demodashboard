@@ -4,7 +4,7 @@ An interactive smart city simulation built with HTML, CSS, and JavaScript. Explo
 
 **[Open the live demo](https://dineshpalsingh1989.github.io/demodashboard/)**
 
-**[IRIV PiControl tour](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-pi/)**: an 89-second film and interactive map of every pin and port ([download the MP4](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-pi/IRIV-PiControl-tour.mp4)).
+**[IRIV PiControl tour](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-pi/)**: an 89-second film and interactive map of every pin and port, plus 49 compatible Cytron parts by port, a system builder that checks port limits, and ready-made parts lists ([download the MP4](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-pi/IRIV-PiControl-tour.mp4)).
 
 ## Explore the demo
 
@@ -55,7 +55,7 @@ The map is drawn on a canvas that is fully redrawn every frame, so most of the w
 - `device-insights.js` — IRIV device panels: connection map, live rules, MQTT feed, health, output tests, network failover, camera view, and model comparison
 - `images/` — device illustrations and product photos
 - `serve.js` — optional local preview server
-- `short-video-of-iriv-pi/` — IRIV PiControl tour page, film renderer (`film.js`), pin data (`data.js`) and the rendered MP4
+- `short-video-of-iriv-pi/` — IRIV PiControl tour page, film renderer (`film.js`), pin data (`data.js`), compatible Cytron parts and system recipes (`connect.js`), and the rendered MP4
 
 ## GitHub Pages
 
