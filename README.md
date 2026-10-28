@@ -13,6 +13,7 @@ An interactive smart city simulation built with HTML, CSS, and JavaScript. Explo
 - Scroll, zoom buttons and keyboard controls share a 35–500% range. Resetting the view, choosing a district or starting a tour exits walk mode.
 - Enter walk mode to explore at street level, visit shops, or follow the highway to the small town and farms.
 - Switch between day and night, toggle device markers, and enable optional narration.
+- Turn on **Traffic** to colour every lane by live speed (green free-flowing, amber slow, red queued), with arrows moving in the direction of travel. Cars brake gradually for red lights, keep a safe gap, and show brake lights as queues build and clear. The layer also appears when you open Smart Traffic & Mobility or a junction controller.
 - Try emergency response, flash flood, power cut, irrigation, water treatment, and power grid scenarios.
 - Search for the **City Power Station** or **Water Treatment** to follow a remote **50 MW power station** and **1,000 m³/h water treatment plant** feeding the city. Both sit beyond a planted buffer; yellow lines carry power, blue lines carry treated water, and brown lines return wastewater. Click either plant for simulated capacity, output, flow, and pressure readings.
 - Open the [Milesight collection](https://dineshpalsingh1989.github.io/demodashboard/#milesight) for eight additional models, or choose **Project → Explore 8 new Milesight products**.

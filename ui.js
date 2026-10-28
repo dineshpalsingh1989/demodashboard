@@ -69,6 +69,7 @@ function readPreferences() {
 }
 function syncPreferences() {
   bDev.setAttribute('aria-pressed', String(showDev));
+  bFlow.setAttribute('aria-pressed', String(showFlow));
   bNight.setAttribute('aria-pressed', String(!!nightTarget));
   bNight.innerHTML = uiIcon(nightTarget ? 'sun' : 'moon');
   bRot.setAttribute('aria-pressed', String(autoRot));
@@ -76,7 +77,7 @@ function syncPreferences() {
   bVoice.innerHTML = uiIcon(voiceOn ? 'volume' : 'volumeOff');
   document.querySelector('meta[name="theme-color"]').content = nightTarget ? '#111c2e' : '#f4f7fb';
   // Voice always starts muted; camera, marker, and theme preferences are remembered.
-  try { localStorage.setItem('neoville.preferences.v1', JSON.stringify({night:!!nightTarget, rotate:autoRot, devices:showDev})); }
+  try { localStorage.setItem('neoville.preferences.v1', JSON.stringify({night:!!nightTarget, rotate:autoRot, devices:showDev, traffic:showFlow})); }
   catch { /* Private browsing and file previews may disable storage. */ }
 }
 function renderTourButton() {
@@ -181,6 +182,7 @@ function initUI() {
   nightTarget = preferences.night === true ? 1 : 0;
   night = nightTarget;
   document.body.classList.toggle('night', !!nightTarget);
+  showFlow = preferences.traffic === true;
   setDevLayer(typeof preferences.devices === 'boolean' ? preferences.devices : W > 820);
   bVoice.disabled = !('speechSynthesis' in window);
   if (bVoice.disabled) bVoice.title = 'Voice narration is unavailable in this browser';

@@ -224,6 +224,7 @@
 
 <div class="view-tools" role="group" aria-label="View preferences">
   <button id="bDev" aria-label="Show device markers" title="Show device markers" aria-pressed="true"><span data-icon="signal"></span><span>Devices</span></button>
+  <button id="bFlow" aria-label="Show traffic flow" title="Traffic flow: lanes coloured green when moving freely, amber when slow, red when queued" aria-pressed="false"><span data-icon="car"></span><span>Traffic</span></button>
   <span class="tool-divider"></span>
   <button id="bNight" aria-label="Night mode" title="Night mode" aria-pressed="false"><span data-icon="moon"></span></button>
   <button id="bVoice" aria-label="Voice narration" title="Voice narration" aria-pressed="false"><span data-icon="volumeOff"></span></button>
@@ -288,9 +289,11 @@ const TOPICS = {
     icon: '🚦', color: '#ef6c00', kicker: 'Transport', title: 'Smart Traffic & Mobility',
     sum: 'The roads are live. Watch the cars: adaptive traffic signals switch between north–south and east–west flow, and vehicles queue and go on their own. Real smart signals use cameras and road sensors to set green times by actual demand, not a fixed timer.',
     how: ['Adaptive signals measure queue length and give green time where it is needed.',
+          'The traffic flow layer colours every lane by live speed: green moving freely, amber slow, red queued.',
           'Smart parking sensors show free spots in an app, which cuts circling traffic.',
           'Buses and electric vehicles share live location for accurate arrival times.',
-          'Emergency vehicles get a "green corridor" of signals ahead of them.'],
+          'Emergency vehicles get a "green corridor" of signals ahead of them.',
+          'Turn on <b>Traffic</b> to colour every lane by speed: green moving freely, amber slow, red queued.'],
     ben: ['Shorter commutes', 'Less fuel burned', 'Fewer accidents'],
     m: [['Vehicles moving', () => cars.filter(c => c.v > .2).length + ' / ' + cars.length], ['Waiting at signals', () => cars.filter(c => c.v <= .2).length],
         ['Signal phase', () => phaseName()], ['Avg. speed', () => Math.round(cars.reduce((s, c) => s + c.v, 0) / cars.length * 22) + ' km/h']],
@@ -1356,13 +1359,14 @@ for (const a of ROADS) for (const b of ROADS) {
 // Cars
 const cars = [];
 const CARCOL = ['#e53935', '#1e88e5', '#fdd835', '#ffffff', '#43a047', '#fb8c00', '#8e24aa', '#546e7a', '#26c6da'];
+const LANES = [['x', -.4, 1], ['x', .4, -1], ['y', .4, 1], ['y', -.4, -1]];
 let ci = 0;
-for (const c of ROADS) for (const [ax, off, dir] of [['x', -.4, 1], ['x', .4, -1], ['y', .4, 1], ['y', -.4, -1]]) {
+for (const c of ROADS) for (const [ax, off, dir] of LANES) {
   const n = 4;
   for (let k = 0; k < n; k++) {
     const bus = (ci % 11 === 4);
     cars.push({ ax, lane: c + off, dir, pos: (k * (WORLD + 2) / n + hsh(ci * 3.3) * 5) % (WORLD + 2) - 1, v: 1.4, len: bus ? 1.15 : .62,
-      color: bus ? '#14a3a3' : CARCOL[ci % CARCOL.length], bus });
+      vmax: bus ? 1.25 : 1.45 + hsh(ci * 7.1) * .3, color: bus ? '#14a3a3' : CARCOL[ci % CARCOL.length], bus });
     ci++;
   }
 }
@@ -1375,20 +1379,28 @@ function lightState(ax) {
 }
 const phaseName = () => { const p = sigPhase(); return p < SIG.gx + 1 ? 'East–West ' + (p < SIG.gx ? 'green' : 'amber') : 'North–South ' + (p < SIG.gx + 1 + SIG.gy ? 'green' : 'amber'); };
 
+// Cars ease off towards a red light and keep a speed-dependent gap to the car ahead, so queues
+// form and clear smoothly. A car too close to stop when the light changes carries on through.
+const STOP_LINE = 1.12;   // distance from the junction centre to the stop line
 function updateCars(dt) {
   for (const c of cars) {
-    let target = 1.6;
+    let target = c.vmax || 1.6;
     if (lightState(c.ax) !== 'g') for (const I of ROADS) {
-      const d = ((I - c.dir * 1.15) - c.pos) * c.dir;
-      if (d >= 0 && d < .55) target = 0;
+      const d = ((I - c.dir * (STOP_LINE + c.len / 2)) - c.pos) * c.dir;
+      if (d < c.v * .3 && c.v > .6) continue;
+      if (d >= -.02 && d < 3) target = Math.min(target, Math.max(0, d - .04) * 1.5);
     }
     target = carRules(c, target, dt);
     for (const o of cars) {
       if (o === c || o.ax !== c.ax || o.lane !== c.lane) continue;
       let ahead = (o.pos - c.pos) * c.dir; if (ahead < 0) ahead += WORLD + 2;
-      if (ahead < (c.len + o.len) / 2 + .28) target = 0;
+      const gap = ahead - (c.len + o.len) / 2;
+      if (gap < .12) target = 0;
+      else if (gap < 2.5) target = Math.min(target, (gap - .2) * 1.6 + o.v * .5);
     }
-    c.v += (target - c.v) * Math.min(1, dt * (target < c.v ? 6 : 1.6));
+    target = Math.max(0, target);
+    c.bk = (c.bk || 0) + ((target < c.v - .05 || c.v < .05 ? 1 : 0) - (c.bk || 0)) * Math.min(1, dt * 10);   // brake lights
+    c.v += (target - c.v) * Math.min(1, dt * (target < c.v ? 4 : 1.4));
     c.pos += c.v * c.dir * dt;
     if (c.dir > 0 && c.pos > WORLD + 1) c.pos -= WORLD + 2;
     if (c.dir < 0 && c.pos < -1) c.pos += WORLD + 2;
@@ -1624,22 +1636,54 @@ function drawCar(c) {
   ctx.globalAlpha = fade;
   const x = c.ax === 'x' ? c.pos : c.lane, y = c.ax === 'x' ? c.lane : c.pos;
   { const h = P(x, y, .3); carHits.push({ x: h[0], y: h[1], car: c }); }
-  const L = c.len / 2, Wd = .17, hx = c.ax === 'x' ? L : Wd, hy = c.ax === 'x' ? Wd : L;
-  if (c.bus) {
-    drawBox({ x0: x - hx, x1: x + hx, y0: y - hy, y1: y + hy, z0: .04, h: .38, color: c.color, win: 'grid', id: 1 });
-  } else {
-    drawBox({ x0: x - hx, x1: x + hx, y0: y - hy, y1: y + hy, z0: .04, h: .17, color: c.color });
-    const kx = c.ax === 'x' ? hx * .55 : hx * .85, ky = c.ax === 'x' ? hy * .85 : hy * .55;
-    const sh = c.dir * -.06, ox = c.ax === 'x' ? sh : 0, oy = c.ax === 'y' ? sh : 0;
-    drawBox({ x0: x - kx + ox, x1: x + kx + ox, y0: y - ky + oy, y1: y + ky + oy, z0: .21, h: .12, color: '#a9c7dc', roof: c.color });
-  }
-  if (night > .3) {
-    const fx = x + (c.ax === 'x' ? c.dir * (L + .05) : 0), fy = y + (c.ax === 'y' ? c.dir * (L + .05) : 0);
-    const p = P(fx, fy, .14); glow(p[0], p[1], sc * .45, `rgba(255,240,190,${.6 * night})`);
-    const bx = x - (c.ax === 'x' ? c.dir * (L + .02) : 0), by = y - (c.ax === 'y' ? c.dir * (L + .02) : 0);
-    const q = P(bx, by, .14); glow(q[0], q[1], sc * .2, `rgba(255,40,40,${.7 * night})`);
-  }
+  drawVehicle(x, y, c.ax, c.dir, c.color, { len: c.len, bus: c.bus, bk: c.bk, lit: true });
   ctx.globalAlpha = 1;
+}
+
+// A quad painted on one vertical face of a vehicle (light, wheel, sign). Faces turned away from the camera are skipped.
+function faceQuad(fx, fy, nx, ny, u0, u1, z0, z1, fill) {
+  const tx = -ny, ty = nx;
+  const q = [P(fx + tx * u0, fy + ty * u0, z0), P(fx + tx * u1, fy + ty * u1, z0), P(fx + tx * u1, fy + ty * u1, z1), P(fx + tx * u0, fy + ty * u0, z1)];
+  if (area(q) > 0) poly(q, fill);
+}
+// Soft shadow, dark underbody for ground clearance, body, glass cabin, wheels and lights.
+// Parked cars (lit false) skip the wheels and lights, and so does everything when zoomed out too far to see them.
+function drawVehicle(x, y, ax, dir, colr, o = {}) {
+  const z0 = o.z0 || 0, L = (o.len || .62) / 2, Wd = .17, bus = o.bus, bk = o.bk || 0;
+  const ux = ax === 'x' ? 1 : 0, uy = 1 - ux, hx = ux ? L : Wd, hy = ux ? Wd : L;
+  const near = o.lit && sc > 9, zb = z0 + (o.lit ? .06 : .04), bh = bus ? .4 : .15;
+  poly(quad(x - hx + .06, y - hy + .06, x + hx + .06, y + hy + .06, z0 + .004), `rgba(0,0,0,${.2 * (1 - night * .5)})`);
+  if (near) drawBox({ x0: x - hx + .03, x1: x + hx - .03, y0: y - hy + .03, y1: y + hy - .03, z0: z0 + .01, h: .06, color: '#22262b' });
+  if (bus) {
+    drawBox({ x0: x - hx, x1: x + hx, y0: y - hy, y1: y + hy, z0: zb, h: bh, color: colr, win: 'grid', id: 1 });
+    const rx = ux ? hx * .45 : hx * .6, ry = ux ? hy * .6 : hy * .45;
+    drawBox({ x0: x - rx, x1: x + rx, y0: y - ry, y1: y + ry, z0: zb + bh, h: .05, color: '#cfd8dc' });   // roof AC unit
+  } else {
+    drawBox({ x0: x - hx, x1: x + hx, y0: y - hy, y1: y + hy, z0: zb, h: bh, color: colr });
+    const kx = ux ? hx * .55 : hx * .85, ky = ux ? hy * .85 : hy * .55, sh = dir * -.06;
+    drawBox({ x0: x - kx + sh * ux, x1: x + kx + sh * ux, y0: y - ky + sh * uy, y1: y + ky + sh * uy, z0: zb + bh, h: .12, color: '#7fa6c2', roof: colr });
+  }
+  if (!near) return;
+  const top = zb + bh;
+  for (const s of [1, -1]) {   // wheels on both sides; only the side facing the camera passes faceQuad
+    const nx = uy * s, ny = ux * s;
+    faceQuad(x + nx * (hx + .004), y + ny * (hy + .004), nx, ny, L * .45, L * .8, z0, z0 + .11, '#15181c');
+    faceQuad(x + nx * (hx + .004), y + ny * (hy + .004), nx, ny, -L * .8, -L * .45, z0, z0 + .11, '#15181c');
+  }
+  const fnx = ux * dir, fny = uy * dir, head = night > .3 ? '#fffbe6' : '#f1eedf', tail = bk > .3 ? '#ff2b2b' : '#b71c1c';
+  const fx = x + fnx * (hx + .004), fy = y + fny * (hy + .004), bx = x - fnx * (hx + .004), by = y - fny * (hy + .004);
+  for (const s of [1, -1]) {
+    faceQuad(fx, fy, fnx, fny, s * Wd * .45, s * Wd * .85, zb + .06, zb + .11, head);
+    faceQuad(bx, by, -fnx, -fny, s * Wd * .45, s * Wd * .85, zb + .06, zb + .11, tail);
+  }
+  if (bus) faceQuad(fx, fy, fnx, fny, -Wd * .7, Wd * .7, top - .08, top - .02, '#ffb300');   // destination display
+  if (night > .3) {
+    const p = P(x + fnx * (L + .3), y + fny * (L + .3), .02); glow(p[0], p[1], sc * .45, `rgba(255,240,190,${.45 * night})`);
+  }
+  if (night > .3 || bk > .3) {
+    const q = P(x - fnx * (L + .04), y - fny * (L + .04), zb + .08);
+    glow(q[0], q[1], sc * (.16 + .1 * bk), `rgba(255,40,40,${Math.min(.85, .55 * night + .45 * bk)})`);
+  }
 }
 
 function drawObj(o, path) {
@@ -1676,7 +1720,7 @@ function drawObj(o, path) {
     case 'ftruck': return drawFTruck(o);
     case 'farmer': return drawFarmer(o);
     case 'hgantry': return drawHGantry(o, path);
-    case 'hwcar': return carTop(o.c.x, o.c.y, 'x', o.c.col);
+    case 'hwcar': return carTop(o.c.x, o.c.y, 'x', o.c.col, 0, o.c.dir, true);
     case 'canopy': return drawCanopy(o);
     case 'diner': return drawDiner(o);
     case 'slide': return drawSlide(o);
@@ -1685,7 +1729,7 @@ function drawObj(o, path) {
     case 'lot': return drawLot(o);
     case 'train': return drawTrain();
     case 'flood': return drawFlood(o);
-    case 'vcar': return carTop(o.c.x, o.c.y, o.c.ax, o.c.col);
+    case 'vcar': return carTop(o.c.x, o.c.y, o.c.ax, o.c.col, 0, o.c.sd || 1, true);
     case 'firetower': return drawFireTower(o, path);
     case 'gantry': return drawGantry(o);
     case 'pylon': return drawPylon(o);
@@ -1753,6 +1797,34 @@ function drawSky() {
   });
 }
 
+// Traffic flow layer: each lane between two junctions is coloured by the average speed of its cars
+// (green free-flowing, amber slow, red queued), with chevrons moving in the direction of travel at that speed.
+let showFlow = false;
+const FLOW_EDGES = [0, ...ROADS, WORLD], FLOW_COL = ['#ff3b30', '#ffb300', '#2ecc71'];
+const flowOn = () => !WALK.on && scene === 'city' && (showFlow || sel === 'mobility' || selDev === 'jn-ai' || selDev === 'pic-traffic');
+function drawFlow() {
+  if (!flowOn()) return;
+  const seg = new Map();
+  for (const c of cars) {
+    let i = 0; while (i < FLOW_EDGES.length - 2 && c.pos > FLOW_EDGES[i + 1]) i++;
+    const k = c.ax + c.lane + '|' + i, s = seg.get(k) || seg.set(k, { n: 0, v: 0 }).get(k);
+    s.n++; s.v += Math.min(1, c.v / (c.vmax || 1.6));
+  }
+  const z = .005, w = .24, step = 1.3;
+  for (const c of ROADS) for (const [ax, off, dir] of LANES) {
+    const lane = c + off, pt = (u, v) => ax === 'x' ? P(u, lane + v, z) : P(lane + v, u, z);
+    for (let i = 0; i < FLOW_EDGES.length - 1; i++) {
+      const a = FLOW_EDGES[i] + (i ? 1.2 : .1), b = FLOW_EDGES[i + 1] - (i < FLOW_EDGES.length - 2 ? 1.2 : .1);
+      const s = seg.get(ax + lane + '|' + i), r = s ? s.v / s.n : 1, colr = FLOW_COL[r > .6 ? 2 : r > .3 ? 1 : 0];
+      poly([pt(a, -w / 2), pt(b, -w / 2), pt(b, w / 2), pt(a, w / 2)], hexA(colr, .7));
+      if (sc < 6) continue;
+      const ph = (time * r * 1.6) % step;
+      for (let u = dir > 0 ? a + ph : b - ph; dir > 0 ? u < b - .25 : u > a + .25; u += dir * step)
+        poly([pt(u + dir * .2, 0), pt(u, .1), pt(u + dir * .06, 0), pt(u, -.1)], 'rgba(255,255,255,.9)');
+    }
+  }
+}
+
 function drawGround() {
   if (!WALK.on) {
   // animated dashed "data circuit" around the city
@@ -1779,6 +1851,16 @@ function drawGround() {
     poly(quad(a - 1.0, b + k - .07, a - .78, b + k + .07, z), cw); poly(quad(a + .78, b + k - .07, a + 1.0, b + k + .07, z), cw);
     poly(quad(a + k - .07, b - 1.0, a + k + .07, b - .78, z), cw); poly(quad(a + k - .07, b + .78, a + k + .07, b + 1.0, z), cw);
   }
+  // stop lines and painted direction arrows on every approach
+  if (sc > 7) for (const c of ROADS) for (const [ax, off, dir] of LANES) for (const I of ROADS) {
+    const lane = c + off, z = .003, cw = 'rgba(255,255,255,.85)';
+    const lq = (u0, u1, v0, v1) => ax === 'x' ? quad(Math.min(u0, u1), v0, Math.max(u0, u1), v1, z) : quad(v0, Math.min(u0, u1), v1, Math.max(u0, u1), z);
+    poly(lq(I - dir * (STOP_LINE - .06), I - dir * STOP_LINE, lane - .36, lane + .36), cw);
+    poly(lq(I - dir * 2.35, I - dir * 1.9, lane - .025, lane + .025), cw);
+    const pt = (u, v) => ax === 'x' ? P(u, lane + v, z) : P(lane + v, u, z);
+    poly([pt(I - dir * 1.65, 0), pt(I - dir * 1.9, .12), pt(I - dir * 1.9, -.12)], cw);
+  }
+  drawFlow();
 
   // blocks
   for (const bl of blocks) {
@@ -4237,11 +4319,7 @@ add('aicam', 'parkride', 32.0, 40.0, { look: .8 });
 [[13.2, 13.25, .8], [21.2, 21.25, .8], [29.2, 13.25, .8]].forEach(([x, y, l]) => add('aicam', 'mobility', x, y, { look: l }));
 
 // ---------- drawing ----------
-const carTop = (x, y, ax, colr, z0 = 0) => {   // a small parked or moving car
-  const hx = ax === 'x' ? .31 : .17, hy = ax === 'x' ? .17 : .31;
-  drawBox({ x0: x - hx, x1: x + hx, y0: y - hy, y1: y + hy, z0: z0 + .04, h: .17, color: colr });
-  drawBox({ x0: x - hx * .6, x1: x + hx * .6, y0: y - hy * .6, y1: y + hy * .6, z0: z0 + .21, h: .12, color: '#a9c7dc', roof: colr });
-};
+const carTop = (x, y, ax, colr, z0 = 0, dir = 1, lit = false) => drawVehicle(x, y, ax, dir, colr, { z0, lit });   // a small parked or moving car
 function drawMSCP(o, path) {
   const nx = Math.floor((o.x1 - o.x0 - .3) / .45), occ = CP.inside / CP.cap;
   for (let k = 0; k < o.levels; k++) {
@@ -4333,6 +4411,7 @@ function updatePark(dt) {
     if (!n) { if (c.dir === 'in') { CP.inside = Math.min(CP.cap, CP.inside + 1); CP.entries++; } else CP.inside = Math.max(0, CP.inside - 1); CP.vcars.splice(k, 1); continue; }
     const dx = n[0] - c.x, dy = n[1] - c.y, d = Math.hypot(dx, dy), st = 1.5 * dt;
     c.ax = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+    c.sd = Math.sign(c.ax === 'x' ? dx : dy) || 1;   // driving direction, for the lights
     if (d <= st) { c.x = n[0]; c.y = n[1]; c.i++; if (n[2] === 'gate') { c.atGate = true; c.gateT = 0; } } else { c.x += dx / d * st; c.y += dy / d * st; }
     if (c.dir === 'in' && c.read && c.x < 41.0) openIn = true;
     if (c.dir === 'out' && c.read && c.x > 39.9) openOut = true;
@@ -4395,6 +4474,10 @@ function drawFX3() {
     ctx.strokeStyle = 'rgba(124,77,255,.9)'; ctx.lineWidth = 1.5;
     cars.forEach(c => { if (c.v >= .2) return; const x = c.ax === 'x' ? c.pos : c.lane, y = c.ax === 'x' ? c.lane : c.pos, h = P(x, y, .3); ctx.strokeRect(h[0] - sc * .3, h[1] - sc * .2, sc * .6, sc * .35); });
     const p = P(14.5, 14.5, 3.2); pill(p[0], p[1], SIG.adapt ? `🧠 Adaptive green: E–W ${SIG.gx} s · N–S ${SIG.gy} s` : '⏱ Fixed timing 5 s / 5 s', SIG.adapt ? '#2e7d32' : '#546e7a', '#fff', 12);
+  }
+  if (flowOn()) {
+    const moving = cars.filter(c => c.v > .2).length, p = [W / 2 + cam.offX, 118];
+    pill(p[0], p[1], `🚦 Traffic flow · 🟢 free  🟠 slow  🔴 queued · ${moving}/${cars.length} moving`, '#263238', '#fff', 11);
   }
   if (FX.rlr) { const p = P(14.5, 13.0, 1.4); pill(p[0], p[1], `⚠ Red-light runner logged · ${FX.rlr}`, '#e53935', '#fff', 11); }
 }
@@ -5703,6 +5786,8 @@ const legend = document.getElementById('legend');
 legend.innerHTML = '<b>Project devices</b>' + Object.values(CAT).map(c => `<div><i style="--c:${c.c}"></i>${c.label}</div>`).join('');
 function setDevLayer(on) { showDev = on; legend.style.display = on ? '' : 'none'; syncPreferences(); }
 bDev.onclick = () => setDevLayer(!showDev);
+const bFlow = document.getElementById('bFlow');
+bFlow.onclick = () => { showFlow = !showFlow; syncPreferences(); };
 document.getElementById('bProj').onclick = () => showProject();
 bNight.onclick = () => { nightTarget = nightTarget ? 0 : 1; document.body.classList.toggle('night', !!nightTarget); syncPreferences(); };
 bRot.onclick = () => { autoRot = !autoRot; syncPreferences(); };
