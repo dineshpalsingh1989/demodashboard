@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IRIV PiControl Tour</title>
+<meta name="description" content="A guided film and interactive map of every pin and port on the IRIV PiControl industrial controller.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root { --ink: #1d1d1f; --muted: #6e6e73; --line: #d2d2d7; --soft: #f5f5f7; --accent: #f56300; --blue: #0071e3; --bg: #fff; }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.5 Inter, -apple-system, "Segoe UI", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  button { font: inherit; }
+
+  nav { position: sticky; top: 0; z-index: 10; background: rgba(255,255,255,.82); backdrop-filter: saturate(180%) blur(20px); border-bottom: 1px solid rgba(0,0,0,.08); }
+  nav .in { max-width: 1080px; margin: 0 auto; padding: 0 22px; height: 52px; display: flex; align-items: center; gap: 28px; }
+  nav b { font-size: 19px; font-weight: 700; letter-spacing: -.3px; margin-right: auto; }
+  nav a { color: var(--ink); font-size: 13px; }
+  nav .links { display: flex; gap: 26px; }
+  nav .buy { background: var(--blue); color: #fff; padding: 5px 12px; border-radius: 99px; font-size: 12px; }
+  nav .buy:hover { text-decoration: none; background: #0077ed; }
+  @media (max-width: 720px) { nav .links { display: none; } }
+
+  section { padding: 110px 22px; }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+  .eyebrow { color: var(--accent); font-weight: 600; font-size: 19px; margin: 0 0 8px; }
+  h1, h2 { font-weight: 800; letter-spacing: -.035em; line-height: 1.05; margin: 0; }
+  h1 { font-size: clamp(48px, 9vw, 96px); }
+  h2 { font-size: clamp(38px, 6vw, 64px); }
+  .lede { font-size: clamp(19px, 2.4vw, 26px); color: var(--muted); font-weight: 500; margin: 16px 0 0; max-width: 760px; }
+  .center { text-align: center; }
+  .center .lede { margin-left: auto; margin-right: auto; }
+
+  /* film */
+  .hero { padding-top: 70px; padding-bottom: 60px; }
+  .player { margin: 48px auto 0; max-width: 1200px; }
+  .screen { position: relative; border-radius: 26px; overflow: hidden; background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.06), 0 30px 80px -30px rgba(0,0,0,.25); cursor: pointer; }
+  .screen canvas { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; }
+  .bigplay { position: absolute; inset: 0; margin: auto; width: 84px; height: 84px; border-radius: 50%; border: 0; background: rgba(29,29,31,.78); color: #fff; display: grid; place-items: center; cursor: pointer; transition: opacity .25s, transform .25s; }
+  .bigplay svg { width: 30px; height: 30px; margin-left: 5px; }
+  .playing .bigplay { opacity: 0; transform: scale(.9); pointer-events: none; }
+  .bar { display: flex; align-items: center; gap: 14px; margin-top: 18px; padding: 0 6px; flex-wrap: wrap; }
+  .ctl { width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--soft); color: var(--ink); display: grid; place-items: center; cursor: pointer; flex: none; }
+  .ctl:hover { background: #e8e8ed; }
+  .ctl svg { width: 16px; height: 16px; }
+  .time { font-variant-numeric: tabular-nums; font-size: 13px; color: var(--muted); width: 92px; flex: none; }
+  input[type=range] { flex: 1; min-width: 140px; accent-color: var(--accent); }
+  .dl { border: 0; border-radius: 99px; background: var(--ink); color: #fff; padding: 10px 18px; font-size: 14px; font-weight: 600; cursor: pointer; flex: none; }
+  .dl:disabled { opacity: .6; cursor: progress; }
+  .dlnote { width: 100%; font-size: 13px; color: var(--muted); min-height: 20px; text-align: right; }
+  .chapters { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; padding: 0 6px; }
+  .chapters button { border: 1px solid var(--line); background: #fff; border-radius: 99px; padding: 6px 13px; font-size: 13px; color: var(--ink); cursor: pointer; }
+  .chapters button:hover { border-color: var(--ink); }
+  .chapters button.on { background: var(--ink); border-color: var(--ink); color: #fff; }
+
+  /* pin maps */
+  .grey { background: var(--soft); }
+  .map { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(280px, 1fr); gap: 34px; margin-top: 56px; align-items: start; }
+  @media (max-width: 880px) { .map { grid-template-columns: 1fr; } }
+  .stage { background: #fff; border-radius: 26px; padding: 18px; position: sticky; top: 76px; }
+  @media (max-width: 880px) { .stage { position: static; } }
+  .stage svg { display: block; width: 100%; height: auto; }
+  .hot rect { fill: color-mix(in srgb, var(--c) 10%, transparent); stroke: var(--c); stroke-width: 1.6; vector-effect: non-scaling-stroke; cursor: pointer; transition: fill .2s, stroke-width .2s; }
+  .hot:hover rect, .hot:focus-visible rect { fill: color-mix(in srgb, var(--c) 22%, transparent); }
+  .hot.on rect { fill: color-mix(in srgb, var(--c) 26%, transparent); stroke-width: 3.2; animation: pulse 1.6s ease-in-out infinite; }
+  .hot:focus { outline: none; }
+  @keyframes pulse { 50% { stroke-opacity: .45; } }
+  .list { display: grid; gap: 10px; }
+  .card { text-align: left; border: 0; background: #fff; border-radius: 18px; padding: 16px 18px; cursor: pointer; color: var(--ink); box-shadow: 0 0 0 1px rgba(0,0,0,.05); transition: box-shadow .2s, transform .2s; }
+  .card:hover { transform: translateY(-1px); box-shadow: 0 0 0 1px rgba(0,0,0,.08), 0 10px 24px -14px rgba(0,0,0,.3); }
+  .card .nm { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; }
+  .card .nm i { width: 11px; height: 11px; border-radius: 50%; background: var(--c); flex: none; }
+  .card .more { display: none; margin-top: 8px; }
+  .card.on { box-shadow: 0 0 0 2px var(--c); }
+  .card.on .more { display: block; }
+  .card h3 { font-size: 22px; letter-spacing: -.02em; margin: 0 0 6px; }
+  .card p { margin: 0; color: var(--muted); font-size: 15px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .chips span { border: 1.5px solid var(--c); border-radius: 99px; padding: 2px 10px; font-size: 12.5px; font-weight: 600; }
+  .terms { margin: 12px 0 0; padding: 0; list-style: none; font-size: 13.5px; }
+  .terms li { display: flex; gap: 10px; padding: 5px 0; border-top: 1px solid #ececf0; }
+  .terms b { width: 74px; flex: none; }
+  .terms span { color: var(--muted); }
+
+  /* terminal diagram */
+  .blocks { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; margin-top: 60px; }
+  @media (max-width: 720px) { .blocks { grid-template-columns: 1fr; } }
+  .block { background: #1d1d1f; border-radius: 22px; padding: 22px 18px 18px; color: #fff; }
+  .block h4 { margin: 0 0 14px; font-size: 13px; color: #a1a1a6; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; }
+  .row { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; }
+  .row + .row { margin-top: 6px; }
+  .pin { border: 0; border-radius: 10px; padding: 12px 2px 10px; background: #2c2c2e; color: #fff; cursor: pointer; display: grid; justify-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; line-height: 1.1; min-width: 0; }
+  .pin i { width: 16px; height: 16px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #ffb36b, #f56300 70%); box-shadow: inset 0 0 0 3px #3a3a3c; }
+  .pin span { text-align: center; white-space: nowrap; }
+  @media (max-width: 560px) { .pin { font-size: 8.5px; padding: 9px 0 8px; border-radius: 8px; } .row { gap: 4px; } .block { padding: 18px 10px 12px; } }
+  .pin:hover, .pin.on { background: color-mix(in srgb, var(--c) 55%, #2c2c2e); }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 20px; font-size: 13px; color: var(--muted); }
+  .legend span { display: flex; align-items: center; gap: 7px; }
+  .legend i { width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
+
+  /* specs */
+  .cm { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 56px; }
+  @media (max-width: 720px) { .cm { grid-template-columns: 1fr; } }
+  .cmcard { background: #fff; border-radius: 26px; padding: 34px; }
+  .cmcard h3 { font-size: 44px; letter-spacing: -.03em; margin: 0 0 18px; }
+  .cmcard:last-child h3 { color: var(--accent); }
+  .cmcard dl { margin: 0; display: grid; gap: 14px; }
+  .cmcard dt { font-size: 13px; color: var(--muted); font-weight: 600; }
+  .cmcard dd { margin: 2px 0 0; font-size: 20px; font-weight: 700; }
+  .feat { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1px; background: var(--line); border-radius: 22px; overflow: hidden; margin-top: 30px; }
+  .feat div { background: #fff; padding: 22px; }
+  .feat b { display: block; font-size: 13px; color: var(--muted); font-weight: 600; margin-bottom: 4px; }
+  .sw { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 30px; }
+  .sw span { background: var(--soft); border-radius: 99px; padding: 8px 16px; font-weight: 600; font-size: 15px; }
+
+  footer { border-top: 1px solid var(--line); padding: 26px 22px 40px; color: var(--muted); font-size: 12.5px; }
+  footer .wrap { display: grid; gap: 6px; }
+
+  .reveal { opacity: 0; transform: translateY(30px); transition: opacity .9s ease, transform .9s cubic-bezier(.2,.7,.2,1); }
+  .reveal.in { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } html { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+<nav><div class="in">
+  <b>IRIV PiControl</b>
+  <span class="links"><a href="#film">Film</a><a href="#front">Front panel</a><a href="#pins">All pins</a><a href="#side">Side</a><a href="#inside">Inside</a><a href="#specs">Specs</a></span>
+  <a class="buy" href="https://my.cytron.io/p-iriv-picontrol-cm4-industrial-controller" target="_blank" rel="noopener">Buy from Cytron</a>
+</div></nav>
+
+<section class="hero center" id="film">
+  <div class="wrap">
+    <p class="eyebrow">IRIV PiControl · the tour</p>
+    <h1>Every pin. Every port.</h1>
+    <p class="lede">A 90-second film of the whole controller, from the power terminals to the chips inside. Then explore each part yourself below.</p>
+  </div>
+  <div class="player">
+    <div class="screen" id="screen">
+      <canvas id="film-canvas" width="1920" height="1080" aria-label="Animated tour of the IRIV PiControl"></canvas>
+      <button class="bigplay" id="bigplay" aria-label="Play the tour"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z"/></svg></button>
+    </div>
+    <div class="bar">
+      <button class="ctl" id="play" aria-label="Play"></button>
+      <button class="ctl" id="restart" aria-label="Restart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 12a8 8 0 1 0 2.6-5.9M4 4v5h5"/></svg></button>
+      <span class="time" id="time">0:00 / 0:00</span>
+      <input type="range" id="seek" min="0" max="1000" value="0" aria-label="Seek">
+      <button class="dl" id="dl">Download video (MP4)</button>
+      <div class="dlnote" id="dlnote"></div>
+    </div>
+    <div class="chapters" id="chapters"></div>
+  </div>
+</section>
+
+<section class="grey" id="front">
+  <div class="wrap">
+    <p class="eyebrow reveal">Front panel</p>
+    <h2 class="reveal">Every connection. One face.</h2>
+    <p class="lede reveal">Two 16-way push-in terminal blocks, two Ethernet ports, status LEDs and a Wi-Fi antenna. Tap any area to see what it does.</p>
+    <div class="map reveal" id="map-front"></div>
+  </div>
+</section>
+
+<section id="pins">
+  <div class="wrap">
+    <p class="eyebrow reveal">Terminal map</p>
+    <h2 class="reveal">All 32 terminals.</h2>
+    <p class="lede reveal">Laid out exactly as they sit on the front panel, from left to right. Tap a terminal to highlight its group.</p>
+    <div class="blocks reveal" id="blocks"></div>
+    <div class="legend reveal" id="legend"></div>
+  </div>
+</section>
+
+<section class="grey" id="side">
+  <div class="wrap">
+    <p class="eyebrow reveal">Side panel</p>
+    <h2 class="reveal">Screens, USB and more antennas.</h2>
+    <p class="lede reveal">Full-size HDMI, two USB 2.0 ports, USB-C for flashing and debugging, and four antenna knock-outs.</p>
+    <div class="map reveal" id="map-side"></div>
+  </div>
+</section>
+
+<section id="inside">
+  <div class="wrap">
+    <p class="eyebrow reveal">Inside</p>
+    <h2 class="reveal">Open it up.</h2>
+    <p class="lede reveal">Expansion sockets, a built-in display and security hardware, all inside a fanless metal enclosure.</p>
+    <div class="map reveal" id="map-inside"></div>
+  </div>
+</section>
+
+<section class="grey center" id="specs">
+  <div class="wrap">
+    <p class="eyebrow reveal">The brains</p>
+    <h2 class="reveal">Raspberry Pi CM4 or CM5.</h2>
+    <p class="lede reveal">Same enclosure, same I/O. Choose the compute module that fits the job.</p>
+    <div class="cm reveal" id="cm" style="text-align:left"></div>
+    <div class="feat reveal" id="feat" style="text-align:left"></div>
+    <div class="sw reveal"><span>Python</span><span>Node-RED</span><span>Grafana</span><span>CODESYS</span><span>Ignition</span></div>
+  </div>
+</section>
+
+<footer><div class="wrap">
+  <div>Specifications from the <a href="https://my.cytron.io/p-iriv-picontrol-cm4-industrial-controller" target="_blank" rel="noopener">Cytron product page</a>, checked 28 October 2026. Check the IRIV PiControl user manual for wiring limits before installation.</div>
+  <div>Product images and the IRIV name belong to Cytron Technologies. This tour is an independent explainer and is not published by Cytron.</div>
+</div></footer>
+
+<script src="data.js"></script>
+<script src="film.js"></script>
+<script>
+/* ---------- player ---------- */
+const cv = document.getElementById('film-canvas'), fctx = cv.getContext('2d');
+const screen = document.getElementById('screen'), seek = document.getElementById('seek'), timeEl = document.getElementById('time');
+const playBtn = document.getElementById('play');
+const ICON = { play: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4l13 8-13 8z"/></svg>', pause: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>' };
+let t = 2.2, playing = false, last = 0, scrubbing = false;
+const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+function setPlaying(on) { playing = on; screen.classList.toggle('playing', on); playBtn.innerHTML = on ? ICON.pause : ICON.play; playBtn.setAttribute('aria-label', on ? 'Pause' : 'Play'); if (on && t >= TOTAL - .05) t = 0; }
+const chapters = SCENES.map((s, i) => ({ i, label: s.g ? G[s.g].name : i === 0 ? 'Intro' : i === SCENES.length - 1 ? 'Outro' : s.kicker })).filter((c, i) => i > 0 && i < SCENES.length - 1);
+document.getElementById('chapters').innerHTML = chapters.map(c => `<button data-i="${c.i}">${c.label}</button>`).join('');
+document.getElementById('chapters').onclick = e => { const b = e.target.closest('button'); if (!b) return; t = SCENES[+b.dataset.i].t0; setPlaying(true); };
+const chapBtns = [...document.querySelectorAll('#chapters button')];
+function loop(now) {
+  const dt = Math.min(.1, (now - last) / 1000); last = now;
+  if (playing && !scrubbing) { t += dt; if (t >= TOTAL) { t = TOTAL - .001; setPlaying(false); } }
+  render(fctx, t);
+  if (!scrubbing) seek.value = Math.round(t / TOTAL * 1000);
+  timeEl.textContent = `${fmt(t)} / ${fmt(TOTAL)}`;
+  const cur = sceneAt(t); chapBtns.forEach(b => b.classList.toggle('on', +b.dataset.i === cur));
+  requestAnimationFrame(loop);
+}
+filmReady.then(() => requestAnimationFrame(n => { last = n; loop(n); }));
+screen.onclick = () => setPlaying(!playing);
+playBtn.onclick = () => setPlaying(!playing);
+document.getElementById('restart').onclick = () => { t = 0; setPlaying(true); };
+seek.oninput = () => { scrubbing = true; t = seek.value / 1000 * TOTAL; };
+seek.onchange = () => { scrubbing = false; };
+setPlaying(false);
+// start playing once the film scrolls into view
+new IntersectionObserver((es, ob) => es.forEach(e => { if (e.isIntersecting && !matchMedia('(prefers-reduced-motion: reduce)').matches) { setPlaying(true); ob.disconnect(); } }), { threshold: .6 }).observe(screen);
+
+const dl = document.getElementById('dl'), note = document.getElementById('dlnote');
+dl.onclick = async () => {
+  dl.disabled = true; note.textContent = 'Rendering the video… 0%';
+  try {
+    const blob = await exportVideo(p => { note.textContent = `Rendering the video… ${Math.round(p * 100)}%`; });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = 'IRIV-PiControl-tour.' + (blob.type.includes('mp4') ? 'mp4' : 'webm'); a.click();
+    note.textContent = `Saved ${a.download} (${(blob.size / 1e6).toFixed(1)} MB, 1920×1080).`;
+  } catch (e) {
+    note.textContent = location.protocol === 'file:' ? 'Open this page through a local server (node serve.js) to export the video.' : 'Export failed: ' + e.message;
+  }
+  dl.disabled = false;
+};
+
+/* ---------- interactive maps ---------- */
+function termList(g) {
+  const ts = TERMINALS.filter(x => x.group === g.id), seen = new Set();
+  const rows = ts.filter(x => !seen.has(x.name + x.fn) && seen.add(x.name + x.fn));
+  return rows.length ? `<ul class="terms">${rows.map(x => `<li><b>${x.name}</b><span>${x.fn}</span></li>`).join('')}</ul>` : '';
+}
+function buildMap(el, img, vb, ids) {
+  const hot = ids.map(id => { const g = G[id]; return `<g class="hot" data-id="${id}" style="--c:${g.color}" tabindex="0" role="button" aria-label="${g.name}">${g.rects.map(([x0, y0, x1, y1]) => `<rect x="${x0 - 3}" y="${y0 - 3}" width="${x1 - x0 + 6}" height="${y1 - y0 + 6}" rx="5"/>`).join('')}</g>`; }).join('');
+  const cards = ids.map(id => { const g = G[id]; return `<button class="card" data-id="${id}" style="--c:${g.color}" aria-expanded="false"><div class="nm"><i></i>${g.name}</div><div class="more"><h3>${g.title}</h3><p>${g.body}</p><div class="chips">${g.chips.map(c => `<span>${c}</span>`).join('')}</div>${termList(g)}</div></button>`; }).join('');
+  el.innerHTML = `<div class="stage"><svg viewBox="${vb}" role="group" aria-label="${img} view"><image href="${IMG[img]}" width="1000" height="1000"/>${hot}</svg></div><div class="list">${cards}</div>`;
+  const select = id => el.querySelectorAll('[data-id]').forEach(n => { const on = n.dataset.id === id; n.classList.toggle('on', on); if (n.classList.contains('card')) n.setAttribute('aria-expanded', on); });
+  el.addEventListener('click', e => { const n = e.target.closest('[data-id]'); if (n) select(n.dataset.id); });
+  el.addEventListener('keydown', e => { const n = e.target.closest('.hot'); if (n && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); select(n.dataset.id); } });
+  select(ids[0]);
+  return select;
+}
+const selectFront = buildMap(document.getElementById('map-front'), 'front', '50 225 910 540', ['power', 'rs485', 'rs232', 'do', 'di', 'an', 'lan', 'status', 'wifi']);
+buildMap(document.getElementById('map-side'), 'side', '185 585 680 290', ['usb', 'usbc']);
+buildMap(document.getElementById('map-inside'), 'inside', '120 320 800 540', ['oled', 'expand', 'rtc']);
+
+/* ---------- terminal diagram ---------- */
+const blockHtml = b => {
+  const ts = TERMINALS.filter(x => x.block === b), cell = x => `<button class="pin" data-g="${x.group}" style="--c:${G[x.group].color}" title="${x.fn}"><i></i><span>${x.name.replace('RS485 ', '').replace('RS232 ', '')}</span></button>`;
+  return `<div class="block"><h4>Terminal block ${b} · ${b === 1 ? 'power, serial, outputs' : 'inputs, analog'}</h4><div class="row">${ts.filter(x => x.row === 'top').map(cell).join('')}</div><div class="row">${ts.filter(x => x.row === 'bottom').map(cell).join('')}</div></div>`;
+};
+const blocks = document.getElementById('blocks');
+blocks.innerHTML = blockHtml(1) + blockHtml(2);
+blocks.onclick = e => {
+  const p = e.target.closest('.pin'); if (!p) return;
+  blocks.querySelectorAll('.pin').forEach(n => n.classList.toggle('on', n.dataset.g === p.dataset.g));
+  selectFront(p.dataset.g);
+};
+document.getElementById('legend').innerHTML = ['power', 'rs485', 'rs232', 'do', 'di', 'an'].map(id => `<span style="--c:${G[id].color}"><i></i>${G[id].name}</span>`).join('');
+
+/* ---------- specs ---------- */
+document.getElementById('cm').innerHTML = [1, 2].map(k => `<div class="cmcard"><h3>${SPECS[0][k].replace('Raspberry Pi ', '')}</h3><dl>${SPECS.slice(1).map(r => `<div><dt>${r[0]}</dt><dd>${r[k]}</dd></div>`).join('')}</dl></div>`).join('');
+document.getElementById('feat').innerHTML = FEATURES.map(([k, v]) => `<div><b>${k}</b>${v}</div>`).join('');
+
+/* ---------- scroll reveal ---------- */
+const ro = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); ro.unobserve(e.target); } }), { threshold: .15 });
+document.querySelectorAll('.reveal').forEach(n => ro.observe(n));
+</script>
+</body>
+</html>
