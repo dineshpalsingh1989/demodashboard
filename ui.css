@@ -1,6 +1,7 @@
 /* Interface styles. The canvas simulation and its content live in index.html. */
 :root {
   --panel: rgba(255, 255, 255, .94);
+  --panel-solid: rgba(255, 255, 255, .985);
   --text: #182c40;
   --muted: #63778b;
   --line: rgba(44, 70, 99, .12);
@@ -11,6 +12,7 @@
 }
 body.night {
   --panel: rgba(17, 28, 46, .96);
+  --panel-solid: rgba(17, 28, 46, .99);
   --text: #e7effa;
   --muted: #a0b1c8;
   --line: rgba(180, 202, 235, .14);
@@ -278,3 +280,12 @@ body.panel-open #story { left: calc((100% - 448px) / 2); }
 .utility-flow.power { border-left: 3px solid #d98a08; padding-left: 9px; }
 .utility-flow.water { border-left: 3px solid #00a7db; padding-left: 9px; }
 #panel .utility-note { font-size: 12px; color: var(--muted); }
+
+/* Performance: the city canvas repaints every frame, so any frosted-glass blur over it is
+   recomputed every frame too and competes with the map for GPU time (slow panel slide-in,
+   choppy camera fly-to). The bars are made nearly opaque instead, which looks the same. */
+.top, .ctrls button, .view-tools, .map-tools, .telemetry, #panel, #legend, #story, .p-actions button, .p-nav button, .tourbtn {
+  backdrop-filter: none; -webkit-backdrop-filter: none;
+}
+.top, .view-tools, .map-tools, .telemetry, #panel, #legend, #story { background: var(--panel-solid); }
+#panel { will-change: transform; contain: layout paint; }

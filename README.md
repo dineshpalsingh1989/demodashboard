@@ -30,6 +30,17 @@ node serve.js
 
 Then visit `http://localhost:8080`. No package installation or build step is required.
 
+## Performance
+
+The map is drawn on a canvas that is fully redrawn every frame, so most of the work happens on the GPU. To keep selecting, panning, and the camera fly-to smooth on laptop graphics:
+
+- Building wall outlines are drawn only when zoomed in far enough to see them, and roof outlines stay thinner than one device pixel.
+- Poles, tree trunks, and wires are drawn as thin filled shapes, which the GPU handles faster than strokes.
+- Objects outside the visible area are skipped, which helps most when a selection zooms the camera in.
+- On slower machines, the map automatically switches from 1.5× to 1× pixel density after about two seconds below 25 fps.
+- Hover checks run at most once per frame.
+- The top bar, side panel, and other overlays are solid rather than frosted glass, because a blur over the moving map has to be recalculated every frame.
+
 ## Files
 
 - `index.html` — city simulation, device content, and interface markup
