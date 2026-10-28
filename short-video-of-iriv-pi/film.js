@@ -76,9 +76,13 @@ function drawGroup(ctx, c, g, a, t) {
   ctx.save();
   ctx.beginPath(); ctx.rect(0, 0, FW, FH); rects.forEach(([x, y, w, h]) => rr(ctx, x - 6, y - 6, w + 12, h + 12, 14));
   ctx.fillStyle = `rgba(255,255,255,${.62 * a})`; ctx.fill('evenodd');
-  ctx.globalAlpha = a; ctx.strokeStyle = g.color; ctx.lineWidth = 3.5; ctx.shadowColor = g.color; ctx.shadowBlur = 22;
-  rects.forEach(([x, y, w, h]) => { ctx.beginPath(); rr(ctx, x - 6, y - 6, w + 12, h + 12, 14); ctx.stroke(); });
-  ctx.shadowBlur = 0;
+  // glow drawn as wide translucent strokes: canvas shadowBlur is far slower to draw
+  ctx.strokeStyle = g.color;
+  for (const [lw, al] of [[16, .12], [9, .2], [3.5, 1]]) {
+    ctx.globalAlpha = a * al; ctx.lineWidth = lw;
+    rects.forEach(([x, y, w, h]) => { ctx.beginPath(); rr(ctx, x - 6, y - 6, w + 12, h + 12, 14); ctx.stroke(); });
+  }
+  ctx.globalAlpha = a;
   const pulse = .5 + .5 * Math.sin(t * 5);
   (g.pins || []).forEach(p => (p.pair || [p.x]).forEach(px => {
     const [sx, sy] = toScreen(c, px, p.y);
@@ -191,10 +195,11 @@ function drawSpecs(ctx, a, u) {
   ctx.restore();
 }
 
-function render(ctx, t) {
+// k scales the 1920×1080 frame to the canvas size (the player canvas matches its on-screen size).
+function render(ctx, t, k = 1) {
   t = Math.max(0, Math.min(TOTAL - 1e-3, t));
   const i = sceneAt(t), s = SCENES[i], prev = SCENES[i - 1], u = t - s.t0;
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.setTransform(k, 0, 0, k, 0, 0);
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, FW, FH);
   const out = 1 - clamp((u - (s.d - .4)) / .4), p = ease(u / 1.1);
   let cam = s.img ? camOf(s) : null;
