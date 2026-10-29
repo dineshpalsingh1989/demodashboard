@@ -1,0 +1,102 @@
+WEBVTT
+
+1
+00:00:00.300 --> 00:00:04.750
+IRIV EdgeAI CM5
+An industrial AI controller that sees, thinks and acts.
+
+2
+00:00:05.300 --> 00:00:10.250
+Sees. Thinks. Acts.
+Sees: 2× MIPI CSI, Industrial cameras, IP and CCTV cameras. Thinks: Up to 26 TOPS, Raspberry Pi CM5, Up to 16 GB. Acts: 2 dry contacts, 2 drivers, 2 A each, RS485 and 2× Gigabit.
+
+3
+00:00:10.800 --> 00:00:18.250
+Check every bottle.
+A sensor triggers the camera, the AI checks each bottle, and faulty ones are rejected.
+
+4
+00:00:18.800 --> 00:00:23.750
+Everything wires in at the front.
+16 push-in terminals, two Gigabit ports, status LEDs and Wi-Fi.
+
+5
+00:00:24.300 --> 00:00:27.950
+10–30 V DC in.
+Surge protected up to 60 V for 20 ms, and 11 W at full load, so a standard 24 V DIN-rail supply runs it with room for lights and sensors.
+
+6
+00:00:28.500 --> 00:00:32.150
+Isolated RS485.
+Up to 500 kbps with 5000 Vrms isolation. Send results to a PLC over Modbus, or read meters and sensors next to the camera.
+
+7
+00:00:32.700 --> 00:00:36.750
+Two trigger inputs.
+Isolated and bidirectional, 3–50 V high. Wire a photoelectric sensor to DI0 so a part arriving triggers the camera. S/S is the shared common for sinking or sourcing sensors.
+
+8
+00:00:37.300 --> 00:00:41.250
+Two dry-contact outputs.
+Isolated relay-style contacts, up to 50 V and 500 mA. Fire a reject pusher, open a barrier or switch a stack light when the AI decides.
+
+9
+00:00:41.800 --> 00:00:45.850
+Built-in light drivers.
+L0 and L1 power inspection lights straight from VIN, up to 2 A each, with PWM dimming. Strobe a ring or dome light in time with each capture.
+
+10
+00:00:46.400 --> 00:00:50.350
+Two Gigabit ports.
+Bring in IP and CCTV cameras over RTSP on one port, and send results to the plant or cloud on the other.
+
+11
+00:00:50.900 --> 00:00:55.150
+Status at a glance.
+Power, activity, M.2, 4G power and WWAN LEDs, two programmable LEDs, a programmable USER button and a POWER button. An OLED and a buzzer are inside.
+
+12
+00:00:55.700 --> 00:00:58.950
+USB-C for setup.
+Flash the eMMC and debug over USB-C. Day to day you log in over the network.
+
+13
+00:00:59.500 --> 00:01:03.150
+Wireless, built in.
+Dual-band 2.4 / 5 GHz Wi-Fi and Bluetooth 5.0 with BLE. The antenna is included.
+
+14
+00:01:03.700 --> 00:01:08.150
+Two MIPI camera ports.
+Two 4-lane MIPI CSI ports take Raspberry Pi cameras directly, with no USB bandwidth used. Run two cameras on one controller, such as top and side views of the same part.
+
+15
+00:01:08.700 --> 00:01:12.950
+USB 3.0 and 4K HDMI.
+Two USB 3.0 ports carry high-resolution industrial cameras at full speed. HDMI 2.0 drives a 4K 60 Hz screen for live inspection results.
+
+16
+00:01:13.500 --> 00:01:17.450
+4G, anywhere.
+An mPCIe socket (USB 2.0) takes a 4G or LoRa module, with the SIM slot on the side. The 4G PWR and WWAN LEDs on the front show its status.
+
+17
+00:01:18.000 --> 00:01:24.950
+Read every plate.
+The IP camera tracks cars and people, reads each plate and opens the barrier.
+
+18
+00:01:25.500 --> 00:01:30.450
+Up to 26 TOPS of AI.
+13 TOPS: Raspberry Pi AI HAT+, 13 TOPS, Raspberry Pi CM5, Cortex-A76 2.4 GHz, 8 GB LPDDR4-4267, 32 GB. 26 TOPS: Raspberry Pi AI HAT+, 26 TOPS, Raspberry Pi CM5, Cortex-A76 2.4 GHz, 8 or 16 GB LPDDR4-4267, 32 or 64 GB.
+
+19
+00:01:31.000 --> 00:01:34.650
+Clips onto a DIN rail.
+A metal, fanless case, 139 × 88 × 38 mm, rated −20 to 60 °C. It clips onto a standard 35 mm rail next to the camera’s power supply.
+
+20
+00:01:35.200 --> 00:01:39.650
+IRIV EdgeAI CM5
+Defect detection · OCR · counting · ANPR · CCTV analytics. From RM2,487 at cytron.io.
+

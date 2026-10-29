@@ -1,0 +1,654 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IRIV EdgeAI Tour</title>
+<meta name="description" content="A film, a live AI demo and an interactive map of every port on the IRIV EdgeAI CM5 industrial AI controller.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root { --ink: #1d1d1f; --muted: #6e6e73; --line: #d2d2d7; --soft: #f5f5f7; --accent: #f56300; --blue: #0071e3; --bg: #fff; }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.5 Inter, -apple-system, "Segoe UI", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  button { font: inherit; }
+
+  nav { position: sticky; top: 0; z-index: 10; background: rgba(255,255,255,.96); border-bottom: 1px solid rgba(0,0,0,.08); }
+  nav .in { max-width: 1080px; margin: 0 auto; padding: 0 22px; height: 52px; display: flex; align-items: center; gap: 28px; }
+  nav b { font-size: 19px; font-weight: 700; letter-spacing: -.3px; margin-right: auto; }
+  nav a { color: var(--ink); font-size: 13px; }
+  nav .links { display: flex; gap: 26px; }
+  nav .buy { background: var(--blue); color: #fff; padding: 5px 12px; border-radius: 99px; font-size: 12px; }
+  nav .buy:hover { text-decoration: none; background: #0077ed; }
+  @media (max-width: 720px) { nav .links { display: none; } }
+
+  section { padding: 110px 22px; }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+  .eyebrow { color: var(--accent); font-weight: 600; font-size: 19px; margin: 0 0 8px; }
+  h1, h2 { font-weight: 800; letter-spacing: -.035em; line-height: 1.05; margin: 0; }
+  h1 { font-size: clamp(48px, 9vw, 96px); }
+  h2 { font-size: clamp(38px, 6vw, 64px); }
+  .lede { font-size: clamp(19px, 2.4vw, 26px); color: var(--muted); font-weight: 500; margin: 16px 0 0; max-width: 760px; }
+  .center { text-align: center; }
+  .center .lede { margin-left: auto; margin-right: auto; }
+
+  /* film */
+  .hero { padding-top: 70px; padding-bottom: 60px; }
+  .player { margin: 48px auto 0; max-width: 1200px; }
+  .screen { position: relative; border-radius: 26px; overflow: hidden; background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.06), 0 30px 80px -30px rgba(0,0,0,.25); cursor: pointer; }
+  .screen canvas { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; }
+  .bigplay { position: absolute; inset: 0; margin: auto; width: 84px; height: 84px; border-radius: 50%; border: 0; background: rgba(29,29,31,.78); color: #fff; display: grid; place-items: center; cursor: pointer; transition: opacity .25s, transform .25s; }
+  .bigplay svg { width: 30px; height: 30px; margin-left: 5px; }
+  .playing .bigplay { opacity: 0; transform: scale(.9); pointer-events: none; }
+  .bar { display: flex; align-items: center; gap: 14px; margin-top: 18px; padding: 0 6px; flex-wrap: wrap; }
+  .ctl { width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--soft); color: var(--ink); display: grid; place-items: center; cursor: pointer; flex: none; }
+  .ctl:hover { background: #e8e8ed; }
+  .ctl svg { width: 16px; height: 16px; }
+  .time { font-variant-numeric: tabular-nums; font-size: 13px; color: var(--muted); width: 92px; flex: none; }
+  input[type=range] { flex: 1; min-width: 140px; accent-color: var(--accent); }
+  .dl { border: 0; border-radius: 99px; background: var(--ink); color: #fff; padding: 10px 18px; font-size: 14px; font-weight: 600; cursor: pointer; flex: none; }
+  .dl:disabled { opacity: .6; cursor: progress; }
+  .files { font-size: 13px; font-weight: 600; color: var(--muted); }
+  .dlnote { width: 100%; font-size: 13px; color: var(--muted); min-height: 20px; text-align: right; }
+  .chapters { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; padding: 0 6px; }
+  .chapters button { border: 1px solid var(--line); background: #fff; border-radius: 99px; padding: 6px 13px; font-size: 13px; color: var(--ink); cursor: pointer; }
+  .chapters button:hover { border-color: var(--ink); }
+  .chapters button.on { background: var(--ink); border-color: var(--ink); color: #fff; }
+
+  /* pin maps */
+  .grey { background: var(--soft); }
+  .map { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(280px, 1fr); gap: 34px; margin-top: 56px; align-items: start; }
+  @media (max-width: 880px) { .map { grid-template-columns: 1fr; } }
+  .stage { background: #fff; border-radius: 26px; padding: 18px; position: sticky; top: 76px; }
+  @media (max-width: 880px) { .stage { position: static; } }
+  .stage svg { display: block; width: 100%; height: auto; }
+  .hot rect { fill: color-mix(in srgb, var(--c) 10%, transparent); stroke: var(--c); stroke-width: 1.6; vector-effect: non-scaling-stroke; cursor: pointer; transition: fill .2s, stroke-width .2s; }
+  .hot:hover rect, .hot:focus-visible rect { fill: color-mix(in srgb, var(--c) 22%, transparent); }
+  .hot.on rect { fill: color-mix(in srgb, var(--c) 26%, transparent); stroke-width: 3.2; }
+  .hot:focus { outline: none; }
+  @keyframes pulse { 50% { stroke-opacity: .45; } }
+  .list { display: grid; gap: 10px; }
+  .card { text-align: left; border: 0; background: #fff; border-radius: 18px; padding: 16px 18px; cursor: pointer; color: var(--ink); box-shadow: 0 0 0 1px rgba(0,0,0,.05); transition: box-shadow .2s, transform .2s; }
+  .card:hover { transform: translateY(-1px); box-shadow: 0 0 0 1px rgba(0,0,0,.08), 0 10px 24px -14px rgba(0,0,0,.3); }
+  .card .nm { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; }
+  .card .nm i { width: 11px; height: 11px; border-radius: 50%; background: var(--c); flex: none; }
+  .card .more { display: none; margin-top: 8px; }
+  .card.on { box-shadow: 0 0 0 2px var(--c); }
+  .card.on .more { display: block; }
+  .card h3 { font-size: 22px; letter-spacing: -.02em; margin: 0 0 6px; }
+  .card p { margin: 0; color: var(--muted); font-size: 15px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .chips span { border: 1.5px solid var(--c); border-radius: 99px; padding: 2px 10px; font-size: 12.5px; font-weight: 600; }
+  .terms { margin: 12px 0 0; padding: 0; list-style: none; font-size: 13.5px; }
+  .terms li { display: flex; gap: 10px; padding: 5px 0; border-top: 1px solid #ececf0; }
+  .terms b { width: 74px; flex: none; }
+  .terms span { color: var(--muted); }
+
+  /* terminal diagram */
+  .blocks { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; margin-top: 60px; }
+  @media (max-width: 720px) { .blocks { grid-template-columns: 1fr; } }
+  .block { background: #1d1d1f; border-radius: 22px; padding: 22px 18px 18px; color: #fff; }
+  .block h4 { margin: 0 0 14px; font-size: 13px; color: #a1a1a6; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; }
+  .row { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; }
+  .row + .row { margin-top: 6px; }
+  .pin { border: 0; border-radius: 10px; padding: 12px 2px 10px; background: #2c2c2e; color: #fff; cursor: pointer; display: grid; justify-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; line-height: 1.1; min-width: 0; }
+  .pin i { width: 16px; height: 16px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #ffb36b, #f56300 70%); box-shadow: inset 0 0 0 3px #3a3a3c; }
+  .pin span { text-align: center; white-space: nowrap; }
+  @media (max-width: 560px) { .pin { font-size: 8.5px; padding: 9px 0 8px; border-radius: 8px; } .row { gap: 4px; } .block { padding: 18px 10px 12px; } }
+  .pin:hover, .pin.on { background: color-mix(in srgb, var(--c) 55%, #2c2c2e); }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 20px; font-size: 13px; color: var(--muted); }
+  .legend span { display: flex; align-items: center; gap: 7px; }
+  .legend i { width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
+
+  /* specs */
+  .cm { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 56px; }
+  @media (max-width: 720px) { .cm { grid-template-columns: 1fr; } }
+  .cmcard { background: #fff; border-radius: 26px; padding: 34px; }
+  .cmcard h3 { font-size: 44px; letter-spacing: -.03em; margin: 0 0 18px; }
+  .cmcard:last-child h3 { color: var(--accent); }
+  .cmcard dl { margin: 0; display: grid; gap: 14px; }
+  .cmcard dt { font-size: 13px; color: var(--muted); font-weight: 600; }
+  .cmcard dd { margin: 2px 0 0; font-size: 20px; font-weight: 700; }
+  .feat { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1px; background: var(--line); border-radius: 22px; overflow: hidden; margin-top: 30px; }
+  .feat div { background: #fff; padding: 22px; }
+  .feat b { display: block; font-size: 13px; color: var(--muted); font-weight: 600; margin-bottom: 4px; }
+  .sw { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 30px; }
+  .sw span { background: var(--soft); border-radius: 99px; padding: 8px 16px; font-weight: 600; font-size: 15px; }
+
+  footer { border-top: 1px solid var(--line); padding: 26px 22px 40px; color: var(--muted); font-size: 12.5px; }
+  footer .wrap { display: grid; gap: 6px; }
+
+  /* what you can connect */
+  .ctools { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between; margin-top: 44px; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tab { border: 0; border-radius: 99px; padding: 9px 16px; background: #fff; color: var(--ink); box-shadow: 0 0 0 1px rgba(0,0,0,.08); font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: background .2s, color .2s; }
+  .tab i { width: 9px; height: 9px; border-radius: 50%; background: var(--c); }
+  .tab:hover { box-shadow: 0 0 0 1px var(--c); }
+  .tab.on { background: var(--ink); color: #fff; box-shadow: none; }
+  .search { position: relative; flex: 0 1 260px; }
+  .search input { width: 100%; border: 0; border-radius: 99px; padding: 11px 16px 11px 40px; font: inherit; font-size: 14px; background: #fff; color: var(--ink); box-shadow: 0 0 0 1px rgba(0,0,0,.08); }
+  .search input:focus { outline: none; box-shadow: 0 0 0 2px var(--blue); }
+  .search svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+  .cpanel { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 22px; margin-top: 26px; }
+  @media (max-width: 880px) { .cpanel { grid-template-columns: 1fr; } .search { flex: 1 1 100%; } }
+  .portview, .tipcard { background: #fff; border-radius: 26px; padding: 22px; }
+  .portview svg { display: block; width: 100%; height: auto; border-radius: 14px; }
+  .pv-hot rect { fill: color-mix(in srgb, var(--c) 16%, transparent); stroke: var(--c); stroke-width: 2.6; vector-effect: non-scaling-stroke; }
+  .pv-hot circle { fill: color-mix(in srgb, var(--c) 30%, transparent); stroke: var(--c); stroke-width: 1.6; vector-effect: non-scaling-stroke; }
+  .pvcap { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 16px; font-size: 14px; color: var(--muted); }
+  .pvcap > span:first-child { margin-right: 4px; }
+  .pvcap b { color: var(--ink); }
+  .pvcap .dev { white-space: nowrap; display: inline-flex; gap: 6px; align-items: center; background: var(--soft); border-radius: 99px; padding: 5px 12px 5px 9px; color: var(--ink); font-weight: 600; font-size: 13px; }
+  .pvcap .dev svg { color: var(--c); }
+  .tipcard h3 { font-size: 26px; letter-spacing: -.02em; margin: 0 0 8px; }
+  .tipcard > p { color: var(--muted); margin: 0 0 16px; }
+  .tipcard ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; font-size: 15px; }
+  .tipcard li { display: flex; gap: 10px; }
+  .tipcard li::before { content: ''; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--c); margin-top: 8px; }
+  .generic { margin-top: 18px; padding-top: 16px; border-top: 1px solid #ececf0; }
+  .generic b { font-size: 13px; color: var(--muted); }
+  .generic .chips span { border-color: var(--line); font-weight: 500; }
+  .filters { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 24px; }
+  .filters button { border: 0; border-radius: 99px; padding: 6px 13px; font-size: 13px; font-weight: 600; background: transparent; color: var(--muted); cursor: pointer; }
+  .filters button:hover { color: var(--ink); }
+  .filters button.on { background: #fff; color: var(--ink); box-shadow: 0 0 0 1px rgba(0,0,0,.08); }
+  .products { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; margin-top: 16px; }
+  .prod { background: #fff; border-radius: 22px; padding: 20px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 0 0 1px rgba(0,0,0,.04); transition: transform .2s, box-shadow .2s; }
+  .prod:hover { transform: translateY(-2px); box-shadow: 0 0 0 1px rgba(0,0,0,.06), 0 16px 30px -18px rgba(0,0,0,.35); }
+  .prod.in-sys { box-shadow: 0 0 0 2px var(--c); }
+  .prod .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .prod .ic { width: 54px; height: 54px; border-radius: 16px; display: grid; place-items: center; color: var(--c); background: linear-gradient(145deg, color-mix(in srgb, var(--c) 22%, #fff), color-mix(in srgb, var(--c) 6%, #fff)); }
+  .prod .ptag { font-size: 11.5px; font-weight: 700; color: var(--c); background: color-mix(in srgb, var(--c) 10%, #fff); padding: 3px 9px; border-radius: 99px; }
+  .prod b { font-size: 15px; line-height: 1.3; }
+  .prod b a { color: var(--ink); }
+  .prod p { margin: 0; color: var(--muted); font-size: 13.5px; line-height: 1.45; }
+  .uses { font-size: 12.5px; color: var(--muted); }
+  .uses span { font-weight: 700; color: var(--ink); }
+  .prod .ft { margin-top: auto; padding-top: 10px; border-top: 1px solid #f0f0f3; display: flex; align-items: center; gap: 10px; }
+  .prod .ft .price { font-weight: 800; font-size: 15px; margin-right: auto; }
+  .prod .ft a { font-size: 12.5px; font-weight: 600; }
+  .add { border: 0; border-radius: 99px; background: var(--ink); color: #fff; font-size: 12.5px; font-weight: 700; padding: 7px 12px; cursor: pointer; white-space: nowrap; }
+  .add.on { background: var(--c); }
+  .empty { padding: 50px 20px; text-align: center; color: var(--muted); }
+  .note { font-size: 13px; color: var(--muted); margin-top: 18px; }
+
+  /* my system builder */
+  .sysbtn { position: fixed; right: 22px; bottom: 22px; z-index: 20; border: 0; border-radius: 99px; background: var(--ink); color: #fff; padding: 13px 20px; font-weight: 700; font-size: 14px; box-shadow: 0 14px 30px -12px rgba(0,0,0,.5); cursor: pointer; display: none; align-items: center; gap: 10px; }
+  .sysbtn.show { display: flex; }
+  .sysbtn em { font-style: normal; background: var(--accent); border-radius: 99px; padding: 1px 8px; font-size: 12px; }
+  .sysbtn.bump { animation: bump .45s; }
+  @keyframes bump { 40% { transform: scale(1.08); } }
+  .scrim { position: fixed; inset: 0; z-index: 25; background: rgba(0,0,0,.25); opacity: 0; pointer-events: none; transition: opacity .3s; }
+  .scrim.open { opacity: 1; pointer-events: auto; }
+  .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(430px, 100%); z-index: 30; background: #fff; box-shadow: -20px 0 60px -30px rgba(0,0,0,.4); transform: translateX(105%); transition: transform .35s cubic-bezier(.2,.7,.2,1); display: flex; flex-direction: column; visibility: hidden; }
+  .drawer.open { transform: none; visibility: visible; }
+  .dhead { padding: 18px 22px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; }
+  .dhead h3 { margin: 0; font-size: 22px; letter-spacing: -.02em; }
+  .dx { border: 0; background: var(--soft); width: 34px; height: 34px; border-radius: 50%; cursor: pointer; font-size: 18px; line-height: 1; }
+  .dbody { flex: 1; overflow: auto; padding: 4px 22px 22px; }
+  .sitem { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 12px 0; border-bottom: 1px solid #f0f0f3; font-size: 14px; }
+  .sitem b { font-weight: 600; line-height: 1.3; }
+  .sitem small { color: var(--muted); font-size: 12px; }
+  .qty { display: flex; align-items: center; gap: 6px; }
+  .qty button { width: 26px; height: 26px; border-radius: 50%; border: 0; background: var(--soft); cursor: pointer; font-weight: 700; }
+  .qty span { min-width: 18px; text-align: center; font-variant-numeric: tabular-nums; }
+  .sitem .lp { text-align: right; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .dbody h4 { margin: 22px 0 10px; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .meters { display: grid; gap: 11px; }
+  .meter { font-size: 13px; }
+  .meter div { display: flex; justify-content: space-between; }
+  .meter i { display: block; height: 6px; border-radius: 9px; background: #ececf0; margin-top: 4px; overflow: hidden; }
+  .meter i b { display: block; height: 100%; background: #1a9e45; border-radius: 9px; transition: width .3s; }
+  .meter.over i b { background: #e5383b; }
+  .meter.over span { color: #e5383b; font-weight: 700; }
+  .warn { margin-top: 14px; display: grid; gap: 8px; }
+  .warn div { background: #fff4e5; color: #8a4b00; border-radius: 12px; padding: 10px 12px; font-size: 13px; }
+  .warn .ok { background: #e9f7ee; color: #15703a; }
+  .dfoot { border-top: 1px solid var(--line); padding: 16px 22px 20px; display: grid; gap: 12px; }
+  .dfoot .sum b { font-size: 26px; letter-spacing: -.02em; }
+  .dfoot .sum small { color: var(--muted); font-size: 12px; }
+  .btns { display: flex; gap: 8px; }
+  .btns button { flex: 1; }
+  .recipe .btns { margin-top: 14px; }
+  .ghostbtn { border: 0; border-radius: 99px; background: #fff; color: var(--ink); box-shadow: 0 0 0 1px var(--line); padding: 9px 15px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  button:disabled { opacity: .45; cursor: default; }
+
+  /* ready-made systems */
+  .recipes { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 50px; }
+  .recipe { background: var(--soft); border-radius: 26px; padding: 28px; display: flex; flex-direction: column; }
+  .recipe .hd { display: flex; align-items: center; gap: 12px; }
+  .recipe .hd span { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; background: var(--c); color: #fff; }
+  .recipe h3 { font-size: 26px; letter-spacing: -.02em; margin: 0; }
+  .recipe > p { color: var(--muted); margin: 12px 0 16px; font-size: 15px; }
+  .parts { list-style: none; margin: 0 0 18px; padding: 0; font-size: 14px; }
+  .parts li { display: grid; grid-template-columns: 26px 1fr auto; gap: 8px; padding: 9px 0; border-top: 1px solid #e3e3e8; align-items: start; }
+  .parts .q { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .parts a { color: var(--ink); }
+  .parts small { display: block; color: var(--c); font-weight: 600; font-size: 12px; margin-top: 2px; }
+  .parts .pr { font-variant-numeric: tabular-nums; color: var(--muted); }
+  .total { margin-top: auto; padding-top: 4px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .total b { font-size: 22px; letter-spacing: -.02em; white-space: nowrap; }
+  .total small { display: block; font-size: 12px; color: var(--muted); font-weight: 500; letter-spacing: 0; }
+  .copy { border: 0; border-radius: 99px; background: var(--ink); color: #fff; padding: 9px 15px; font-size: 13px; font-weight: 600; cursor: pointer; flex: none; }
+  .cta { margin-top: 56px; background: #1d1d1f; color: #fff; border-radius: 26px; padding: 36px; display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between; }
+  .cta h3 { margin: 0; font-size: 28px; letter-spacing: -.02em; }
+  .cta p { margin: 6px 0 0; color: #a1a1a6; }
+  .cta a { background: #fff; color: var(--ink); border-radius: 99px; padding: 11px 20px; font-weight: 700; font-size: 15px; }
+  .cta a:hover { text-decoration: none; background: #f5f5f7; }
+  @media (prefers-reduced-motion: reduce) { .wire { animation: none; } }
+
+  /* live demo */
+  .demo-sec { background: #000; color: #f5f5f7; }
+  .demo-sec h2 { color: #f5f5f7; }
+  .demo-sec .lede { color: #a1a1a6; }
+  .dtabs { display: inline-flex; gap: 4px; background: #1d1d1f; border-radius: 99px; padding: 5px; margin-top: 30px; }
+  .dtabs button { border: 0; background: transparent; color: #a1a1a6; padding: 9px 18px; border-radius: 99px; font-weight: 600; font-size: 14px; cursor: pointer; }
+  .dtabs button.on { background: #f5f5f7; color: #1d1d1f; }
+  .demo-wrap { max-width: 1200px; margin: 34px auto 0; }
+  .demo-wrap canvas { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; border-radius: 26px; background: #0b1220; }
+  .dsteps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 16px; }
+  @media (max-width: 760px) { .dsteps { grid-template-columns: 1fr 1fr; } }
+  .dstep { background: #1d1d1f; border-radius: 18px; padding: 18px; }
+  .dstep small { color: var(--c); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+  .dstep b { display: block; color: #f5f5f7; font-size: 16px; margin-top: 4px; }
+  .dstep p { margin: 6px 0 0; color: #a1a1a6; font-size: 14px; line-height: 1.45; }
+  .kits { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-top: 22px; text-align: left; }
+  .kits div { background: #fff; border-radius: 22px; padding: 24px; }
+  .kits b { display: block; font-size: 20px; letter-spacing: -.01em; margin-bottom: 6px; }
+  .kits p { margin: 0; color: var(--muted); font-size: 15px; }
+  .blocks.one { grid-template-columns: minmax(0, 640px); justify-content: center; }
+
+  .reveal { opacity: 0; transform: translateY(30px); transition: opacity .9s ease, transform .9s cubic-bezier(.2,.7,.2,1); }
+  .reveal.in { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } html { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+<nav><div class="in">
+  <b>IRIV EdgeAI CM5</b>
+  <span class="links"><a href="#film">Film</a><a href="#demo">Live demo</a><a href="#front">Front panel</a><a href="#pins">All pins</a><a href="#side">Side</a><a href="#connect">Connect</a><a href="#systems">Systems</a><a href="#specs">Specs</a></span>
+  <a class="buy" href="https://my.cytron.io/c-industrial-edge-controller/p-iriv-edge-ai-cm5" target="_blank" rel="noopener">Buy from Cytron</a>
+</div></nav>
+
+<section class="hero center" id="film">
+  <div class="wrap">
+    <p class="eyebrow">IRIV EdgeAI CM5 · the tour</p>
+    <h1>See. Think. Act.</h1>
+    <p class="lede">An industrial AI controller with camera ports, up to 26 TOPS of AI and isolated I/O to act on what it sees. Watch the film, try the live demo, then explore every port.</p>
+  </div>
+  <div class="player">
+    <div class="screen" id="screen">
+      <canvas id="film-canvas" width="1920" height="1080" aria-label="Animated tour of the IRIV EdgeAI CM5"></canvas>
+      <button class="bigplay" id="bigplay" aria-label="Play the tour"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z"/></svg></button>
+    </div>
+    <div class="bar">
+      <button class="ctl" id="play" aria-label="Play"></button>
+      <button class="ctl" id="restart" aria-label="Restart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 12a8 8 0 1 0 2.6-5.9M4 4v5h5"/></svg></button>
+      <span class="time" id="time">0:00 / 0:00</span>
+      <input type="range" id="seek" min="0" max="1000" value="0" aria-label="Seek">
+      <button class="dl" id="dl">Download video (MP4)</button>
+      <span class="files"><a href="IRIV-EdgeAI-CM5-tour.mp4" download>Ready-made MP4</a> · <a href="IRIV-EdgeAI-CM5-tour.vtt" download>Subtitles (.vtt)</a></span>
+      <div class="dlnote" id="dlnote"></div>
+    </div>
+    <div class="chapters" id="chapters"></div>
+  </div>
+</section>
+
+<section class="demo-sec" id="demo">
+  <div class="wrap center">
+    <p class="eyebrow reveal">Live demo</p>
+    <h2 class="reveal">Watch it think.</h2>
+    <p class="lede reveal">A simulated EdgeAI at work. Switch between a factory line and a car park gate, and watch each input, decision and output as it happens.</p>
+    <div class="dtabs reveal" id="dtabs" role="tablist" aria-label="Demo"><button data-demo="factory" class="on" role="tab">Factory inspection</button><button data-demo="gate" role="tab">CCTV &amp; ANPR gate</button></div>
+  </div>
+  <div class="demo-wrap reveal"><canvas id="demo-canvas" width="1600" height="900" aria-label="Simulated EdgeAI demo"></canvas><div class="dsteps" id="dsteps"></div></div>
+</section>
+
+<section class="grey" id="front">
+  <div class="wrap">
+    <p class="eyebrow reveal">Front panel</p>
+    <h2 class="reveal">Everything wires in at the front.</h2>
+    <p class="lede reveal">One 16-way push-in terminal block, two Gigabit Ethernet ports, status LEDs, two buttons and Wi-Fi. Tap any area to see what it does.</p>
+    <div class="map reveal" id="map-front"></div>
+  </div>
+</section>
+
+<section id="pins">
+  <div class="wrap">
+    <p class="eyebrow reveal">Terminal map</p>
+    <h2 class="reveal">All 16 terminals.</h2>
+    <p class="lede reveal">Laid out exactly as they sit on the front panel, from left to right. Tap a terminal to highlight its group.</p>
+    <div class="blocks one reveal" id="blocks"></div>
+    <div class="legend reveal" id="legend"></div>
+  </div>
+</section>
+
+<section class="grey" id="side">
+  <div class="wrap">
+    <p class="eyebrow reveal">Side panel</p>
+    <h2 class="reveal">Cameras plug in at the side.</h2>
+    <p class="lede reveal">Two MIPI camera ports, two USB 3.0 ports, full-size HDMI and a SIM slot for 4G.</p>
+    <div class="map reveal" id="map-side"></div>
+  </div>
+</section>
+
+<section class="grey" id="connect">
+  <div class="wrap">
+    <p class="eyebrow reveal">What you can connect</p>
+    <h2 class="reveal">Cameras in. Decisions out.</h2>
+    <p class="lede reveal">Cameras, lights, triggers and screens. Pick a port to see where it is, how to wire it, and real parts you can order from Cytron. Add parts to <b>My system</b> to check the ports and the price.</p>
+    <div class="ctools reveal"><div class="tabs" id="tabs" role="tablist" aria-label="Ports"></div>
+      <label class="search"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="psearch" type="search" placeholder="Search parts" aria-label="Search parts"></label></div>
+    <div class="reveal" id="cpanel"></div>
+    <p class="note">Products and prices from my.cytron.io on 29 October 2026, excluding tax. Check each product page for current price, stock and wiring details.</p>
+  </div>
+</section>
+
+<section id="systems">
+  <div class="wrap">
+    <p class="eyebrow reveal">Ready-made systems</p>
+    <h2 class="reveal">Start from a recipe.</h2>
+    <p class="lede reveal">Three complete parts lists, each with the port every part uses. Copy one into a quote and adjust the quantities.</p>
+    <div class="recipes reveal" id="recipes"></div>
+    <div class="cta reveal">
+      <div><h3>See it running in a whole city.</h3><p>EdgeAI cameras read plates at the car park and measure queues at every junction in the NeoVille smart city demo.</p></div>
+      <a href="../#cp-anpr">Open the smart city demo</a>
+    </div>
+  </div>
+</section>
+
+<section class="grey center" id="specs">
+  <div class="wrap">
+    <p class="eyebrow reveal">The brains</p>
+    <h2 class="reveal">Up to 26 TOPS of AI.</h2>
+    <p class="lede reveal">A Raspberry Pi CM5 with a Raspberry Pi AI HAT+ on PCIe. Pick 13 or 26 TOPS, then the kit that fits the job.</p>
+    <div class="cm reveal" id="cm" style="text-align:left"></div>
+    <div class="kits reveal" id="kits"></div>
+    <div class="feat reveal" id="feat" style="text-align:left"></div>
+    <div class="sw reveal"><span>YOLOv8</span><span>MediaPipe</span><span>Python</span><span>Docker</span><span>Node-RED</span><span>OPC UA</span></div>
+  </div>
+</section>
+
+<button class="sysbtn" id="sysbtn" aria-label="Open my system"></button>
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-label="My system"><div class="dhead"><h3>My system</h3><button class="dx" id="dclose" aria-label="Close">×</button></div><div class="dbody" id="dbody"></div><div class="dfoot" id="dfoot"></div></aside>
+
+<footer><div class="wrap">
+  <div>Specifications from the <a href="https://my.cytron.io/c-industrial-edge-controller/p-iriv-edge-ai-cm5" target="_blank" rel="noopener">Cytron product page</a>, checked 29 October 2026. Check the IRIV EdgeAI CM5 user manual for wiring limits before installation. The live demo is a simulation; detection results, timings and counts are illustrative.</div>
+  <div>Also see the <a href="../short-video-of-iriv-pi/">IRIV PiControl tour</a>.</div>
+  <div>Product images and the IRIV name belong to Cytron Technologies. This tour is an independent explainer and is not published by Cytron.</div>
+</div></footer>
+
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="film.js"></script>
+<script src="connect.js"></script>
+<script>
+/* ---------- player ---------- */
+const cv = document.getElementById('film-canvas'), fctx = cv.getContext('2d');
+const screen = document.getElementById('screen'), seek = document.getElementById('seek'), timeEl = document.getElementById('time');
+const playBtn = document.getElementById('play');
+const ICON = { play: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4l13 8-13 8z"/></svg>', pause: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>' };
+let t = 2.2, playing = false, last = 0, scrubbing = false;
+const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+// The film only redraws while it is playing and on screen, or after a seek; a paused or
+// scrolled-away film costs nothing, so the rest of the page scrolls smoothly.
+let dirty = true, onScreen = true;
+function setPlaying(on) { playing = on; screen.classList.toggle('playing', on); playBtn.innerHTML = on ? ICON.pause : ICON.play; playBtn.setAttribute('aria-label', on ? 'Pause' : 'Play'); if (on && t >= TOTAL - .05) t = 0; dirty = true; }
+function sizeCanvas() {
+  const w = Math.max(320, Math.min(FW, Math.round(cv.clientWidth * Math.min(2, devicePixelRatio || 1))));
+  if (cv.width !== w) { cv.width = w; cv.height = Math.round(w * FH / FW); }
+  dirty = true;
+}
+addEventListener('resize', sizeCanvas);
+new IntersectionObserver(es => { onScreen = es[0].isIntersecting; dirty = true; }).observe(screen);
+const chapters = SCENES.map((s, i) => ({ i, label: s.g ? G[s.g].name : i === 0 ? 'Intro' : i === SCENES.length - 1 ? 'Outro' : s.kicker })).filter((c, i) => i > 0 && i < SCENES.length - 1);
+document.getElementById('chapters').innerHTML = chapters.map(c => `<button data-i="${c.i}">${c.label}</button>`).join('');
+document.getElementById('chapters').onclick = e => { const b = e.target.closest('button'); if (!b) return; t = SCENES[+b.dataset.i].t0; setPlaying(true); };
+const chapBtns = [...document.querySelectorAll('#chapters button')];
+let curScene = -1;
+function loop(now) {
+  const dt = Math.min(.1, (now - last) / 1000); last = now;
+  const live = onScreen && !document.hidden;
+  if (playing && !scrubbing && live) { t += dt; dirty = true; if (t >= TOTAL) { t = TOTAL - .001; setPlaying(false); } }
+  if (dirty && live) {
+    dirty = false;
+    render(fctx, t, cv.width / FW);
+    if (!scrubbing) seek.value = Math.round(t / TOTAL * 1000);
+    timeEl.textContent = `${fmt(t)} / ${fmt(TOTAL)}`;
+    const cur = sceneAt(t);
+    if (cur !== curScene) { curScene = cur; chapBtns.forEach(b => b.classList.toggle('on', +b.dataset.i === cur)); }
+  }
+  requestAnimationFrame(loop);
+}
+filmReady.then(() => { sizeCanvas(); requestAnimationFrame(n => { last = n; loop(n); }); });
+screen.onclick = () => setPlaying(!playing);
+playBtn.onclick = () => setPlaying(!playing);
+document.getElementById('restart').onclick = () => { t = 0; setPlaying(true); };
+seek.oninput = () => { scrubbing = true; t = seek.value / 1000 * TOTAL; dirty = true; };
+seek.onchange = () => { scrubbing = false; };
+setPlaying(false);
+// start playing once the film scrolls into view
+new IntersectionObserver((es, ob) => es.forEach(e => { if (e.isIntersecting && !matchMedia('(prefers-reduced-motion: reduce)').matches) { setPlaying(true); ob.disconnect(); } }), { threshold: .6 }).observe(screen);
+
+const dl = document.getElementById('dl'), note = document.getElementById('dlnote');
+dl.onclick = async () => {
+  dl.disabled = true; note.textContent = 'Rendering the video… 0%';
+  try {
+    const blob = await exportVideo(p => { note.textContent = `Rendering the video… ${Math.round(p * 100)}%`; });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = 'IRIV-EdgeAI-CM5-tour.' + (blob.type.includes('mp4') ? 'mp4' : 'webm'); a.click();
+    note.textContent = `Saved ${a.download} (${(blob.size / 1e6).toFixed(1)} MB, 1920×1080).`;
+  } catch (e) {
+    note.textContent = location.protocol === 'file:' ? 'Open this page through a local server (node serve.js) to export the video.' : 'Export failed: ' + e.message;
+  }
+  dl.disabled = false;
+};
+
+/* ---------- interactive maps ---------- */
+function termList(g) {
+  const ts = TERMINALS.filter(x => x.group === g.id), seen = new Set();
+  const rows = ts.filter(x => !seen.has(x.name + x.fn) && seen.add(x.name + x.fn));
+  return rows.length ? `<ul class="terms">${rows.map(x => `<li><b>${x.name}</b><span>${x.fn}</span></li>`).join('')}</ul>` : '';
+}
+function buildMap(el, img, vb, ids) {
+  const hot = ids.map(id => { const g = G[id]; return `<g class="hot" data-id="${id}" style="--c:${g.color}" tabindex="0" role="button" aria-label="${g.name}">${g.rects.map(([x0, y0, x1, y1]) => `<rect x="${x0 - 3}" y="${y0 - 3}" width="${x1 - x0 + 6}" height="${y1 - y0 + 6}" rx="5"/>`).join('')}</g>`; }).join('');
+  const cards = ids.map(id => { const g = G[id]; return `<button class="card" data-id="${id}" style="--c:${g.color}" aria-expanded="false"><div class="nm"><i></i>${g.name}</div><div class="more"><h3>${g.title}</h3><p>${g.body}</p><div class="chips">${g.chips.map(c => `<span>${c}</span>`).join('')}</div>${termList(g)}</div></button>`; }).join('');
+  el.innerHTML = `<div class="stage"><svg viewBox="${vb}" role="group" aria-label="${img} view"><image href="${IMG[img]}" width="800" height="800"/>${hot}</svg></div><div class="list">${cards}</div>`;
+  const select = id => el.querySelectorAll('[data-id]').forEach(n => { const on = n.dataset.id === id; n.classList.toggle('on', on); if (n.classList.contains('card')) n.setAttribute('aria-expanded', on); });
+  el.addEventListener('click', e => { const n = e.target.closest('[data-id]'); if (n) select(n.dataset.id); });
+  el.addEventListener('keydown', e => { const n = e.target.closest('.hot'); if (n && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); select(n.dataset.id); } });
+  select(ids[0]);
+  return select;
+}
+const selectFront = buildMap(document.getElementById('map-front'), 'front', '15 145 775 505', ['power', 'rs485', 'di', 'do', 'led', 'lan', 'status', 'boot', 'wifi']);
+buildMap(document.getElementById('map-side'), 'iso', '440 470 300 260', ['cams', 'usb', 'cell']);
+
+/* ---------- terminal diagram ---------- */
+const blockHtml = b => {
+  const ts = TERMINALS.filter(x => x.block === b), cell = x => `<button class="pin" data-g="${x.group}" style="--c:${G[x.group].color}" title="${x.fn}"><i></i><span>${x.name.replace('RS485 ', '').replace('RS232 ', '')}</span></button>`;
+  return `<div class="block"><h4>Terminal block · power, RS485, inputs, outputs, lights</h4><div class="row">${ts.filter(x => x.row === 'top').map(cell).join('')}</div><div class="row">${ts.filter(x => x.row === 'bottom').map(cell).join('')}</div></div>`;
+};
+const blocks = document.getElementById('blocks');
+blocks.innerHTML = blockHtml(1);
+blocks.onclick = e => {
+  const p = e.target.closest('.pin'); if (!p) return;
+  blocks.querySelectorAll('.pin').forEach(n => n.classList.toggle('on', n.dataset.g === p.dataset.g));
+  selectFront(p.dataset.g);
+};
+document.getElementById('legend').innerHTML = ['power', 'rs485', 'di', 'do', 'led'].map(id => `<span style="--c:${G[id].color}"><i></i>${G[id].name}</span>`).join('');
+
+/* ---------- what you can connect ---------- */
+const TAB_COLOR = Object.fromEntries(CONNECT.map(c => [c.id, c.color]));
+const tabOf = k => CONNECT.find(c => c.items.includes(k));
+const usesText = k => k === CONTROLLER ? 'The controller' : USES[k].length ? USES[k].map(r => RES[r][1]).join(' + ') : 'No port needed';
+const VIEWBOX = { front: '165 468 625 185', iso: '470 530 270 200' };
+// The real product photo with the tab's port highlighted.
+function portView(c, color) {
+  const [img, gids] = c.view, gs = gids.map(id => G[id]);
+  const rects = gs.flatMap(g => g.rects).map(([x0, y0, x1, y1]) => `<rect x="${x0 - 3}" y="${y0 - 3}" width="${x1 - x0 + 6}" height="${y1 - y0 + 6}" rx="4"/>`).join('');
+  const rings = gs.flatMap(g => g.pins || []).flatMap(p => (p.pair || [p.x]).map(x => `<circle cx="${x}" cy="${p.y}" r="5.5"/>`)).join('');
+  return `<div class="portview" style="--c:${color}"><svg viewBox="${VIEWBOX[img]}" role="img" aria-label="${c.label} on the ${PRODUCT}">
+      <image href="${IMG[img]}" width="800" height="800"/>
+      <mask id="pvmask"><rect width="800" height="800" fill="#fff"/><g fill="#000">${rects}</g></mask>
+      <rect width="800" height="800" fill="#fff" fill-opacity=".38" mask="url(#pvmask)"/>
+      <g class="pv-hot">${rects}${rings}</g></svg>
+    <div class="pvcap"><span>Lands on <b>${c.ports}</b></span>${c.devices.map((d, i) => `<span class="dev">${icon(c.icons[i], 16)}${d}</span>`).join('')}</div></div>`;
+}
+function prodCard(k, showTag) {
+  const p = PRODUCTS[k], t = tabOf(k), color = TAB_COLOR[t.id], n = sys[k] || 0;
+  return `<div class="prod${n ? ' in-sys' : ''}" data-k="${k}" style="--c:${color}"><div class="top"><div class="ic">${icon(p.icon, 26)}</div>${showTag ? `<span class="ptag">${t.label}</span>` : ''}</div>
+    <b><a href="${p.url}" target="_blank" rel="noopener">${p.name}</a></b><p>${p.note}</p><div class="uses">Uses <span>${usesText(k)}</span></div>
+    <div class="ft"><span class="price">${rm(p.price)}</span><a href="${p.url}" target="_blank" rel="noopener">Cytron ↗</a><button class="add${n ? ' on' : ''}" data-add="${k}">${n ? `✓ ${n} added` : '+ Add'}</button></div></div>`;
+}
+const tabs = document.getElementById('tabs'), cpanel = document.getElementById('cpanel'), psearch = document.getElementById('psearch');
+tabs.innerHTML = CONNECT.map(c => `<button class="tab" role="tab" data-id="${c.id}" style="--c:${TAB_COLOR[c.id]}"><i></i>${c.label}</button>`).join('');
+let curTab = CONNECT[0].id, curTopic = 'All';
+function showTab(id, topic = 'All') {
+  curTab = id; curTopic = topic;
+  const c = CONNECT.find(x => x.id === id), color = TAB_COLOR[id];
+  tabs.querySelectorAll('.tab').forEach(b => { const on = b.dataset.id === id; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+  const items = topic === 'All' || !c.topics ? c.items : c.topics[topic];
+  cpanel.innerHTML = `<div class="cpanel">${portView(c, color)}
+    <div class="tipcard" style="--c:${color}"><h3>${c.label}</h3><p>${c.lede}</p><ul>${c.tips.map(t => `<li>${t}</li>`).join('')}</ul>
+    ${c.generic ? `<div class="generic"><b>Typical devices</b><div class="chips">${c.generic.map(g => `<span>${g}</span>`).join('')}</div></div>` : ''}</div></div>
+    ${c.topics ? `<div class="filters">${['All', ...Object.keys(c.topics)].map(t => `<button data-topic="${t}" class="${t === topic ? 'on' : ''}">${t}</button>`).join('')}</div>` : ''}
+    <div class="products">${items.map(k => prodCard(k)).join('')}</div>`;
+}
+function showSearch(q) {
+  const words = q.toLowerCase().split(/\s+/).filter(Boolean);
+  const hits = Object.keys(USES).filter(k => tabOf(k)).filter(k => { const p = PRODUCTS[k], hay = `${p.name} ${p.note} ${tabOf(k).label} ${usesText(k)}`.toLowerCase(); return words.every(w => hay.includes(w)); });
+  tabs.querySelectorAll('.tab').forEach(b => b.classList.remove('on'));
+  cpanel.innerHTML = hits.length ? `<div class="products">${hits.map(k => prodCard(k, true)).join('')}</div>` : `<div class="empty">No parts match “${q.replace(/[<&]/g, '')}”. Try “camera”, “light” or “4G”.</div>`;
+}
+psearch.placeholder = `Search all ${new Set(CONNECT.flatMap(c => c.items)).size} parts`;
+tabs.onclick = e => { const b = e.target.closest('.tab'); if (b) { psearch.value = ''; showTab(b.dataset.id); } };
+cpanel.addEventListener('click', e => { const f = e.target.closest('[data-topic]'); if (f) showTab(curTab, f.dataset.topic); });
+psearch.oninput = () => psearch.value.trim() ? showSearch(psearch.value.trim()) : showTab(curTab, curTopic);
+
+/* ---------- my system builder ---------- */
+const SYS_KEY = 'iriv.edgeai.mysystem.v1';
+let sys = {};
+try { sys = JSON.parse(localStorage.getItem(SYS_KEY)) || {}; } catch { sys = {}; }
+for (const k in sys) if (!PRODUCTS[k] || !(sys[k] > 0)) delete sys[k];
+const saveSys = () => { try { localStorage.setItem(SYS_KEY, JSON.stringify(sys)); } catch { /* storage may be blocked */ } };
+const drawer = document.getElementById('drawer'), scrim = document.getElementById('scrim'), sysbtn = document.getElementById('sysbtn');
+function addPart(k, q = 1) {
+  if (!sys[CONTROLLER] && k !== CONTROLLER && q > 0) sys[CONTROLLER] = 1;   // every system starts with the controller
+  sys[k] = (sys[k] || 0) + q;
+  if (sys[k] <= 0) delete sys[k];
+  saveSys(); refreshSys();
+}
+function usage() {
+  const ctl = Math.max(1, sys[CONTROLLER] || 0), cap = {}, used = {};
+  for (const r in BUDGET) cap[r] = BUDGET[r] * ctl;
+  for (const [k, q] of Object.entries(sys)) {
+    for (const r of USES[k]) used[r] = (used[r] || 0) + q;
+    for (const [r, n] of Object.entries(ADDS[k] || {})) cap[r] += n * q;
+  }
+  return { ctl, cap, used };
+}
+const sysTotal = () => Object.keys(sys).reduce((s, k) => s + PRODUCTS[k].price * sys[k], 0);
+function renderDrawer() {
+  const keys = Object.keys(sys).sort((a, b) => (b === CONTROLLER) - (a === CONTROLLER)), { ctl, cap, used } = usage();
+  const meters = Object.keys(BUDGET).filter(r => r !== 'vin' && used[r]).map(r => { const over = used[r] > cap[r]; return `<div class="meter${over ? ' over' : ''}"><div><b>${RES[r][0]}</b><span>${used[r]} / ${cap[r]}</span></div><i><b style="width:${Math.min(100, used[r] / cap[r] * 100)}%"></b></i></div>`; }).join('');
+  const warns = Object.keys(FIX).filter(r => (used[r] || 0) > cap[r]).map(r => `<div><b>${RES[r][0]} full.</b> ${FIX[r][0].toUpperCase() + FIX[r].slice(1)}.</div>`);
+  warns.push(...extraChecks(sys, used));
+  if (!used.vin && keys.length > 1) warns.push('<div><b>No power supply yet.</b> Add the Meanwell 24 V DIN-rail supply.</div>');
+  if ((used.vin || 0) > ctl) warns.push('<div><b>More supplies than controllers.</b> One 24 V supply usually runs the controller, its lights and sensors.</div>');
+  if (!warns.length && keys.length > 1) warns.push(`<div class="ok">✓ Everything fits on ${ctl === 1 ? 'one ' + PRODUCT : ctl + ' × ' + PRODUCT}.</div>`);
+  document.getElementById('dbody').innerHTML = keys.length ? keys.map(k => `<div class="sitem"><div><b>${PRODUCTS[k].name}</b><br><small>${usesText(k)}</small></div>
+      <div class="qty"><button data-q="${k}" data-d="-1" aria-label="One fewer">−</button><span>${sys[k]}</span><button data-q="${k}" data-d="1" aria-label="One more">+</button></div>
+      <div></div><div class="lp">${rm(PRODUCTS[k].price * sys[k])}</div></div>`).join('') +
+      (meters ? `<h4>Ports used</h4><div class="meters">${meters}</div>` : '') + `<div class="warn">${warns.join('')}</div>`
+    : '<div class="empty">Nothing here yet. Press <b>+ Add</b> on any part, or load a ready-made system.</div>';
+  document.getElementById('dfoot').innerHTML = `<div class="sum"><b>${rm(Math.round(sysTotal()))}</b><br><small>excluding tax, from listed prices</small></div>
+    <div class="btns"><button class="ghostbtn" id="sclear"${keys.length ? '' : ' disabled'}>Clear</button><button class="copy" id="scopy"${keys.length ? '' : ' disabled'}>Copy parts list</button></div>`;
+  return keys;
+}
+function refreshSys(bump = true) {
+  const keys = renderDrawer(), count = keys.reduce((s, k) => s + sys[k], 0);
+  sysbtn.classList.toggle('show', count > 0);
+  sysbtn.innerHTML = `My system <em>${count}</em> ${rm(Math.round(sysTotal()))}`;
+  if (bump) { sysbtn.classList.remove('bump'); void sysbtn.offsetWidth; sysbtn.classList.add('bump'); }
+  document.querySelectorAll('.prod[data-k]').forEach(card => {
+    const k = card.dataset.k, n = sys[k] || 0, b = card.querySelector('.add');
+    card.classList.toggle('in-sys', !!n); b.classList.toggle('on', !!n); b.textContent = n ? `✓ ${n} added` : '+ Add';
+  });
+}
+const openSys = on => { drawer.classList.toggle('open', on); scrim.classList.toggle('open', on); if (on) document.getElementById('dclose').focus(); };
+sysbtn.onclick = () => openSys(true);
+scrim.onclick = document.getElementById('dclose').onclick = () => openSys(false);
+addEventListener('keydown', e => { if (e.key === 'Escape' && drawer.classList.contains('open')) openSys(false); });
+document.addEventListener('click', e => { const a = e.target.closest('[data-add]'); if (a) addPart(a.dataset.add); });
+drawer.addEventListener('click', async e => {
+  const q = e.target.closest('[data-q]'); if (q) { addPart(q.dataset.q, +q.dataset.d); return; }
+  if (e.target.id === 'sclear') { sys = {}; saveSys(); refreshSys(false); }
+  if (e.target.id === 'scopy') {
+    const text = `My ${PRODUCT} system\n` + Object.keys(sys).map(k => `${sys[k]} x ${PRODUCTS[k].name} (${usesText(k)}) - ${rm(PRODUCTS[k].price * sys[k])} - ${PRODUCTS[k].url}`).join('\n') + `\nTotal about ${rm(Math.round(sysTotal()))} excluding tax`;
+    try { await navigator.clipboard.writeText(text); e.target.textContent = 'Copied ✓'; } catch { e.target.textContent = 'Copy failed'; }
+    setTimeout(() => { e.target.textContent = 'Copy parts list'; }, 1800);
+  }
+});
+showTab(CONNECT[0].id);
+refreshSys(false);
+
+/* ---------- ready-made systems ---------- */
+document.getElementById('recipes').innerHTML = RECIPES.map(r => {
+  const total = r.parts.reduce((s, [k, q]) => s + PRODUCTS[k].price * q, 0);
+  return `<div class="recipe" style="--c:${r.color}"><div class="hd"><span>${icon(r.icon, 24)}</span><h3>${r.name}</h3></div><p>${r.blurb}</p>
+    <ul class="parts">${r.parts.map(([k, q, port]) => `<li><span class="q">${q}×</span><span><a href="${PRODUCTS[k].url}" target="_blank" rel="noopener">${PRODUCTS[k].name}</a><small>${port}</small></span><span class="pr">${rm(PRODUCTS[k].price * q)}</span></li>`).join('')}</ul>
+    <div class="total"><b>About ${rm(Math.round(total))}<small>excluding tax, from listed prices</small></b></div>
+    <div class="btns"><button class="ghostbtn" data-load="${r.id}">Add to system</button><button class="copy" data-id="${r.id}">Copy parts list</button></div></div>`;
+}).join('');
+document.getElementById('recipes').onclick = async e => {
+  const l = e.target.closest('[data-load]');
+  if (l) { RECIPES.find(x => x.id === l.dataset.load).parts.forEach(([k, q]) => { if (k !== CONTROLLER || !sys[CONTROLLER]) addPart(k, q); }); openSys(true); return; }
+  const b = e.target.closest('.copy'); if (!b) return;
+  const r = RECIPES.find(x => x.id === b.dataset.id);
+  const text = `${r.name} with ${PRODUCT}\n` + r.parts.map(([k, q, port]) => `${q} x ${PRODUCTS[k].name} (${port}) - ${rm(PRODUCTS[k].price * q)} - ${PRODUCTS[k].url}`).join('\n');
+  try { await navigator.clipboard.writeText(text); b.textContent = 'Copied ✓'; } catch { b.textContent = 'Copy failed'; }
+  setTimeout(() => { b.textContent = 'Copy parts list'; }, 1800);
+};
+
+/* ---------- live demo ---------- */
+const DSTEPS = {
+  factory: [['Trigger', 'DI0', 'A photoelectric sensor sees each bottle arrive.', G.di.color], ['Capture', 'MIPI0 + L0', 'The light strobes and the camera grabs a frame.', G.led.color],
+    ['Decide', 'AI accelerator', 'The model checks the cap, label and fill in a few milliseconds.', G.cams.color], ['Act', 'DO0 + ETH1', 'Faulty bottles are blown off, and every result goes out over MQTT.', G.do.color]],
+  gate: [['Stream', 'ETH0', 'The IP camera streams video over RTSP.', G.lan.color], ['Detect', 'AI accelerator', 'Cars and people are found and tracked in every frame.', G.cams.color],
+    ['Read', 'OCR model', 'The plate is read as the car crosses the line.', G.usb.color], ['Act', 'DO0 + ETH1', 'The barrier opens, and the read is logged over MQTT.', G.do.color]]
+};
+const dcv = document.getElementById('demo-canvas'), dctx = dcv.getContext('2d');
+let demoMode = 'factory', demoT = 5, demoOn = false, demoLast = 0;
+function showSteps() { document.getElementById('dsteps').innerHTML = DSTEPS[demoMode].map(([t, p, d, c], i) => `<div class="dstep" style="--c:${c}"><small>${i + 1} · ${p}</small><b>${t}</b><p>${d}</p></div>`).join(''); }
+function sizeDemo() { const w = Math.max(480, Math.min(2400, Math.round(dcv.clientWidth * Math.min(2, devicePixelRatio || 1)))); if (dcv.width !== w) { dcv.width = w; dcv.height = Math.round(w * 9 / 16); } }
+function demoLoop(now) {
+  const dt = Math.min(.1, (now - demoLast) / 1000); demoLast = now;
+  if (demoOn && !document.hidden) { demoT += dt; dctx.setTransform(dcv.width / 1600, 0, 0, dcv.width / 1600, 0, 0); DEMOS[demoMode](dctx, demoT, 1600, 900); }
+  requestAnimationFrame(demoLoop);
+}
+document.getElementById('dtabs').onclick = e => {
+  const b = e.target.closest('[data-demo]'); if (!b) return;
+  demoMode = b.dataset.demo; demoT = demoMode === 'gate' ? 8 : 5; showSteps();
+  document.querySelectorAll('#dtabs button').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', x === b); });
+};
+new IntersectionObserver(es => { demoOn = es[0].isIntersecting; }).observe(dcv);
+addEventListener('resize', sizeDemo);
+showSteps();
+filmReady.then(() => { sizeDemo(); requestAnimationFrame(n => { demoLast = n; demoLoop(n); }); });
+
+/* ---------- specs ---------- */
+document.getElementById('cm').innerHTML = [1, 2].map(k => `<div class="cmcard"><h3>${SPECS[0][k].replace('Raspberry Pi ', '')}</h3><dl>${SPECS.slice(1).map(r => `<div><dt>${r[0]}</dt><dd>${r[k]}</dd></div>`).join('')}</dl></div>`).join('');
+document.getElementById('kits').innerHTML = KITS.map(([k, v]) => `<div><b>${k}</b><p>${v}</p></div>`).join('');
+document.getElementById('feat').innerHTML = FEATURES.map(([k, v]) => `<div><b>${k}</b>${v}</div>`).join('');
+
+/* ---------- scroll reveal ---------- */
+const ro = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); ro.unobserve(e.target); } }), { threshold: .15 });
+document.querySelectorAll('.reveal').forEach(n => ro.observe(n));
+</script>
+</body>
+</html>

@@ -52,6 +52,7 @@
   input[type=range] { flex: 1; min-width: 140px; accent-color: var(--accent); }
   .dl { border: 0; border-radius: 99px; background: var(--ink); color: #fff; padding: 10px 18px; font-size: 14px; font-weight: 600; cursor: pointer; flex: none; }
   .dl:disabled { opacity: .6; cursor: progress; }
+  .files { font-size: 13px; font-weight: 600; color: var(--muted); }
   .dlnote { width: 100%; font-size: 13px; color: var(--muted); min-height: 20px; text-align: right; }
   .chapters { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; padding: 0 6px; }
   .chapters button { border: 1px solid var(--line); background: #fff; border-radius: 99px; padding: 6px 13px; font-size: 13px; color: var(--ink); cursor: pointer; }
@@ -269,6 +270,7 @@
       <span class="time" id="time">0:00 / 0:00</span>
       <input type="range" id="seek" min="0" max="1000" value="0" aria-label="Seek">
       <button class="dl" id="dl">Download video (MP4)</button>
+      <span class="files"><a href="IRIV-PiControl-tour.mp4" download>Ready-made MP4</a> · <a href="IRIV-PiControl-tour.vtt" download>Subtitles (.vtt)</a></span>
       <div class="dlnote" id="dlnote"></div>
     </div>
     <div class="chapters" id="chapters"></div>
@@ -354,6 +356,7 @@
 
 <footer><div class="wrap">
   <div>Specifications from the <a href="https://my.cytron.io/p-iriv-picontrol-cm4-industrial-controller" target="_blank" rel="noopener">Cytron product page</a>, checked 28 October 2026. Check the IRIV PiControl user manual for wiring limits before installation.</div>
+  <div>Also see the <a href="../short-video-of-iriv-edgeai/">IRIV EdgeAI CM5 tour</a>, with a live AI demo.</div>
   <div>Product images and the IRIV name belong to Cytron Technologies. This tour is an independent explainer and is not published by Cytron.</div>
 </div></footer>
 

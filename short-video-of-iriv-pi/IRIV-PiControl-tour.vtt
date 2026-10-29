@@ -1,0 +1,97 @@
+WEBVTT
+
+1
+00:00:00.300 --> 00:00:04.250
+IRIV PiControl
+An industrial controller with a Raspberry Pi inside.
+
+2
+00:00:04.800 --> 00:00:09.750
+Every connection. One face.
+32 push-in terminals, two Ethernet ports, status LEDs and built-in Wi-Fi.
+
+3
+00:00:10.300 --> 00:00:13.950
+10–30 V DC in.
+A wide input range with surge protection, so it runs from a standard 12 V or 24 V DIN-rail supply.
+
+4
+00:00:14.500 --> 00:00:18.150
+Isolated RS485.
+Talk Modbus RTU to energy meters, drives, PLCs and sensors over one twisted pair, isolated from the controller.
+
+5
+00:00:18.700 --> 00:00:22.350
+Isolated RS232.
+For barcode scanners, older PLCs, modems and lab instruments that still speak point-to-point serial.
+
+6
+00:00:22.900 --> 00:00:26.850
+Four isolated outputs.
+Switch relays, contactors, beacons and valves. Each output has its own pair of terminals and handles up to 50 V.
+
+7
+00:00:27.400 --> 00:00:31.350
+Four isolated inputs.
+Read push buttons, limit switches, door contacts and pulse meters. Each input has + and − terminals and accepts up to 50 V.
+
+8
+00:00:31.900 --> 00:00:36.150
+Four analog inputs.
+Isolated inputs for 0–5 V, 0–10 V or 0–20 mA transmitters: pressure, level, temperature and flow. They share a common analog ground (AGND).
+
+9
+00:00:36.700 --> 00:00:40.650
+Two Ethernet ports.
+One Gigabit and one 10/100 port, so the controller can sit on two networks at once, for example the machine network and the office network.
+
+10
+00:00:41.200 --> 00:00:45.450
+Status at a glance.
+Power, M.2 drive and activity LEDs, two programmable LEDs, and a programmable USER button. A reset button and an active buzzer are inside.
+
+11
+00:00:46.000 --> 00:00:49.950
+Wireless, built in.
+Dual-band 2.4 / 5 GHz Wi-Fi (802.11 b/g/n/ac) and Bluetooth 5.0 with BLE. The dual-band antenna is included and screws on.
+
+12
+00:00:50.500 --> 00:00:54.750
+USB and 4K HDMI.
+Two USB 2.0 ports for keyboards, scanners or storage, and a full-size HDMI 2.0 port that drives a display at up to 4K 60 Hz.
+
+13
+00:00:55.300 --> 00:00:59.550
+USB-C and four antenna ports.
+USB-C is for flashing the eMMC and debugging. Four knock-outs (ANT0–ANT3) take extra antennas, for example for a 4G module in the Mini PCIe slot.
+
+14
+00:01:00.100 --> 00:01:04.050
+Open it up.
+Expansion sockets, a display and security hardware inside a fanless metal case.
+
+15
+00:01:04.600 --> 00:01:08.550
+A small screen on the device.
+A 0.96-inch SSD1306 OLED shows the IP address, live values or alarms right on the controller, with no laptop needed.
+
+16
+00:01:09.100 --> 00:01:13.350
+Room to expand.
+An M.2 Key-M socket for an NVMe SSD, plus a Mini PCIe socket (USB 2.0 and SPI only) for add-on modules such as 4G.
+
+17
+00:01:13.900 --> 00:01:18.150
+Keeps time. Keeps keys safe.
+A PCF85063A real-time clock with coin-cell backup, an ATECC608B crypto chip for secure keys, and an active buzzer for local alarms.
+
+18
+00:01:18.700 --> 00:01:23.650
+Raspberry Pi CM4 or CM5.
+Quad-core Cortex-A72 at 1.5 GHz or Cortex-A76 at 2.4 GHz, up to 16 GB RAM and 64 GB eMMC. Metal, fanless, DIN-rail mount.
+
+19
+00:01:24.200 --> 00:01:28.650
+IRIV PiControl
+Python · Node-RED · Grafana · CODESYS · Ignition
+
