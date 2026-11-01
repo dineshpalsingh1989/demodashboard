@@ -245,6 +245,7 @@
   .reveal.in { opacity: 1; transform: none; }
   @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } html { scroll-behavior: auto; } }
 </style>
+<link rel="stylesheet" href="../iriv-tour-media.css">
 </head>
 <body>
 <nav><div class="in">
@@ -257,22 +258,23 @@
   <div class="wrap">
     <p class="eyebrow">IRIV PiControl · the tour</p>
     <h1>Every pin. Every port.</h1>
-    <p class="lede">A 90-second film of the whole controller, from the power terminals to the chips inside. Then explore each part yourself below.</p>
+    <p class="lede">A narrated tour of the whole controller, from the power terminals to the chips inside. Then explore each part yourself below.</p>
   </div>
   <div class="player">
     <div class="screen" id="screen">
-      <canvas id="film-canvas" width="1920" height="1080" aria-label="Animated tour of the IRIV PiControl"></canvas>
-      <button class="bigplay" id="bigplay" aria-label="Play the tour"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z"/></svg></button>
+      <video id="tour-video" controls playsinline preload="metadata" poster="images/tour-poster.jpg" aria-label="IRIV PiControl narrated tour">
+        <source src="IRIV-PiControl-tour.mp4" type="video/mp4">
+        <track kind="captions" srclang="en" label="English" src="IRIV-PiControl-tour.vtt" default>
+        <a href="IRIV-PiControl-tour.mp4">Download the narrated film</a>
+      </video>
     </div>
+    <p class="film-status" id="film-status">English narration · short captions · 1080p. Use the player controls for sound and captions.</p>
     <div class="bar">
-      <button class="ctl" id="play" aria-label="Play"></button>
-      <button class="ctl" id="restart" aria-label="Restart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 12a8 8 0 1 0 2.6-5.9M4 4v5h5"/></svg></button>
-      <span class="time" id="time">0:00 / 0:00</span>
-      <input type="range" id="seek" min="0" max="1000" value="0" aria-label="Seek">
-      <button class="dl" id="dl">Download video (MP4)</button>
-      <span class="files"><a href="IRIV-PiControl-tour.mp4" download>Ready-made MP4</a> · <a href="IRIV-PiControl-tour.vtt" download>Subtitles (.vtt)</a></span>
-      <div class="dlnote" id="dlnote"></div>
+      <a class="dl" href="IRIV-PiControl-tour.mp4" download>Download narrated MP4</a>
+      <a class="files" href="IRIV-PiControl-tour.vtt" download>Download captions (.vtt)</a>
     </div>
+    <div class="film-next" id="film-next"><a href="#connect">Explore connections and compatible accessories →</a><a href="../iriv-controllers/">Compare both controllers</a></div>
+    <details class="transcript"><summary>Read the narration transcript</summary><div id="tour-transcript"></div></details>
     <div class="chapters" id="chapters"></div>
   </div>
 </section>
@@ -356,74 +358,18 @@
 
 <footer><div class="wrap">
   <div>Specifications from the <a href="https://my.cytron.io/p-iriv-picontrol-cm4-industrial-controller" target="_blank" rel="noopener">Cytron product page</a>, checked 28 October 2026. Check the IRIV PiControl user manual for wiring limits before installation.</div>
-  <div>Also see the <a href="../short-video-of-iriv-edgeai/">IRIV EdgeAI CM5 tour</a>, with a live AI demo.</div>
+  <div>Also see the <a href="../short-video-of-iriv-edgeai/">IRIV EdgeAI CM5 tour</a>, with a live AI demo, or <a href="../iriv-controllers/">compare both controllers</a>.</div>
   <div>Product images and the IRIV name belong to Cytron Technologies. This tour is an independent explainer and is not published by Cytron.</div>
 </div></footer>
 
 <script src="data.js"></script>
+<script src="narration.js"></script>
+<script src="../iriv-tour-media.js"></script>
 <script src="film.js"></script>
 <script src="connect.js"></script>
 <script>
 /* ---------- player ---------- */
-const cv = document.getElementById('film-canvas'), fctx = cv.getContext('2d');
-const screen = document.getElementById('screen'), seek = document.getElementById('seek'), timeEl = document.getElementById('time');
-const playBtn = document.getElementById('play');
-const ICON = { play: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4l13 8-13 8z"/></svg>', pause: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>' };
-let t = 2.2, playing = false, last = 0, scrubbing = false;
-const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
-// The film only redraws while it is playing and on screen, or after a seek; a paused or
-// scrolled-away film costs nothing, so the rest of the page scrolls smoothly.
-let dirty = true, onScreen = true;
-function setPlaying(on) { playing = on; screen.classList.toggle('playing', on); playBtn.innerHTML = on ? ICON.pause : ICON.play; playBtn.setAttribute('aria-label', on ? 'Pause' : 'Play'); if (on && t >= TOTAL - .05) t = 0; dirty = true; }
-function sizeCanvas() {
-  const w = Math.max(320, Math.min(FW, Math.round(cv.clientWidth * Math.min(2, devicePixelRatio || 1))));
-  if (cv.width !== w) { cv.width = w; cv.height = Math.round(w * FH / FW); }
-  dirty = true;
-}
-addEventListener('resize', sizeCanvas);
-new IntersectionObserver(es => { onScreen = es[0].isIntersecting; dirty = true; }).observe(screen);
-const chapters = SCENES.map((s, i) => ({ i, label: s.g ? G[s.g].name : i === 0 ? 'Intro' : i === SCENES.length - 1 ? 'Outro' : s.kicker })).filter((c, i) => i > 0 && i < SCENES.length - 1);
-document.getElementById('chapters').innerHTML = chapters.map(c => `<button data-i="${c.i}">${c.label}</button>`).join('');
-document.getElementById('chapters').onclick = e => { const b = e.target.closest('button'); if (!b) return; t = SCENES[+b.dataset.i].t0; setPlaying(true); };
-const chapBtns = [...document.querySelectorAll('#chapters button')];
-let curScene = -1;
-function loop(now) {
-  const dt = Math.min(.1, (now - last) / 1000); last = now;
-  const live = onScreen && !document.hidden;
-  if (playing && !scrubbing && live) { t += dt; dirty = true; if (t >= TOTAL) { t = TOTAL - .001; setPlaying(false); } }
-  if (dirty && live) {
-    dirty = false;
-    render(fctx, t, cv.width / FW);
-    if (!scrubbing) seek.value = Math.round(t / TOTAL * 1000);
-    timeEl.textContent = `${fmt(t)} / ${fmt(TOTAL)}`;
-    const cur = sceneAt(t);
-    if (cur !== curScene) { curScene = cur; chapBtns.forEach(b => b.classList.toggle('on', +b.dataset.i === cur)); }
-  }
-  requestAnimationFrame(loop);
-}
-filmReady.then(() => { sizeCanvas(); requestAnimationFrame(n => { last = n; loop(n); }); });
-screen.onclick = () => setPlaying(!playing);
-playBtn.onclick = () => setPlaying(!playing);
-document.getElementById('restart').onclick = () => { t = 0; setPlaying(true); };
-seek.oninput = () => { scrubbing = true; t = seek.value / 1000 * TOTAL; dirty = true; };
-seek.onchange = () => { scrubbing = false; };
-setPlaying(false);
-// start playing once the film scrolls into view
-new IntersectionObserver((es, ob) => es.forEach(e => { if (e.isIntersecting && !matchMedia('(prefers-reduced-motion: reduce)').matches) { setPlaying(true); ob.disconnect(); } }), { threshold: .6 }).observe(screen);
-
-const dl = document.getElementById('dl'), note = document.getElementById('dlnote');
-dl.onclick = async () => {
-  dl.disabled = true; note.textContent = 'Rendering the video… 0%';
-  try {
-    const blob = await exportVideo(p => { note.textContent = `Rendering the video… ${Math.round(p * 100)}%`; });
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-    a.download = 'IRIV-PiControl-tour.' + (blob.type.includes('mp4') ? 'mp4' : 'webm'); a.click();
-    note.textContent = `Saved ${a.download} (${(blob.size / 1e6).toFixed(1)} MB, 1920×1080).`;
-  } catch (e) {
-    note.textContent = location.protocol === 'file:' ? 'Open this page through a local server (node serve.js) to export the video.' : 'Export failed: ' + e.message;
-  }
-  dl.disabled = false;
-};
+initTourPlayer();
 
 /* ---------- interactive maps ---------- */
 function termList(g) {

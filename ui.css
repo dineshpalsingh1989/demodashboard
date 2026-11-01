@@ -65,7 +65,7 @@ kbd { font: 10px/1.5 Inter, system-ui, sans-serif; padding: 1px 5px; border: 1px
 .explore-button { display: flex; justify-content: space-between; align-items: center; width: 100%; height: 42px; padding: 0 15px; border: 0; border-radius: 10px; background: #2469e8; color: #fff; font-size: 12px; font-weight: 600; cursor: pointer; }
 .about-button { display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%; margin-top: 13px; border: 0; padding: 4px 0; background: transparent; color: var(--muted); font-size: 10px; cursor: pointer; }
 .about-button .ui-icon { width: 14px; height: 14px; }
-body.panel-open .welcome, body.inside .welcome, body.story .welcome { display: none; }
+body.panel-open .welcome, body.inside .welcome, body.story .welcome, body.riding .welcome { display: none; }
 .view-tools, .map-tools { position: fixed; z-index: 5; display: flex; align-items: center; gap: 3px; padding: 5px; border: 1px solid var(--line); background: var(--panel); border-radius: 12px; box-shadow: var(--shadow); backdrop-filter: blur(12px); }
 .view-tools { top: 112px; right: 24px; }
 .view-tools button, .map-tools button { display: flex; align-items: center; justify-content: center; gap: 7px; height: 36px; min-width: 36px; padding: 0 9px; border: 0; border-radius: 8px; color: var(--muted); background: transparent; font-size: 11px; font-weight: 600; cursor: pointer; }
@@ -345,6 +345,11 @@ body.panel-open #story { left: calc((100% - 448px) / 2); }
 .ins-cmp td:first-child { color: var(--muted); width: 22%; }
 .ins-cmp .ins-me { background: color-mix(in srgb, var(--zc) 9%, transparent); font-weight: 600; }
 .ins-prod { display: flex; align-items: center; gap: 10px; padding: 11px 12px; border-radius: 12px; background: var(--chip); border: 1px solid var(--line); color: var(--text); text-decoration: none; font-size: 13px; font-weight: 600; }
+.ins-film { display: flex; align-items: center; gap: 12px; padding: 8px; margin-bottom: 8px; border-radius: 12px; background: var(--chip); border: 1px solid var(--line); color: var(--text); text-decoration: none; }
+.ins-film:hover { border-color: var(--zc); }
+.ins-film img { width: 96px; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 8px; }
+.ins-film span { display: grid; gap: 2px; font-size: 13px; }
+.ins-film small { color: var(--muted, #6b7280); font-size: 11px; }
 .ins-prod:hover { border-color: var(--zc); }
 .ins-cam svg { width: 100%; display: block; border-radius: 12px; background: #000; }
 .ins-cam g[class^="ins-"] { transform-box: view-box; }

@@ -114,27 +114,33 @@ function initDirectory() {
   let filter = 'all', matches = [], opener = null;
   const entries = [
     ...ORDER.filter(id => id !== 'intro').map(id => ({id, type:'district', title:TOPICS[id].title, detail:TOPICS[id].kicker, icon:TOPICS[id].icon, keywords:TOPICS[id].sum, open:() => show(id)})),
-    ...DEVICES.map(d => ({id:d.id, type:'device', title:d.model + ' · ' + d.name, detail:d.loc || d.short || d.brand, icon:d.icon, keywords:[d.brand, d.conn, d.cat, d.zone, d.what].join(' '), open:() => showDevice(d.id)})),
+    ...DEVICES.map(d => ({id:d.id, type:'device', iriv:/^IRIV/.test(d.model), title:d.model + ' · ' + d.name, detail:d.loc || d.short || d.brand, icon:d.icon, keywords:[d.brand, d.conn, d.cat, d.zone, d.what].join(' '), open:() => showDevice(d.id)})),
     ...Object.entries(SCENARIOS).map(([id, s]) => ({id, type:'scenario', title:s.title, detail:s.sub, icon:s.icon, keywords:s.sub, open:() => runScenario(id)}))
   ];
   const normalize = value => value.toLowerCase().replace(/[–—-]/g, ' ').replace(/\s+/g, ' ');
   function render() {
     const query = normalize(input.value.trim());
     const terms = query.split(' ').filter(Boolean);
-    matches = entries.filter(item => (filter === 'all' || item.type === filter) && terms.every(term => normalize([item.title, item.detail, item.keywords, item.id].join(' ')).includes(term)));
+    matches = entries.filter(item => (filter === 'all' || (filter === 'iriv' ? item.iriv : item.type === filter)) && terms.every(term => normalize([item.title, item.detail, item.keywords, item.id].join(' ')).includes(term)));
     if (query) matches.sort((a, b) => Number(normalize(b.title).includes(query)) - Number(normalize(a.title).includes(query)));
     count.textContent = query ? `${matches.length} result${matches.length === 1 ? '' : 's'} for “${input.value.trim()}”` : `${matches.length} places, devices, and experiences to explore`;
     results.innerHTML = matches.length ? matches.map((item, i) => `<button class="search-result" data-result="${i}"><span class="result-icon" aria-hidden="true">${escapeUI(item.icon)}</span><span class="result-copy"><b>${escapeUI(item.title)}</b><small>${item.type[0].toUpperCase() + item.type.slice(1)} · ${escapeUI(item.detail)}</small></span>${uiIcon('arrow')}</button>`).join('') : '<div class="empty-search"><b>No matches yet</b><p>Try a place like “farm”, a device like “CT101”,<br>or a scenario like “flood”.</p></div>';
     results.scrollTop = 0;
   }
-  function openDirectory() {
+  function setFilter(value) {
+    filter = value;
+    dialog.querySelectorAll('[data-filter]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.filter === value)));
+  }
+  function openDirectory(preset) {
     if (dialog.open) return;
+    if (typeof preset === 'string') setFilter(preset);
     clearWalkInput();
     opener = document.activeElement;
     render(); dialog.showModal(); input.focus(); input.select();
   }
-  document.getElementById('bSearch').onclick = openDirectory;
-  document.getElementById('bExplore').onclick = openDirectory;
+  document.getElementById('bSearch').onclick = () => openDirectory();
+  document.getElementById('bExplore').onclick = () => openDirectory();
+  document.getElementById('bIriv').onclick = () => openDirectory('iriv');
   document.getElementById('searchClose').onclick = () => dialog.close();
   dialog.addEventListener('click', e => {
     if (e.target === dialog) {
@@ -145,8 +151,7 @@ function initDirectory() {
   dialog.addEventListener('close', () => { if (opener?.isConnected) opener.focus({preventScroll:true}); });
   input.addEventListener('input', render);
   dialog.querySelectorAll('[data-filter]').forEach(button => button.onclick = () => {
-    filter = button.dataset.filter;
-    dialog.querySelectorAll('[data-filter]').forEach(b => b.setAttribute('aria-pressed', String(b === button)));
+    setFilter(button.dataset.filter);
     render();
   });
   function select(index) {

@@ -1,97 +1,138 @@
 WEBVTT
 
 1
-00:00:00.300 --> 00:00:04.250
-IRIV PiControl
-An industrial controller with a Raspberry Pi inside.
+00:00:00.550 --> 00:00:01.927
+Meet IRIV PiControl.
 
 2
-00:00:04.800 --> 00:00:09.750
-Every connection. One face.
-32 push-in terminals, two Ethernet ports, status LEDs and built-in Wi-Fi.
+00:00:01.927 --> 00:00:05.508
+An industrial controller with a Raspberry Pi inside.
 
 3
-00:00:10.300 --> 00:00:13.950
-10–30 V DC in.
-A wide input range with surge protection, so it runs from a standard 12 V or 24 V DIN-rail supply.
+00:00:06.717 --> 00:00:09.733
+Industrial connections, network ports, and status
 
 4
-00:00:14.500 --> 00:00:18.150
-Isolated RS485.
-Talk Modbus RTU to energy meters, drives, PLCs and sensors over one twisted pair, isolated from the controller.
+00:00:09.733 --> 00:00:11.765
+indicators share one front panel.
 
 5
-00:00:18.700 --> 00:00:22.350
-Isolated RS232.
-For barcode scanners, older PLCs, modems and lab instruments that still speak point-to-point serial.
+00:00:12.983 --> 00:00:14.640
+Power the controller from a suitable
 
 6
-00:00:22.900 --> 00:00:26.850
-Four isolated outputs.
-Switch relays, contactors, beacons and valves. Each output has its own pair of terminals and handles up to 50 V.
+00:00:14.640 --> 00:00:15.837
+ten to thirty volt supply.
 
 7
-00:00:27.400 --> 00:00:31.350
-Four isolated inputs.
-Read push buttons, limit switches, door contacts and pulse meters. Each input has + and − terminals and accepts up to 50 V.
+00:00:17.483 --> 00:00:21.196
+Isolated RS485 connects industrial meters and sensors.
 
 8
-00:00:31.900 --> 00:00:36.150
-Four analog inputs.
-Isolated inputs for 0–5 V, 0–10 V or 0–20 mA transmitters: pressure, level, temperature and flow. They share a common analog ground (AGND).
+00:00:22.417 --> 00:00:25.940
+RS232 connects compatible scanners and legacy equipment.
 
 9
-00:00:36.700 --> 00:00:40.650
-Two Ethernet ports.
-One Gigabit and one 10/100 port, so the controller can sit on two networks at once, for example the machine network and the office network.
+00:00:27.217 --> 00:00:29.350
+Four isolated outputs signal external
 
 10
-00:00:41.200 --> 00:00:45.450
-Status at a glance.
-Power, M.2 drive and activity LEDs, two programmable LEDs, and a programmable USER button. A reset button and an active buzzer are inside.
+00:00:29.350 --> 00:00:31.714
+relays, indicators, and control circuits.
 
 11
-00:00:46.000 --> 00:00:49.950
-Wireless, built in.
-Dual-band 2.4 / 5 GHz Wi-Fi (802.11 b/g/n/ac) and Bluetooth 5.0 with BLE. The dual-band antenna is included and screws on.
+00:00:32.917 --> 00:00:34.794
+Four isolated inputs read buttons,
 
 12
-00:00:50.500 --> 00:00:54.750
-USB and 4K HDMI.
-Two USB 2.0 ports for keyboards, scanners or storage, and a full-size HDMI 2.0 port that drives a display at up to 4K 60 Hz.
+00:00:34.794 --> 00:00:36.782
+limit switches, and digital signals.
 
 13
-00:00:55.300 --> 00:00:59.550
-USB-C and four antenna ports.
-USB-C is for flashing the eMMC and debugging. Four knock-outs (ANT0–ANT3) take extra antennas, for example for a 4G module in the Mini PCIe slot.
+00:00:37.983 --> 00:00:40.288
+Four analog inputs read voltage or current
 
 14
-00:01:00.100 --> 00:01:04.050
-Open it up.
-Expansion sockets, a display and security hardware inside a fanless metal case.
+00:00:40.288 --> 00:00:42.592
+transmitters, with a shared analog ground.
 
 15
-00:01:04.600 --> 00:01:08.550
-A small screen on the device.
-A 0.96-inch SSD1306 OLED shows the IP address, live values or alarms right on the controller, with no laptop needed.
+00:00:43.983 --> 00:00:45.772
+Two Ethernet ports connect the machine
 
 16
-00:01:09.100 --> 00:01:13.350
-Room to expand.
-An M.2 Key-M socket for an NVMe SSD, plus a Mini PCIe socket (USB 2.0 and SPI only) for add-on modules such as 4G.
+00:00:45.772 --> 00:00:47.232
+network and the office network.
 
 17
-00:01:13.900 --> 00:01:18.150
-Keeps time. Keeps keys safe.
-A PCF85063A real-time clock with coin-cell backup, an ATECC608B crypto chip for secure keys, and an active buzzer for local alarms.
+00:00:48.983 --> 00:00:50.536
+Status lights and a programmable
 
 18
-00:01:18.700 --> 00:01:23.650
-Raspberry Pi CM4 or CM5.
-Quad-core Cortex-A72 at 1.5 GHz or Cortex-A76 at 2.4 GHz, up to 16 GB RAM and 64 GB eMMC. Metal, fanless, DIN-rail mount.
+00:00:50.536 --> 00:00:52.136
+button help with local operation.
 
 19
-00:01:24.200 --> 00:01:28.650
-IRIV PiControl
-Python · Node-RED · Grafana · CODESYS · Ignition
+00:00:53.783 --> 00:00:57.082
+Built in Wi-Fi and Bluetooth provide wireless connectivity.
+
+20
+00:00:58.283 --> 00:01:01.439
+Connect USB peripherals and a local HDMI display.
+
+21
+00:01:03.283 --> 00:01:04.687
+USB C handles setup.
+
+22
+00:01:04.687 --> 00:01:07.916
+Antenna knock outs support optional expansion.
+
+23
+00:01:09.117 --> 00:01:11.444
+Inside, find expansion sockets, a
+
+24
+00:01:11.444 --> 00:01:14.053
+small display, and security hardware.
+
+25
+00:01:15.283 --> 00:01:16.838
+The built in display can show
+
+26
+00:01:16.838 --> 00:01:18.554
+an address, readings, or alarms.
+
+27
+00:01:20.083 --> 00:01:23.033
+Add NVMe storage or a compatible expansion module.
+
+28
+00:01:25.583 --> 00:01:27.464
+A backed up clock, security chip,
+
+29
+00:01:27.464 --> 00:01:29.459
+and buzzer support local operation.
+
+30
+00:01:31.083 --> 00:01:33.229
+Choose a Raspberry Pi Compute Module four
+
+31
+00:01:33.229 --> 00:01:35.478
+or five configuration for your application.
+
+32
+00:01:37.083 --> 00:01:39.572
+Explore connections and compatible accessories
+
+33
+00:01:39.572 --> 00:01:40.870
+in the interactive demo.
+
+34
+00:01:40.870 --> 00:01:43.412
+Compare both controllers and build your system.
 

@@ -65,6 +65,53 @@ async function layoutCheck(width, height) {
     assert(await ev("document.getElementById('searchResults').children.length > 0"), 'no search results');
     await ev("document.getElementById('searchClose').click()"); await waitFor("!document.getElementById('searchDialog').open", 'search to close');
   });
+  await step('IRIV units button lists only IRIV devices, including the village', async () => {
+    await ev("document.getElementById('bIriv').click()"); await waitFor("document.getElementById('searchDialog').open", 'IRIV list to open');
+    const r = await ev("(()=>{const t=[...document.querySelectorAll('#searchResults .search-result b')].map(b=>b.textContent);return {n:t.length,bad:t.filter(x=>!x.startsWith('IRIV')),vil:t.some(x=>/Solar Pump/.test(x))}})()");
+    assert(r.n >= 30 && !r.bad.length && r.vil, 'IRIV filter wrong: ' + JSON.stringify(r));
+    await ev("document.getElementById('searchClose').click()"); await waitFor("!document.getElementById('searchDialog').open", 'IRIV list to close');
+    for (const id of ['vil-pic', 'vil-ai', 'vil-ioc', 'bus-ai', 'bus-vs']) { await ev(`showDevice('${id}')`); await sleep(1200); assert(await ev("document.getElementById('panel').classList.contains('open')"), 'panel for ' + id); if (id === 'vil-pic') await shot('village'); }
+    await ev("showDevice('vil-pic')"); await sleep(600); assert(await ev("!!document.querySelector('#panel .ins-film')"), 'tour film link missing'); await shot('film-link');
+    await ev('enterInside("satvschool")'); await sleep(1500); assert.equal(await ev('scene'), 'inside'); await shot('village-school-inside');
+    await ev('closePanel()');
+    assert.equal(await ev("objs.filter(o => o.t === 'busstop').length"), 5, 'five bus stops');
+    await ev("showDevice('bus-ai')"); await sleep(1500); await shot('bus-stop');
+    await ev('closePanel()');
+  });
+  await step('Airport and Metro Loop: zones open, train runs, devices open', async () => {
+    for (const z of ['airport', 'airstation', 'rail']) { await ev(`show('${z}')`); await sleep(500); assert(await ev("document.getElementById('panel').classList.contains('open')"), 'panel for ' + z); }
+    const before = await ev('JSON.stringify(RAIL.cars[2])'); await ev('time += 11'); await sleep(900); assert.notEqual(await ev('JSON.stringify(RAIL.cars[2])'), before, 'the train moves'); await ev('closePanel()');
+    for (const id of ['air-ai', 'apron-ai', 'air-pic', 'air-ioc', 'rail-pic', 'rail-ai', 'air-pos', 'food-pos', 'air-edge', 'acp-anpr', 'acp-ioc', 'sec-ioc', 'sec-vs', 'claim-ioc', 'arr-vs', 'air-sub-pic', 'air-sub-ct', 'town-sub-ioc', 'vil-sub-ct', 'farm-sub-ct', 'fer-ai', 'fer-ioc', 'fer-vs']) { await ev(`showDevice('${id}')`); await sleep(900); assert(await ev("document.getElementById('panel').classList.contains('open')"), 'panel for ' + id); }
+    await ev('closePanel()');
+    await ev("show('ferry')"); await sleep(3000); const fy = await ev('FERRY.y'); await ev('FERRY.t += 12'); await sleep(900); assert.notEqual(await ev('FERRY.y'), fy, 'the ferry sails'); await shot('ferry');
+    await ev('show("airport")'); await sleep(2500); await shot('airport');
+    await ev("showDevice('rail-pic')"); await sleep(2500); await shot('airport-station');
+    for (const z of ['airarrival', 'airsecurity', 'airterminal', 'airfood', 'airgate', 'aircontrol']) { await ev(`enterInside('${z}')`); await sleep(1500); assert.equal(await ev('scene'), 'inside', 'inside ' + z); await shot('inside-' + z); await ev('leaveNow()'); await sleep(800); }
+    await ev("show('aircarpark')"); await sleep(6000); assert(await ev('ACP.entries > 1086 || ACP.log.length > 6'), 'cars enter the car park'); await shot('airport-carpark');
+    const seen = new Set(); for (let i = 0; i < 40; i++) { await ev('FLT += 3'); await sleep(40); seen.add(await ev('FL.info(0).status')); } assert(seen.size >= 5, 'flight statuses cycle: ' + [...seen]);
+    await ev('FLT = 52'); await sleep(600); await shot('airport-live');
+    await ev("WX.manual = 'storm'"); await sleep(2500); const f0 = await ev('FLT'); await sleep(1200);
+    assert.equal(await ev('FLT'), f0, 'flight clock stops in a storm'); assert(await ev("AIRFX.runway.startsWith('Closed') && FL.board().some(r => /Delayed/.test(r.dep))"), 'runway closed, flights delayed'); await shot('storm');
+    await ev("WX.manual = 'clear'"); await sleep(1200); assert((await ev('FLT')) > f0, 'flights resume'); await ev('WX.manual = null');
+    await ev('startWalk(70, 26.5)'); await sleep(1500); assert(await ev('WALK.on'), 'walk mode at the airport'); await shot('airport-walk'); await ev('exitWalk()'); await sleep(500);
+    assert(await ev("FL.rows().length === 4 && [0, 1, 2, 3].every(g => { planeState(g, 105); return true; })"), 'flight rows');
+    const names = await ev('RAIL.st.map(s => s.name).join()'); assert.equal(names.split(',').length, 5);
+    assert(await ev('RAIL.cars.length === 5 && RAIL.Tc > 60'), 'train schedule');
+    await ev('closePanel()');
+  });
+  await step('Regional grid, ride the train, and frame times', async () => {
+    await ev("show('regionalgrid')"); await sleep(3000); assert(Math.abs(await ev('cam.tx') - 61) < 10, 'camera flies to the airport substation'); await shot('grid-airport');
+    assert(await ev("objs.filter(o => o.t === 'pylon' && o.zone === 'regionalgrid').length >= 18"), 'regional pylons');
+    assert(await ev('GRIDR.total() > 5'), 'grid load');
+    await ev("show('rail')"); await sleep(400); await ev("document.querySelector('[data-ride]').click()"); await sleep(2500); assert(await ev('RIDE'), 'ride starts'); await shot('ride-train');
+    await cdp('Input.dispatchMouseEvent', { type: 'mousePressed', x: 400, y: 500, button: 'left', clickCount: 1 }); await cdp('Input.dispatchMouseEvent', { type: 'mouseReleased', x: 400, y: 500, button: 'left', clickCount: 1 }); assert.equal(await ev('RIDE'), false, 'click stops the ride');
+    const fps = () => ev("new Promise(r => { let n = 0; const t0 = performance.now(); (function f() { if (++n < 12) requestAnimationFrame(f); else r((performance.now() - t0) / 12); })(); })");
+    await ev('resetCityView()'); await sleep(800); const city = await fps();
+    await ev("show('airport')"); await sleep(1500); const air = await fps();
+    await ev("enterInside('airterminal')"); await sleep(1800); const hall = await fps(); await ev('leaveNow()'); await sleep(500);
+    console.log('frame ms · city ' + city.toFixed(1) + ' · airport ' + air.toFixed(1) + ' · terminal ' + hall.toFixed(1));
+    assert(city < 1500 && air < 1500 && hall < 1500, 'frame time regressed badly (headless software rendering is slow; this only catches big jumps)');
+  });
   await step('Guided tour starts and stops', async () => {
     await ev("document.getElementById('bTour').click()"); await waitFor('!!tourList', 'tour to start');
     await ev('stopTour()'); assert.equal(await ev('tourList'), null);

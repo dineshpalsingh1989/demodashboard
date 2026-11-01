@@ -1,19 +1,21 @@
 # Smart City Demo Dashboard
 
-An interactive smart city simulation built with HTML, CSS, and JavaScript. Explore the city and remote utility facilities, 387 deployed demo devices, building interiors, energy monitoring, and guided scenarios.
+An interactive smart city simulation built with HTML, CSS, and JavaScript. Explore the city and remote utility facilities, 533 deployed demo devices, building interiors, energy monitoring, and guided scenarios.
 
 **[Open the live demo](https://dineshpalsingh1989.github.io/demodashboard/)**
 
+**[IRIV controllers](https://dineshpalsingh1989.github.io/demodashboard/iriv-controllers/)**: IRIV PiControl and IRIV EdgeAI CM5 on one page, with both films, a side-by-side comparison, a "Which IRIV do I need?" picker and how the two work together.
+
 **[IRIV EdgeAI CM5 tour](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-edgeai/)**: a camera-first film, a live AI demo of a bottle inspection line and an ANPR gate, every port, and compatible Cytron cameras, lights and parts ([download the MP4](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-edgeai/IRIV-EdgeAI-CM5-tour.mp4)).
 
-**[IRIV PiControl tour](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-pi/)**: an 89-second film and interactive map of every pin and port, plus 49 compatible Cytron parts by port, a system builder that checks port limits, and ready-made parts lists ([download the MP4](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-pi/IRIV-PiControl-tour.mp4)).
+**[IRIV PiControl tour](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-pi/)**: a narrated film with short English captions and interactive map of every pin and port, plus 49 compatible Cytron parts by port, a system builder that checks port limits, and ready-made parts lists ([download the MP4](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-pi/IRIV-PiControl-tour.mp4)).
 
 ## Explore the demo
 
 - Search for districts, devices, and scenarios using the search button or `/`.
 - Click buildings and device markers for details, or start the guided tour.
 - Drag the map to move; Shift-drag to rotate. Scroll or use the map controls to zoom.
-- The city, highway, small town and farms are all part of one map: drag and zoom to move between them.
+- The city, highway, small town, a village with its own school and solar-pumped pond, and farms are all part of one map: drag and zoom to move between them.
 - Scroll, zoom buttons and keyboard controls share a 35–500% range. Resetting the view, choosing a district or starting a tour exits walk mode.
 - Enter walk mode to explore at street level, visit shops, or follow the highway to the small town and farms.
 - Switch between day and night, toggle device markers, and enable optional narration.
@@ -21,6 +23,9 @@ An interactive smart city simulation built with HTML, CSS, and JavaScript. Explo
 - Try emergency response, flash flood, power cut, irrigation, water treatment, and power grid scenarios.
 - Search for the **City Power Station** or **Water Treatment** to follow a remote **50 MW power station** and **1,000 m³/h water treatment plant** feeding the city. Both sit beyond a planted buffer; yellow lines carry power, blue lines carry treated water, and brown lines return wastewater. Click either plant for simulated capacity, output, flow, and pressure readings.
 - Open the [Milesight collection](https://dineshpalsingh1989.github.io/demodashboard/#milesight) for eight additional models, or choose **Project → Explore 8 new Milesight products**.
+- Visit the **Mega Airport** east of the city: go inside one full-size terminal (check-in, security, gates, food court, duty free, lounge, immigration and baggage claim) and the control centre, watch planes take off and land, and see cars read by the ANPR car park barrier and ride the eye along the **Metro Loop**, an elevated train that stops at five stations with live next-stop screens.
+- Take the **River Ferry** between three quays (screens show the next ferry; storms suspend it) or switch the weather with the sun button.
+- Click **IRIV units** on the map toolbar to list every IRIV unit and fly to where it is installed.
 - Open any IRIV PiControl, IO Controller or EdgeAI device to see what it is wired to, the automation rules it runs (live), its MQTT messages and health, and where else the model is installed. Test its outputs, or cut its network to compare how each controller behaves offline. EdgeAI panels start with a live camera view, since cameras and CCTV analytics are their main job.
 - Run the water-leak and cold-storage response scenarios. Search for bin fill, pipe pressure, desk occupancy, classroom sound, solar irrigation, or the SG50 farm gateway.
 
@@ -35,6 +40,17 @@ node serve.js
 ```
 
 Then visit `http://localhost:8080`. No package installation or build step is required.
+
+The IRIV films include English narration, short captions, chapter navigation and a transcript. The EdgeAI inspection demo follows one bottle through detection, a missing-cap decision and rejection, with pause, replay and individual stage controls. Demonstration results are simulated.
+
+To rebuild the films on Windows with Chrome installed:
+
+```powershell
+powershell -NoProfile -File tools/build-iriv-narration.ps1
+node tools/build-iriv-videos.cjs
+```
+
+Edit each tour's `narration.json` for the spoken script and short on-screen descriptions. The narration build uses the installed Windows English voice, then creates matching scene timing, WAV audio and VTT captions. The video build embeds AAC narration in the 1080p MP4s and refreshes the posters. `node tools/build-iriv-videos.cjs --preview` checks the source scenes without encoding; previews go in `.tmp/video-build/`. Use `--check` to verify the exported films, audio decoding, captions, chapter controls and mobile layouts. The MP4 muxer and its license are retained in `tools/vendor/` so building does not require a CDN.
 
 ## Performance
 
@@ -57,6 +73,7 @@ The map is drawn on a canvas that is fully redrawn every frame, so most of the w
 - `device-insights.js` — IRIV device panels: connection map, live rules, MQTT feed, health, output tests, network failover, camera view, and model comparison
 - `images/` — device illustrations and product photos
 - `serve.js` — optional local preview server
+- `iriv-controllers/` — one page for both IRIV controllers: films, comparison, picker and "better together" examples
 - `short-video-of-iriv-edgeai/` — IRIV EdgeAI CM5 tour: film, live AI demo (`demo.js`), port data, compatible Cytron cameras and parts, and the rendered MP4
 - `tools/check-dashboard.cjs` — smoke test for the dashboard: `node tools/check-dashboard.cjs` (needs Chrome)
 - `short-video-of-iriv-pi/` — IRIV PiControl tour page, film renderer (`film.js`), pin data (`data.js`), compatible Cytron parts and system recipes (`connect.js`), and the rendered MP4

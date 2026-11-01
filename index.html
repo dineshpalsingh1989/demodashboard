@@ -225,6 +225,8 @@
 <div class="view-tools" role="group" aria-label="View preferences">
   <button id="bDev" aria-label="Show device markers" title="Show device markers" aria-pressed="true"><span data-icon="signal"></span><span>Devices</span></button>
   <button id="bFlow" aria-label="Show traffic flow" title="Traffic flow: lanes coloured green when moving freely, amber when slow, red when queued" aria-pressed="false"><span data-icon="car"></span><span>Traffic</span></button>
+  <button id="bIriv" aria-label="Find IRIV units on the map" title="Find every IRIV PiControl, IO Controller and EdgeAI on the map" aria-haspopup="dialog"><span data-icon="signal"></span><span>IRIV units</span></button>
+  <button id="bWx" aria-label="Weather: cycle auto, rain, storm, clear"></button>
   <span class="tool-divider"></span>
   <button id="bNight" aria-label="Night mode" title="Night mode" aria-pressed="false"><span data-icon="moon"></span></button>
   <button id="bVoice" aria-label="Voice narration" title="Voice narration" aria-pressed="false"><span data-icon="volumeOff"></span></button>
@@ -247,7 +249,7 @@
 <dialog id="searchDialog" aria-labelledby="searchTitle">
   <div class="search-heading"><div><div class="eyebrow">CITY DIRECTORY</div><h2 id="searchTitle">Where would you like to go?</h2></div><button id="searchClose" class="x" aria-label="Close search"><span data-icon="close"></span></button></div>
   <div class="search-field"><span data-icon="search"></span><input id="citySearch" type="search" placeholder="Search districts, devices, or scenarios…" aria-label="Search districts, devices, or scenarios" autocomplete="off" spellcheck="false" aria-controls="searchResults"></div>
-  <div class="search-filters" role="group" aria-label="Filter search results"><button data-filter="all" aria-pressed="true">All</button><button data-filter="district" aria-pressed="false">Districts</button><button data-filter="device" aria-pressed="false">Devices</button><button data-filter="scenario" aria-pressed="false">Scenarios</button></div>
+  <div class="search-filters" role="group" aria-label="Filter search results"><button data-filter="all" aria-pressed="true">All</button><button data-filter="district" aria-pressed="false">Districts</button><button data-filter="device" aria-pressed="false">Devices</button><button data-filter="iriv" aria-pressed="false">IRIV units</button><button data-filter="scenario" aria-pressed="false">Scenarios</button></div>
   <p id="searchCount" role="status"></p><div id="searchResults"></div><div class="search-footer"><span><kbd>↓</kbd> Browse results <kbd>Enter</kbd> Open</span><span><kbd>Esc</kbd> Close</span></div>
 </dialog>
 <div id="announcement" class="sr-only" role="status"></div>
@@ -1745,7 +1747,7 @@ function drawObj(o, path) {
     case 'cow': return drawCow(o.c);
     case 'ped': return drawPed(o.p);
     case 'amb': return drawAmb();
-    case 'busstop': return drawBusStop();
+    case 'busstop': return drawBusStop(o);
     case 'pspace': return drawSpace(o.s);
     case 'psign': return drawParkSign();
     case 'cctv': {
@@ -2649,10 +2651,10 @@ function updateWalkers(dt) {
   if (scene !== 'inside') return;
   let near = false;
   walkers.forEach(w => {
-    if (Math.hypot(w.x, w.y - 9) < 1.7) near = true;
+    if (Math.hypot(w.x, w.y - (curInt.doorY || 9)) < 1.7) near = true;
     if (w.cust) return;   // shop customers are moved by shopUpdate
     if (w.wait > 0) { w.wait -= dt; w.moving = false; return; }
-    const n = w.r[(w.i + 1) % w.r.length], dx = n[0] - w.x, dy = n[1] - w.y, d = Math.hypot(dx, dy), step = 1.1 * dt, px = w.x;
+    const n = w.r[(w.i + 1) % w.r.length], dx = n[0] - w.x, dy = n[1] - w.y, d = Math.hypot(dx, dy), step = (curInt.walk || 1.1) * dt, px = w.x;
     if (d <= step) { w.x = n[0]; w.y = n[1]; w.i = (w.i + 1) % w.r.length; w.wait = n[2]; }
     else { w.x += dx / d * step; w.y += dy / d * step; }
     w.moving = true;
@@ -2684,30 +2686,30 @@ function drawWallDev(p) {
 }
 
 function drawInterior() {
-  const S = curInt;
-  drawBox({ x0: 0, y0: 0, x1: 14, y1: 11, z0: -.35, h: .35, color: '#cfd6dc', roof: S.floor });
+  const S = curInt, IW = S.w || 14, ID = S.d || 11, WH = S.wallH || 3.6, [d0, d1] = S.door || [8, 10], dc = (d0 + d1) / 2;   // rooms default to 14 × 11
+  drawBox({ x0: 0, y0: 0, x1: IW, y1: ID, z0: -.35, h: .35, color: '#cfd6dc', roof: S.floor });
   ctx.strokeStyle = col(S.tile); ctx.lineWidth = .8;
-  for (let x = 1; x < 14; x++) { const a = P(x, 0, 0), b = P(x, 11, 0); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); }
-  for (let y = 1; y < 11; y++) { const a = P(0, y, 0), b = P(14, y, 0); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); }
-  poly(quad(.05, 7.9, 2.0, 10.1, .004), col('#6f7f8f'));
+  for (let x = 1; x < IW; x++) { const a = P(x, 0, 0), b = P(x, ID, 0); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); }
+  for (let y = 1; y < ID; y++) { const a = P(0, y, 0), b = P(IW, y, 0); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); }
+  poly(quad(.05, d0 - .1, 2.0, d1 + .1, .004), col('#6f7f8f'));
   S.floorDecor && S.floorDecor();
 
   // back walls (front walls are cut away so we can look inside)
-  drawBox({ x0: -.3, y0: -.3, x1: 0, y1: 11, h: 3.6, color: S.wallA, roof: '#cfc5b3' });
-  drawBox({ x0: 0, y0: -.3, x1: 14, y1: 0, h: 3.6, color: S.wallB, roof: '#cfc5b3' });
-  poly(wallA(0, 11, 0, .14), col('#b7bec6')); poly(wallB(0, 14, 0, .14), col('#b7bec6'));
+  drawBox({ x0: -.3, y0: -.3, x1: 0, y1: ID, h: WH, color: S.wallA, roof: '#cfc5b3' });
+  drawBox({ x0: 0, y0: -.3, x1: IW, y1: 0, h: WH, color: S.wallB, roof: '#cfc5b3' });
+  poly(wallA(0, ID, 0, .14), col('#b7bec6')); poly(wallB(0, IW, 0, .14), col('#b7bec6'));
   const [wz0, wz1] = S.winZ || [1.3, 3.0];
   for (const [a, b] of S.winA) {
     poly(wallA(a, b, wz0, wz1), night > .5 ? '#1a2740' : '#cfe8f7', col('#9aa7b3'), null, 2);
     line(P(.01, (a + b) / 2, wz0), P(.01, (a + b) / 2, wz1), col('#9aa7b3'), 2);
   }
   // entrance doors (slide open when someone is near)
-  poly(wallA(8, 10, 0, 2.6), night > .5 ? '#1b2a46' : '#f7fafc', col('#7b8794'), null, 2);
+  poly(wallA(d0, d1, 0, 2.6), night > .5 ? '#1b2a46' : '#f7fafc', col('#7b8794'), null, 2);
   const o = doorOpen * .9;
-  poly(wallA(8 - o, 9 - o, 0, 2.6, .02), 'rgba(160,210,240,.45)', 'rgba(110,140,165,.9)', null, 1.5);
-  poly(wallA(9 + o, 10 + o, 0, 2.6, .02), 'rgba(160,210,240,.45)', 'rgba(110,140,165,.9)', null, 1.5);
-  poly(wallA(8, 10, 2.72, 3.12), col(S.color));
-  wtext(.01, 9, 2.92, S.sign, .18, '#fff');
+  poly(wallA(d0 - o, dc - o, 0, 2.6, .02), 'rgba(160,210,240,.45)', 'rgba(110,140,165,.9)', null, 1.5);
+  poly(wallA(dc + o, d1 + o, 0, 2.6, .02), 'rgba(160,210,240,.45)', 'rgba(110,140,165,.9)', null, 1.5);
+  poly(wallA(d0, d1, 2.72, 3.12), col(S.color));
+  wtext(.01, dc, 2.92, S.sign, .18, '#fff');
   S.decor && S.decor();
   S.devs.forEach(p => { if (p.mount === 'A' || p.mount === 'B') drawWallDev(p); });
 
@@ -2737,9 +2739,9 @@ function drawInterior() {
 
   // links: sensors → UG65 (LoRaWAN), edge ← UG65, controllers ← IRIV Edge
   const GB = S.gw || GW_BADGE, badges = [GB];
-  const hasEdge = S.devs.some(p => p.id === 'edge'), needEdgeBadge = !hasEdge && S.devs.some(p => ['controller', 'ai'].includes(DEV[p.id].cat) && !DEV[p.id].gw);
-  if (needEdgeBadge) badges.push(EDGE_BADGE);
-  const g = P(GB.x, GB.y, GB.z), eb = P(EDGE_BADGE.x, EDGE_BADGE.y, EDGE_BADGE.z);
+  const EB = S.eb || EDGE_BADGE, hasEdge = S.devs.some(p => p.id === 'edge'), needEdgeBadge = !hasEdge && S.devs.some(p => ['controller', 'ai'].includes(DEV[p.id].cat) && !DEV[p.id].gw);
+  if (needEdgeBadge) badges.push(EB);
+  const g = P(GB.x, GB.y, GB.z), eb = P(EB.x, EB.y, EB.z);
   S.devs.forEach((p, i) => {
     const cat = DEV[p.id].cat, a = P(p.x, p.y, p.z), tgt = (cat === 'controller' || cat === 'ai') && !DEV[p.id].gw ? (hasEdge ? P(...['x', 'y', 'z'].map(k => S.devs.find(q => q.id === 'edge')[k])) : eb) : g;
     const colr = cat === 'sensor' ? CAT.sensor.c : cat === 'edge' ? CAT.gateway.c : cat === 'ai' ? CAT.ai.c : CAT.controller.c;
@@ -2755,6 +2757,10 @@ function drawInterior() {
 
 // ---------- scene switching ----------
 const fade = document.getElementById('fade'), bBack = document.getElementById('bBack');
+function intCam(S, zone) {   // start view of a room: big rooms set cam and optional per-entrance starts
+  const st = S.starts && S.starts[zone];
+  return S.cam ? { x: st ? st[0] : S.cam.x, y: st ? st[1] : S.cam.y, tz: st ? S.cam.tz * 1.8 : S.cam.tz } : { x: W > 820 ? 9.0 : 7, y: W > 820 ? 3.5 : 5.5, tz: W > 820 ? 1.3 : .95 };
+}
 function enterInside(zone) {
   if (WALK.on) exitWalk();
   zone = zone || (SCENES[sel] ? sel : 'gov');
@@ -2770,7 +2776,7 @@ function enterInside(zone) {
     walkers = (S.routes || []).map((r, i) => ({ r, i: 0, x: r[0][0], y: r[0][1], wait: r[0][2], moving: false, col: CLOTHES[(i * 4 + 1) % CLOTHES.length], skin: SKINS[(i + 2) % 5] }));
     if (S.shop) shopInit(S);
     scene = 'inside'; cityTh = cam.th; cam.th = Math.PI / 4;
-    cam.x = cam.tx = 7; cam.y = cam.ty = 5.5; cam.zoom = 2.4;
+    { const c0 = S.cam ? intCam(S, zone) : { x: 7, y: 5.5 }; cam.x = cam.tx = c0.x; cam.y = cam.ty = c0.y; } cam.zoom = 2.4;
     bBack.hidden = false; bBack.querySelector('span').textContent = '· inside ' + S.short;
     document.body.classList.add('inside');
     showInterior();
@@ -2802,7 +2808,7 @@ function showInterior(fromTour = false) {
     `<button class="tourbtn" data-act="halltour">▶ Walk through the sensors in this room</button>` +
     `<button class="tourbtn alt" data-act="about">ℹ About ${TOPICS[curZone].title}</button>` +
     `<button class="tourbtn alt" data-act="exit">⬅ Back to the city</button>`, S.m);
-  cam.tx = W > 820 ? 9.0 : 7; cam.ty = W > 820 ? 3.5 : 5.5; cam.tz = W > 820 ? 1.3 : .95;
+  { const c1 = intCam(S, curZone); cam.tx = c1.x; cam.ty = c1.y; cam.tz = c1.tz; }
   narrate(S.say, fromTour);
 }
 const showHall = showInterior;
@@ -3096,21 +3102,41 @@ function busEta() {
   let d = (b.pos - BUS_STOP_X) * -b.dir; if (d < -.3) d += WORLD + 2;
   return d < .6 ? 'Now' : Math.max(1, Math.round(d / 1.6 / 4)) + ' min';
 }
-function drawBusStop() {
-  const x = BUS_STOP_X;
-  drawBox({ x0: x - .6, y0: 15.74, x1: x + .6, y1: 15.8, h: .95, color: '#90caf9' });
-  drawBox({ x0: x - .45, y0: 15.55, x1: x + .45, y1: 15.72, h: .3, color: '#78909c' });
-  [[x - .25, 15.62], [x + .2, 15.6]].forEach(([px, py], i) => drawPed({ x: px, y: py, ox: 0, oy: 0, moving: false, col: CLOTHES[i + 3], skin: SKINS[i + 1] }));
-  drawBox({ x0: x - .65, y0: 15.45, x1: x + .65, y1: 15.85, z0: .95, h: .07, color: '#37474f' });
-  const s = P(x + .75, 15.5, 1.25);
-  line(P(x + .75, 15.5, 0), s, col('#546e7a'), 1.5);
+function drawBusStop(o) {
+  const x = o.cx, f = o.flip ? -1 : 1, Y = v => o.cy + f * (v - 15.65);   // the shelter mirrors for the north side of a road
+  const bx = (x0, ya, x1, yb, opt) => drawBox(Object.assign({ x0, y0: Math.min(Y(ya), Y(yb)), x1, y1: Math.max(Y(ya), Y(yb)) }, opt));
+  bx(x - .6, 15.74, x + .6, 15.8, { h: .95, color: '#90caf9' });
+  bx(x - .45, 15.55, x + .45, 15.72, { h: .3, color: '#78909c' });
+  [[x - .25, 15.62], [x + .2, 15.6]].forEach(([px, py], k) => drawPed({ x: px, y: Y(py), ox: 0, oy: 0, moving: false, col: CLOTHES[k + 3], skin: SKINS[k + 1] }));
+  bx(x - .65, 15.45, x + .65, 15.85, { z0: .95, h: .07, color: '#37474f' });
+  const s = P(x + .75, Y(15.5), 1.25);
+  line(P(x + .75, Y(15.5), 0), s, col('#546e7a'), 1.5);
   if (sc > 20) {
-    const txt = `🚌 7  ·  ${busEta()}`; ctx.font = `700 ${Math.max(9, sc * .14)}px Inter,sans-serif`;
+    const txt = o.line ? `🚌 ${o.line}  ·  ${1 + Math.floor((time * .6 + o.cx) % 9)} min` : `🚌 7  ·  ${busEta()}`; ctx.font = `700 ${Math.max(9, sc * .14)}px Inter,sans-serif`;
     const w = ctx.measureText(txt).width + 12, hgt = Math.max(14, sc * .22);
     ctx.fillStyle = '#0f1724'; ctx.beginPath(); ctx.roundRect(s[0] - w / 2, s[1] - hgt, w, hgt, 4); ctx.fill();
     ctx.fillStyle = '#ffd54f'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(txt, s[0], s[1] - hgt / 2);
   }
 }
+// more stops: school, mall, hospital and the rail station (flip = north side of the road)
+[['school', 43.0, 23.65, 0, '12'], ['mall', 43.0, 21.65, 1, '5'], ['health', 18.0, 13.65, 1, '9'], ['hub', 3.5, 37.65, 1, '3']].forEach(([z, x, y, flip, line]) => add('busstop', z, x, y, { flip, line }));
+DEVICES.push(
+  fdev({ id: 'bus-ai', cat: 'ai', brand: 'IRIV', model: 'IRIV EdgeAI CM5', name: 'Station Bus Stop Queue Camera', icon: '📷', zone: 'hub', x: 3.5, y: 37.65, z: 2.0, qty: 1,
+    conn: 'IP camera (RTSP) · MQTT to IRIV Edge', power: 'DC 10–30 V (surge-protected)', path: ['Stop camera', 'Ethernet', 'EdgeAI CM5', 'Display + MQTT', 'IRIV Edge'],
+    loc: 'Bus stop at the rail station', short: 'Station bus stop',
+    what: 'An IRIV EdgeAI CM5 counts the people waiting at the station bus stop, so the interchange can send a second bus before the queue gets long.', why: 'On the shelter roof, covering the whole queue.',
+    m: [['Waiting', () => Math.round(wob(14, 6, .2))], ['Next bus', () => Math.max(1, Math.round(wob(4, 2, .1))) + ' min'], ['Extra bus', () => 'Not needed'], ['Model', () => 'People count']],
+    say: 'This A I camera counts the people waiting at the station bus stop, so the depot can send an extra bus when the queue grows.' }),
+  fdev({ id: 'bus-vs', model: 'VS133', name: 'Bus Stop Passenger Counter', icon: '👥', zone: 'school', x: 43.0, y: 23.65, z: 1.3, qty: 3, power: 'DC / PoE', gw: 'ug65',
+    loc: 'School, mall and hospital bus stops', short: 'Bus stops', what: 'Counts the people who get on and off at a stop.', why: 'Above the shelter, facing the kerb.',
+    m: [['Boarding today', () => fint(120 + Math.floor(time / 4))], ['Waiting', () => Math.round(wob(6, 3, .2))], ['Peak', () => '07:45'], ['Battery', () => '—']],
+    say: 'These people counters count passengers at the school, mall and hospital bus stops.' }),
+  fdev({ id: 'bus-sos', model: 'WS101', name: 'Bus Stop SOS Button', icon: '🆘', zone: 'health', x: 18.0, y: 13.65, z: 1.0, qty: 4,
+    loc: 'Bus stop shelters', short: 'Bus stops', what: 'A one-press help button at a stop.', why: 'On the shelter post, at hand height.',
+    m: [['Presses today', () => '0'], ['Battery', () => '90%'], ['Last test', () => 'OK'], ['Signal', () => 'Good']],
+    say: 'This smart button lets someone at a quiet bus stop call for help with one press.' })
+);
+DEVICES.slice(-3).forEach(d => { DEV[d.id] = d; });
 
 // smart parking in the police block: one occupancy sensor per space
 const PARK = Array.from({ length: 7 }, (_, k) => ({ k, x: 9.3 + k * .6, col: CARCOL[(k * 3 + 1) % CARCOL.length] }));
@@ -5024,11 +5050,20 @@ document.getElementById('panel').addEventListener('click', e => { if (e.target.c
    HIGHWAY + SMALL TOWN, rooms for every building, easier navigation
    ================================================================ */
 const HWY = { x0: -22.6, x1: 0, y0: 27.6, y1: 33.4 };       // highway corridor west of the city, beside the farm            // highway corridor east of the city
-const SAT = { x0: -47.4, x1: -22.6, y0: 14.6, y1: 38.4 };   // the small town            // the small town
+const SAT = { x0: -47.4, x1: -22.6, y0: 14.6, y1: 46.4 };   // the small town            // the small town
 const LAND_X0 = -70.2, LAND_X = 60, LAND_Y = 78;
-const onLand = (x, y) => (x > .3 && y > .3 && x < LAND_X - .3 && y < LAND_Y - .3) || (x > -69.8 && x < -47.6 && y > 17.8 && y < 43.2) || (x > -22.4 && x < -.2 && y > 14.8 && y < 43.2 && (x < -13 || x > -9 || (y > 27.6 && y < 33.4))) || (x >= HWY.x0 - .5 && x <= HWY.x1 + .5 && y > HWY.y0 + .2 && y < HWY.y1 - .2) || (x > SAT.x0 + .2 && x < SAT.x1 - .2 && y > SAT.y0 + .2 && y < SAT.y1 - .2);
+const onLand = (x, y) => (x > .3 && y > .3 && x < LAND_X - .3 && y < LAND_Y - .3) || (x > -69.8 && x < -47.6 && y > 17.8 && y < 43.2) || (x > -22.4 && x < -.2 && y > 14.8 && y < 43.2 && (x < -13 || x > -9 || (y > 27.6 && y < 33.4))) || (x >= HWY.x0 - .5 && x <= HWY.x1 + .5 && y > HWY.y0 + .2 && y < HWY.y1 - .2) || (x > SAT.x0 + .2 && x < SAT.x1 - .2 && y > SAT.y0 + .2 && y < SAT.y1 - .2) || (x > AIR.x0 && x < AIR.x1 - .2 && y > AIR.y0 + .2 && y < AIR.y1 - .2);
 
 Object.assign(TOPICS, {
+  satkampung: { icon: '🛖', color: '#8d6e63', kicker: 'Village', title: 'Kampung Homes', sum: 'A small village of timber homes just south of the small town. Each house has a CT101 energy monitor, and everything reports to the town gateway over LoRaWAN.',
+    how: ['CT101 per house for power and solar.', 'Reports to the small-town UG65 gateway.'], ben: ['Lower bills', 'No fibre needed'],
+    m: [['Homes', () => '18'], ['Solar', () => (night > .5 ? 0 : wob(8, 1, .3)).toFixed(0) + ' kW'], ['Alerts', () => '0'], ['Gateway', () => 'sat UG65']], say: 'This is the village. Every house has a small energy monitor that reports over LoRaWAN, so no fibre is needed.' },
+  satvschool: { icon: '🏫', color: '#fb8c00', kicker: 'Village', title: 'Village School & Hall', sum: 'A village primary school and community hall. An IRIV EdgeAI CM5 watches the gate, and an IRIV IO Controller MQTT rings the school bell and runs the hall.',
+    how: ['EdgeAI CM5: gate camera for people and vehicles.', 'IO Controller MQTT: bell, hall lights and door contact.', 'AM319 air quality in the classrooms.'], ben: ['Safer school runs', 'Fresh classrooms', 'Automatic bell'],
+    m: [['Pupils', () => '96'], ['CO₂', () => Math.round(wob(720, 50, .2)) + ' ppm'], ['Gate', () => 'Clear'], ['Bell', () => 'Scheduled']], say: 'This is the village school and hall. An A I camera watches the gate, and an I O Controller rings the bell on schedule.' },
+  satpond: { icon: '🐟', color: '#0288d1', kicker: 'Village', title: 'Village Pond & Solar Pump', sum: 'A fish pond and a water tank filled by a solar pump. An IRIV PiControl reads the tank level and runs the pump and the pond aerator.',
+    how: ['PiControl: tank level on AI1, pump on DO1, aerator on DO2.', 'EM500-UDL measures the tank level.', 'Solar powers the pump.'], ben: ['Water for the village', 'Healthier fish', 'Free daytime power'],
+    m: [['Tank', () => Math.round(wob(68, 4, .05)) + '%'], ['Pump', () => night > .5 ? 'Off' : 'Running'], ['Aerator', () => night > .5 ? 'On' : 'Auto'], ['Pond temp.', () => wob(28, .4, .1).toFixed(1) + ' °C']], say: 'This is the village pond. An IRIV PiControl runs a solar pump to fill the tank and keeps the fish pond aerated.' },
   highway: { icon: '🛣️', color: '#455a64', kicker: 'Transport', title: 'Highway to the Small Town',
     sum: 'A four-lane highway links the city with a small satellite town. An IRIV EdgeAI CM5 on the gantry reads plates and speeds, a road weather station watches the conditions, and an IO Controller MQTT drives the message sign.',
     how: ['EdgeAI CM5 on the gantry: plates, speed, vehicle counts, incidents.', 'WTS506 road weather: rain and wind warnings.', 'IO Controller MQTT drives the message sign over RS485.'], ben: ['Safer roads', 'Live travel times'],
@@ -5050,13 +5085,13 @@ Object.assign(TOPICS, {
   satpark: { icon: '🌳', color: '#43a047', kicker: 'Small town', title: 'Town Park', sum: 'A park with a pond and a playground.', how: ['Smart lights at dusk.'], ben: ['Green space'],
     m: [['Visitors', () => Math.round(wob(25, 8, .1))], ['Lights', () => night > .5 ? 'On' : 'Off'], ['Pond', () => 'Normal'], ['Air', () => 'Good']], say: 'The small town\'s park, with a pond and a playground.' }
 });
-ORDER.push('highway', 'satcentre', 'satwater', 'satsolar', 'satschool', 'sattown', 'satpark');
+ORDER.push('highway', 'satcentre', 'satwater', 'satsolar', 'satschool', 'sattown', 'satpark', 'satkampung', 'satvschool', 'satpond');
 
 // small-town blocks: 3 × 3, with roads at x 85.5 / 93.5 and y 22.5 / 30.5 (the highway joins at y 30.5)
-const SAT_X = [[78.4, 84.6], [86.4, 92.6], [94.4, 100.6]], SAT_Y = [[15.4, 21.6], [23.4, 29.6], [31.4, 37.6]];
-const SAT_Z = [['sattown', 'satcentre', 'satschool'], ['sattown', 'satwater', 'satsolar'], ['sattown', 'satpark', 'sattown']];   // [column][row]
-const SAT_KIND = { sattown: 'grass', satcentre: 'plaza', satschool: 'grass', satwater: 'grass', satsolar: 'grass', satpark: 'grass' };
-for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) { const zone = SAT_Z[i][j]; blocks.push({ zone, x0: SAT_X[i][0], x1: SAT_X[i][1], y0: SAT_Y[j][0], y1: SAT_Y[j][1], kind: SAT_KIND[zone] }); }
+const SAT_X = [[78.4, 84.6], [86.4, 92.6], [94.4, 100.6]], SAT_Y = [[15.4, 21.6], [23.4, 29.6], [31.4, 37.6], [39.4, 45.6]];
+const SAT_Z = [['sattown', 'satcentre', 'satschool', 'satkampung'], ['sattown', 'satwater', 'satsolar', 'satvschool'], ['sattown', 'satpark', 'sattown', 'satpond']];   // [column][row]
+const SAT_KIND = { sattown: 'grass', satcentre: 'plaza', satschool: 'grass', satwater: 'grass', satsolar: 'grass', satpark: 'grass', satkampung: 'grass', satvschool: 'grass', satpond: 'grass' };
+for (let i = 0; i < 3; i++) for (let j = 0; j < 4; j++) { const zone = SAT_Z[i][j]; blocks.push({ zone, x0: SAT_X[i][0], x1: SAT_X[i][1], y0: SAT_Y[j][0], y1: SAT_Y[j][1], kind: SAT_KIND[zone] }); }
 blocks.filter(b => b.zone.startsWith('sat')).forEach(b => { ZINFO[b.zone] = { x: (b.x0 + b.x1) / 2, y: (b.y0 + b.y1) / 2, z: 3 }; });
 ZINFO.highway = { x: 66, y: 30.5, z: 4.2 }; ZINFO.satcentre.z = 4.2;
 
@@ -5076,6 +5111,50 @@ for (let r = 0; r < 4; r++) for (let k = 0; k < 2; k++) box('satsolar', 86.9 + k
 box('satsolar', 91.9, 36.4, 92.4, 36.9, .8, '#cfd8dc', { deco: ['cabinet'] });
 [[95.5, 24.5], [99.5, 24.5], [95.5, 28.8], [99.6, 28.8], [97.5, 23.9]].forEach(([x, y]) => tree('satpark', x, y, .75));
 add('slide', 'satpark', 99.0, 26.8);
+// village: timber homes, school and hall, fish pond with a solar-pumped tank
+for (let r = 0; r < 2; r++) for (let k = 0; k < 3; k++) { const x0 = 79.0 + k * 1.9, y0 = r ? 43.0 : 40.2, [wall, roof] = HOUSE_COL[(k + r * 2) % 6];
+  add('house', 'satkampung', x0 + .55, y0 + .55, { x0, y0, x1: x0 + 1.1, y1: y0 + 1.1, h: .8, rh: .6, wall, roof, solar: k === 1 }); }
+[[79.4, 42.2], [82.8, 42.2], [84.0, 45.0]].forEach(([x, y]) => tree('satkampung', x, y, .6));
+box('satvschool', 87.0, 40.3, 91.8, 41.6, 1.3, '#ffe0b2', { win: 'grid', roof: '#ffcc80' });
+box('satvschool', 87.4, 43.6, 89.6, 44.8, 1.0, '#fff3d6', { win: 'grid', roof: '#8d6e63' });
+add('slide', 'satvschool', 91.2, 44.0);
+[[87.0, 42.6], [91.6, 42.6]].forEach(([x, y]) => tree('satvschool', x, y, .6));
+box('satpond', 95.2, 40.2, 99.6, 43.4, .06, '#4fc3f7', { roof: '#4fc3f7' });
+add('tank', 'satpond', 96.0, 44.6, { r: .7, h: 1.4 });
+for (let k = 0; k < 2; k++) box('satpond', 99.0, 43.9 + k * .8, 100.2, 44.5 + k * .8, .22, '#c9d0d6', { roof: '#23477f', deco: ['panel'] });
+box('satpond', 97.8, 44.4, 98.6, 45.0, .9, '#cfd8dc', { deco: ['cabinet'] });
+[[94.9, 40.0], [100.0, 40.0], [94.9, 43.7]].forEach(([x, y]) => tree('satpond', x, y, .6));
+DEVICES.push(
+  fdev({ id: 'vil-ai', cat: 'ai', brand: 'IRIV', model: 'IRIV EdgeAI CM5', name: 'Village School Gate Camera', icon: '📷', zone: 'satvschool', x: 89.4, y: 40.1, z: 2.0, qty: 1,
+    conn: 'MIPI camera · 4G router · MQTT to IRIV Edge', power: 'DC 10–30 V (surge-protected)', path: ['Gate camera', 'MIPI', 'EdgeAI CM5', 'Beacon + MQTT', 'IRIV Edge'],
+    loc: 'Village school gate', short: 'Village school',
+    what: 'An IRIV EdgeAI CM5 watches the school gate, counts children and cars, and flashes a beacon when a child walks into the road.', why: 'On the gate post, looking at the road and the entrance.',
+    m: [['Children at gate', () => Math.round(wob(6, 3, .3))], ['Cars in view', () => Math.round(wob(2, 1.5, .3))], ['Alerts today', () => '0'], ['Model', () => 'Person + vehicle']],
+    say: 'This A I camera watches the village school gate and warns when a child steps into the road.' }),
+  fdev({ id: 'vil-ioc', cat: 'controller', brand: 'IRIV', model: 'IRIV IO Controller MQTT', name: 'School Bell & Hall Controller', icon: '🔔', zone: 'satvschool', x: 88.5, y: 43.4, z: 1.1, qty: 1,
+    conn: '4G router · MQTT to IRIV Edge', power: 'DC 10–30 V (surge-protected)', path: ['Bell, lights, door', 'DI / DO', 'IO Controller', '4G · MQTT', 'IRIV Edge'],
+    loc: 'Village hall panel', short: 'Village school', what: 'Rings the school bell on schedule and switches the hall lights.', why: 'In the hall panel, next to the existing bell relay.',
+    m: [['Next bell', () => '10:30'], ['Hall lights', () => night > .5 ? 'On' : 'Off'], ['Hall door', () => 'Closed'], ['MQTT', () => 'Connected']],
+    say: 'This I O Controller rings the village school bell and runs the hall lights.' }),
+  fdev({ id: 'vil-pic', cat: 'controller', brand: 'IRIV', model: 'IRIV PiControl', name: 'Solar Pump & Aerator Controller', icon: '🎛️', zone: 'satpond', x: 98.2, y: 44.7, z: 1.0, qty: 1,
+    conn: '4G router · MQTT to IRIV Edge', power: 'DC 10–30 V (surge-protected)', path: ['Tank level & pump', 'AI / DI / DO', 'PiControl', '4G · MQTT', 'IRIV Edge'],
+    loc: 'Village pond cabinet', short: 'Village pond', what: 'Fills the village tank with a solar pump and keeps the fish pond aerated.', why: 'In the cabinet beside the tank, close to the pump.',
+    m: [['Tank level', () => Math.round(wob(68, 4, .05)) + '%'], ['Pump', () => night > .5 ? 'Off' : 'Running'], ['Aerator', () => night > .5 ? 'On' : 'Auto'], ['MQTT', () => 'Connected']],
+    say: 'This I R I V PiControl runs the village solar pump and the pond aerator.' }),
+  fdev({ id: 'vil-ct', model: 'CT101', name: 'Village Home Energy Monitor', icon: '⚡', zone: 'satkampung', x: 80.4, y: 41.6, z: .9, qty: 18, gw: 'sat-gw', power: 'Check datasheet (sources differ)',
+    loc: 'Village homes', short: 'Village homes', what: 'Shows each house its power use and solar.', why: "On each house's main cable.",
+    m: [['Power', () => wob(.9, .2, .3).toFixed(1) + ' kW'], ['Solar', () => (night > .5 ? 0 : wob(.6, .1, .3)).toFixed(1) + ' kW'], ['Today', () => wob(7.2, .3, .05).toFixed(1) + ' kWh'], ['Battery', () => '—']],
+    say: 'These current sensors show each village family their power use.' }),
+  fdev({ id: 'vil-am', model: 'AM319', name: 'Village Classroom Air Quality', icon: '🌡️', zone: 'satvschool', x: 90.4, y: 41.0, z: 1.0, qty: 4, power: 'DC adapter', gw: 'sat-gw',
+    loc: 'Village school classrooms', short: 'Village school', what: 'Classroom air quality.', why: 'In every classroom.',
+    m: [['CO₂', () => Math.round(wob(720, 50, .2)) + ' ppm'], ['Temp.', () => wob(26, .5, .2).toFixed(1) + ' °C'], ['Rooms OK', () => '4 / 4'], ['Battery', () => '—']],
+    say: 'These sensors keep the village classrooms fresh.' }),
+  fdev({ id: 'vil-udl', model: 'EM500-UDL', name: 'Village Tank Level', icon: '🌊', zone: 'satpond', x: 96.0, y: 44.6, z: 1.5, qty: 1, gw: 'sat-gw',
+    loc: 'Village water tank', short: 'Village pond', what: 'Ultrasonic level of the village tank.', why: "In the tank's roof hatch.",
+    m: [['Tank level', () => Math.round(wob(68, 4, .05)) + '%'], ['Trend', () => night > .5 ? 'Falling' : 'Rising'], ['Days of supply', () => '2.0'], ['Battery', () => '95%']],
+    say: 'This level sensor tells the village how full its tank is.' })
+);
+DEVICES.slice(-6).forEach(d => { DEV[d.id] = d; });
 // highway: gantry with the ANPR camera, message sign, weather station
 add('hgantry', 'highway', 62.0, 30.5, { label: '← Small Town 4 km · Farmland 9 km' });
 add('hgantry', 'highway', 70.0, 30.5, { sign: true });
@@ -5112,8 +5191,8 @@ function worldGround5() {
   poly(quad(HWY.x0, 30.4, HWY.x1, 30.6, .01), col('#cfd8dc'));
   for (const y of [28.6, 32.4]) line(P(HWY.x0, y, .3), P(HWY.x1, y, .3), col('#b0bec5'), 2);
   for (let x = HWY.x0 + .3; x < HWY.x1; x += 1.2) for (const y of [29.5, 31.5]) poly(quad(x, y - .03, x + .6, y + .03, .006), 'rgba(255,255,255,.8)');
-  for (let t = SAT.x0 + .3; t < SAT.x1; t += .8) for (const c of [22.5, 30.5]) if (Math.abs(t + 38.5) > 1 && Math.abs(t + 30.5) > 1) poly(quad(t, c - .035, t + .4, c + .035, .004), 'rgba(255,255,255,.75)');
-  for (let t = SAT.y0 + .3; t < SAT.y1; t += .8) for (const c of [-38.5, -30.5]) if (Math.abs(t - 22.5) > 1 && Math.abs(t - 30.5) > 1) poly(quad(c - .035, t, c + .035, t + .4, .004), 'rgba(255,255,255,.75)');
+  for (let t = SAT.x0 + .3; t < SAT.x1; t += .8) for (const c of [22.5, 30.5, 38.5]) if (Math.abs(t + 38.5) > 1 && Math.abs(t + 30.5) > 1) poly(quad(t, c - .035, t + .4, c + .035, .004), 'rgba(255,255,255,.75)');
+  for (let t = SAT.y0 + .3; t < SAT.y1; t += .8) for (const c of [-38.5, -30.5]) if (Math.abs(t - 22.5) > 1 && Math.abs(t - 30.5) > 1 && Math.abs(t - 38.5) > 1) poly(quad(c - .035, t, c + .035, t + .4, .004), 'rgba(255,255,255,.75)');
   poly(circ(-26.5, 27.0, .09, 1.0, 24), col('#5fa8d8'), col('#3d8ac0'));
   // small-town blocks are in the shared blocks list, so drawGround already drew them
 }
@@ -5173,7 +5252,7 @@ const LAYOUTS = {
   kiosk: { name: 'Control office', floor: '#d9dee3', tile: '#c9d0d6', build(O) { workstation(O, 5.0, 4.5, 1, 3); workstation(O, 8.0, 4.5, null, 2); Bx(O, { x0: 2.0, y0: 7.0, x1: 4.0, y1: 7.6, h: .45, color: '#546e7a' }); },
     decor() { screenTile(wallB(3.4, 6.4, 1.8, 3.1), 'cam', 2); screenTile(wallB(6.6, 9.6, 1.8, 3.1), 'map', 5); } }
 };
-const ROOM_FOR = { barn: 'barn', water: 'pumphouse', reservoir: 'pumphouse', wwtp: 'pumphouse', satwater: 'pumphouse', mall: 'mall', school: 'classroom', satschool: 'classroom', hub: 'station', busdepot: 'depot',
+const ROOM_FOR = { barn: 'barn', water: 'pumphouse', reservoir: 'pumphouse', wwtp: 'pumphouse', satwater: 'pumphouse', mall: 'mall', school: 'classroom', satschool: 'classroom', satvschool: 'classroom', satpond: 'pumphouse', hub: 'station', busdepot: 'depot',
   hall: 'hall', sportspark: 'hall', clinic: 'clinic', satcentre: 'office', highway: 'kiosk', parkride: 'kiosk', farm: 'kiosk', green: 'kiosk', forest: 'kiosk', playground: 'kiosk', satsolar: 'kiosk', satpark: 'kiosk', foodcourt: 'kiosk' };
 const SAT_GW_BADGE = { id: 'sat-gw', x: -1.8, y: 1.2, z: 3.4, label: 'UG65 · small-town hall roof' };
 function makeRoom(zone, layout) {
@@ -5201,7 +5280,7 @@ function panBy(dxs, dys) {
   cam.x -= wx; cam.y -= wy; cam.tx = cam.x; cam.ty = cam.y; clampCam();
   rotPauseUntil = performance.now() + 6000;
 }
-function clampCam() { cam.tx = Math.max(LAND_X0 - 4, Math.min(LAND_X + 4, cam.tx)); cam.ty = Math.max(-4, Math.min(LAND_Y + 4, cam.ty)); cam.x = Math.max(LAND_X0 - 6, Math.min(LAND_X + 6, cam.x)); cam.y = Math.max(-6, Math.min(LAND_Y + 6, cam.y)); }
+function clampCam() { cam.tx = Math.max(LAND_X0 - 4, Math.min(AIR.x1 + 4, cam.tx)); cam.ty = Math.max(-4, Math.min(LAND_Y + 4, cam.ty)); cam.x = Math.max(LAND_X0 - 6, Math.min(AIR.x1 + 6, cam.x)); cam.y = Math.max(-6, Math.min(LAND_Y + 6, cam.y)); }
 function zoomAt(mx, my, f) {
   const z2 = clampZoom(cam.tz * f), a = (mx - W / 2 - cam.offX) / sc, b = (my - H / 2 - cam.offY) / (sc * TILT);
   const wx = cam.x + a * C + b * S, wy = cam.y - a * S + b * C, r = cam.zoom / z2;
@@ -5514,12 +5593,13 @@ function frame(now) {
   drawGround();
   groundHits = hits.length;
   const list = [];
-  for (const o of objs) if (WALK.on || onScreen(o)) list.push({ o, d: depth(o.cx, o.cy) });
+  for (const o of objs) if (WALK.on || ((!o.lod || sc >= o.lod) && onScreen(o))) list.push({ o, d: depth(o.cx, o.cy) });   // o.lod: small decor hidden when zoomed far out
   cars.forEach(c => { const x = c.ax === 'x' ? c.pos : c.lane, y = c.ax === 'x' ? c.lane : c.pos; list.push({ o: { t: 'car', car: c, zone: 'mobility' }, d: depth(x, y) }); });
   peds.forEach(p => list.push({ o: { t: 'ped', p }, d: depth(p.x, p.y) }));
   COWS.forEach(c => list.push({ o: { t: 'cow', c }, d: depth(c.x, c.y) }));
   CP.vcars.forEach(c => list.push({ o: { t: 'vcar', c }, d: depth(c.x, c.y) }));
   HWCARS.forEach(c => list.push({ o: { t: 'hwcar', c }, d: depth(c.x, c.y) }));
+  airportEntities(list);
   if (FX.amb) list.push({ o: { t: 'amb' }, d: depth(FX.amb.x, FX.amb.y) });
   carHits = [];
   list.sort((a, b) => a.d - b.d);
@@ -5749,7 +5829,7 @@ function closePanel() {
   stopTour(); stopSpeech(); sel = null; selDev = null; nav = null; clearInterval(metricTimer);
   panel.classList.remove('open'); document.body.classList.remove('panel-open');
   restorePanelFocus(); panel.inert = true;
-  if (scene === 'inside') { cam.tx = 7; cam.ty = 5.5; cam.tz = W > 820 ? 1.45 : 1.0; } else { cam.tx = CX; cam.ty = CX; cam.tz = 1; }
+  if (scene === 'inside') { const c2 = curInt.cam ? intCam(curInt, curZone) : { x: 7, y: 5.5, tz: W > 820 ? 1.45 : 1.0 }; cam.tx = c2.x; cam.ty = c2.y; cam.tz = c2.tz; } else { cam.tx = CX; cam.ty = CX; cam.tz = 1; }
 }
 panel.addEventListener('click', e => {
   const dv = e.target.closest('[data-dev]'); if (dv) { showDevice(dv.dataset.dev); return; }
@@ -5818,6 +5898,10 @@ function updTicker() {
 </script>
 <script src="milesight-devices.js"></script>
 <script src="utilities.js"></script>
+<script src="weather.js"></script>
+<script src="airport.js"></script>
+<script src="power-grid.js"></script>
+<script src="ferry.js"></script>
 <script src="device-insights.js"></script>
 <script>
 // Include devices appended by every district and interior expansion.

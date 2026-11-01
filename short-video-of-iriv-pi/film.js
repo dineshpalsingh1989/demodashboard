@@ -27,7 +27,11 @@ const SCENES = [
   { d: 4.8, g: 'rtc', cam: [440, 515, 2.4], kicker: 'Inside' },
   { d: 5.5, layout: 'specs', kicker: 'The brains', title: 'Raspberry Pi CM4 or CM5.' },
   { d: 5, img: 'front', cam: [500, 470, 1.05], layout: 'hero', kicker: 'Built for the field', title: 'IRIV PiControl', body: 'Python · Node-RED · Grafana · CODESYS · Ignition', foot: 'cytron.io' }
-].map(s => {
+].map((s, i) => {
+  const voice = NARRATION.scenes[i];
+  if (!voice) throw Error('SCENES and NARRATION.scenes differ in length: regenerate narration.js');
+  s = { ...s, d: voice.duration, ...(voice.display ? { body: voice.display } : {}) };
+  if (i === NARRATION.scenes.length - 1) return { ...s, layout: "outro", img: undefined };
   if (!s.g) return s;
   const g = G[s.g];
   return { img: g.img, layout: 'side', kicker: s.kicker || 'Front panel', title: g.title, body: g.body, chips: g.chips, ...s };
@@ -75,7 +79,7 @@ function drawGroup(ctx, c, g, a, t) {
   const rects = g.rects.map(([x0, y0, x1, y1]) => { const [a0, b0] = toScreen(c, x0, y0), [a1, b1] = toScreen(c, x1, y1); return [a0, b0, a1 - a0, b1 - b0]; });
   ctx.save();
   ctx.beginPath(); ctx.rect(0, 0, FW, FH); rects.forEach(([x, y, w, h]) => rr(ctx, x - 6, y - 6, w + 12, h + 12, 14));
-  ctx.fillStyle = `rgba(255,255,255,${.62 * a})`; ctx.fill('evenodd');
+  ctx.fillStyle = `rgba(255,255,255,${.16 * a})`; ctx.fill('evenodd');
   // glow drawn as wide translucent strokes: canvas shadowBlur is far slower to draw
   ctx.strokeStyle = g.color;
   for (const [lw, al] of [[16, .12], [9, .2], [3.5, 1]]) {
@@ -159,8 +163,8 @@ function drawText(ctx, s, a, i) {
     ctx.font = `600 26px ${FONT}`; ctx.fillStyle = s.g ? G[s.g].color : ACCENT; ctx.fillText(s.g ? `${s.kicker} · ${G[s.g].name}` : s.kicker, x, y);
     ctx.font = `800 70px ${FONT}`; ctx.fillStyle = INK; ctx.letterSpacing = '-2px';
     y += 84; for (const l of wrap(ctx, s.title, 640)) { ctx.fillText(l, x, y); y += 78; }
-    ctx.letterSpacing = '0px'; ctx.font = `500 30px ${FONT}`; ctx.fillStyle = MUTED;
-    y += 6; for (const l of wrap(ctx, s.body, 600)) { ctx.fillText(l, x, y); y += 44; }
+    ctx.letterSpacing = '0px'; ctx.font = `500 36px ${FONT}`; ctx.fillStyle = MUTED;
+    y += 6; for (const l of wrap(ctx, s.body, 600)) { ctx.fillText(l, x, y); y += 48; }
     if (s.chips) {
       y += 26; let cx = x; ctx.font = `600 22px ${FONT}`;
       for (const ch of s.chips) {
@@ -201,6 +205,8 @@ function render(ctx, t, k = 1) {
   const i = sceneAt(t), s = SCENES[i], prev = SCENES[i - 1], u = t - s.t0;
   ctx.setTransform(k, 0, 0, k, 0, 0);
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, FW, FH);
+  if (s.layout === 'outro') { drawTourEnd(ctx, u); drawTourFooter(ctx, i, t); return; }
+  if (s.g) { drawTourDetail(ctx, s, u, t); drawTourFooter(ctx, i, t); return; }
   const out = 1 - clamp((u - (s.d - .4)) / .4), p = ease(u / 1.1);
   let cam = s.img ? camOf(s) : null;
   if (cam && prev && prev.img === s.img) {
@@ -232,59 +238,8 @@ function render(ctx, t, k = 1) {
   }
   if (s.layout === 'specs') drawSpecs(ctx, out, u);
   drawText(ctx, s, ease((u - .25) / .6) * out, i);
-  if (s.layout !== 'hero') {   // chapter footer
-    ctx.save(); ctx.globalAlpha = .9; ctx.font = `600 20px ${FONT}`; ctx.fillStyle = '#86868b';
-    ctx.textAlign = 'left'; ctx.fillText('IRIV PiControl', 150, 1030);
-    ctx.textAlign = 'right'; ctx.fillText(`${String(i).padStart(2, '0')} / ${SCENES.length - 2}  ·  ${s.g ? G[s.g].name : s.kicker}`, 1770, 1030);
-    ctx.fillStyle = '#e8e8ed'; ctx.fillRect(150, 1046, 1620, 3); ctx.fillStyle = ACCENT; ctx.fillRect(150, 1046, 1620 * t / TOTAL, 3);
-    ctx.restore();
-  }
+  drawTourFooter(ctx, i, t);
 }
 
 /* ---------- export ---------- */
-const loadScript = src => new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('Could not load ' + src)); document.head.appendChild(s); });
-
-// Frame-by-frame MP4 with WebCodecs; falls back to a real-time recording where WebCodecs is missing.
-async function exportVideo(onProgress = () => {}) {
-  await filmReady;
-  const cv = document.createElement('canvas'); cv.width = FW; cv.height = FH;
-  const ctx = cv.getContext('2d');
-  let codec = null;
-  if ('VideoEncoder' in window) for (const c of ['avc1.640028', 'avc1.4d0028', 'avc1.42e028'])
-    if ((await VideoEncoder.isConfigSupported({ codec: c, width: FW, height: FH, bitrate: 5e6, framerate: FPS })).supported) { codec = c; break; }
-  if (!codec) return recordRealtime(cv, ctx, onProgress);
-  if (!window.Mp4Muxer) await loadScript('https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/build/mp4-muxer.min.js');
-  const muxer = new Mp4Muxer.Muxer({ target: new Mp4Muxer.ArrayBufferTarget(), video: { codec: 'avc', width: FW, height: FH, frameRate: FPS }, fastStart: 'in-memory' });
-  let failed = null;
-  const enc = new VideoEncoder({ output: (chunk, meta) => muxer.addVideoChunk(chunk, meta), error: e => { failed = e; } });
-  enc.configure({ codec, width: FW, height: FH, bitrate: 5e6, framerate: FPS });
-  const n = Math.round(TOTAL * FPS);
-  for (let k = 0; k < n; k++) {
-    if (failed) throw failed;
-    render(ctx, k / FPS);
-    const frame = new VideoFrame(cv, { timestamp: Math.round(k * 1e6 / FPS), duration: Math.round(1e6 / FPS) });
-    enc.encode(frame, { keyFrame: k % (FPS * 2) === 0 }); frame.close();
-    while (enc.encodeQueueSize > 8) await new Promise(r => setTimeout(r, 2));
-    if (k % 10 === 0) { onProgress(k / n); await new Promise(r => setTimeout(r)); }
-  }
-  await enc.flush(); muxer.finalize();
-  onProgress(1);
-  return new Blob([muxer.target.buffer], { type: 'video/mp4' });
-}
-
-function recordRealtime(cv, ctx, onProgress) {
-  const type = ['video/mp4', 'video/webm;codecs=vp9', 'video/webm'].find(t => window.MediaRecorder && MediaRecorder.isTypeSupported(t));
-  if (!type) return Promise.reject(new Error('This browser cannot record video.'));
-  return new Promise(res => {
-    const rec = new MediaRecorder(cv.captureStream(FPS), { mimeType: type, videoBitsPerSecond: 10e6 }), parts = [];
-    rec.ondataavailable = e => parts.push(e.data);
-    rec.onstop = () => res(new Blob(parts, { type: type.split(';')[0] }));
-    const start = performance.now();
-    rec.start();
-    (function tick() {
-      const t = (performance.now() - start) / 1000;
-      render(ctx, t); onProgress(t / TOTAL);
-      if (t < TOTAL) requestAnimationFrame(tick); else rec.stop();
-    })();
-  });
-}
+const exportVideo = exportNarratedTour;

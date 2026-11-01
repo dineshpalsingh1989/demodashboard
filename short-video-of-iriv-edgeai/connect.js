@@ -81,7 +81,7 @@ const CONNECT = [
     items: ['edatec', 'touch'] },
   { id: 'power', label: 'Power', color: '#86868b', ports: 'VIN · GND (10–30 V DC)', view: ['front', ['power']], devices: ['24 V supply', 'Backup'], icons: ['bolt', 'battery'],
     lede: 'One 24 V supply runs the controller, the lights and the sensors.',
-    tips: ['The controller uses up to 11 W; add the lights and sensors on top.', 'Light drivers draw from VIN, up to 2 A each.', 'A supply with a battery charger keeps it running through power cuts.'],
+    tips: ['Cytron specifies 11 W in a CPU stress test, excluding USB load. Budget the controller, USB cameras, lighting, sensors and other connected loads separately.', 'Light drivers draw from VIN, up to 2 A each.', 'A supply with a battery charger keeps it running through power cuts.'],
     items: ['psu24', 'psu36', 'drc40'] }
 ];
 

@@ -10,7 +10,27 @@ IO['hw-ioc'] = { RS485: io('Variable message sign', () => HW.msg), DI1: io('Cabi
   AI1: io('Cabinet temperature', () => wob(34, 1, .1).toFixed(1) + ' °C') };
 IO['sat-ioc'] = { DI1: io('Pump 1 running', on), DI2: io('Pump 2 running', () => Math.sin(time * .05) > .3), DI3: io('Pump fault', off), DO1: io('Start pump 1', on),
   DO2: io('Start pump 2', () => Math.sin(time * .05) > .3), AI1: io('Network pressure (4–20 mA)', () => (Math.sin(time * .05) > .3 ? wob(2.9, .1, .3) : wob(2.4, .1, .3)).toFixed(1) + ' bar') };
-['hw-anpr', 'hw-ioc', 'sat-ioc'].forEach(id => { if (DEV[id]) DEV[id].io = IO[id]; });
+IO['fer-ai'] = { ETH1: io('Quay CCTV (RTSP)', () => '1 stream'), DI1: io('Boat alongside', () => FERRY.at === 2), DO1: io('"Boat nearly full" light', () => wob(18, 8, .2) > 24), RS485: io('Next-ferry screen', () => 'Next: ' + FERRY.eta(2)) };
+IO['fer-ioc'] = { DI1: io('Boat alongside', () => FERRY.at === 0), DI2: io('Gangway at the top', () => FERRY.at !== 0), DO1: io('Lower the gangway', () => FERRY.at === 0), DO2: io('Mooring lights', () => night > .5 || WX.cur() !== 'clear'), DO3: io('Boat horn', () => FERRY.at === 0 && FERRY.t % FERRY.Tc % 8 < .6) };
+IO['air-sub-pic'] = { AI1: io('Transformer T1 oil (4–20 mA)', () => Math.round(oilT()) + ' °C'), AI2: io('Transformer T2 oil (4–20 mA)', () => Math.round(wob(56, 4, .2)) + ' °C'), DI1: io('Incomer breaker closed', () => !powerCut()), DI2: io('Cabinet door', off), DO1: io('Cooling fans', () => oilT() > 70), DO2: io('Alarm to IRIV Edge', () => powerCut()) };
+IO['town-sub-ioc'] = { DI1: io('Incomer breaker closed', () => !powerCut()), DI2: io('Feeder 1 closed', on), DI3: io('Feeder 2 closed', on), DI4: io('Earth fault', off), DO1: io('Trip feeder 2', off), DO2: io('Alarm', () => powerCut()) };
+IO['sec-ioc'] = { DI1: io('Lane 1 belt running', on), DI2: io('Lane 2 belt running', on), DI3: io('Lane 3 belt running', () => Math.sin(time * .03) > -.6), DI4: io('Arch: metal detected', () => Math.sin(time * .5) > .96), DO1: io('Lane 1 gate', on), DO2: io('Lane 2 gate', on), DO3: io('Alarm beacon', () => Math.sin(time * .5) > .96) };
+IO['claim-ioc'] = { DI1: io('Bag at belt start', () => Math.sin(time * 1.3) > 0), DI2: io('Carousel jam', off), DO1: io('Carousel motor', () => FL.board().some(r => r.u >= 28 && r.u < 80)), DO2: io('Arrivals display', on) };
+IO['air-edge'] = { ETH1: io('Video wall', () => '4 screens'), ETH2: io('Airport units over MQTT', () => AIRIDS.filter(id => !INS.down.has(id)).length + ' online'), DI1: io('Rack door', off), DO1: io('Operations alarm horn', () => AIRIDS.some(id => INS.down.has(id))) };
+IO['acp-anpr'] = { ETH1: io('Entry ANPR camera (RTSP)', () => '1 stream'), DI1: io('Car at the barrier', () => ACP.atGate), DO1: io('Entry barrier', () => ACP.arm > .5), RS485: io('Free-spaces sign', () => (ACP.cap - ACP.inside) + ' free') };
+IO['acp-ioc'] = { DI1: io('Barrier arm down', () => ACP.arm < .5), DO1: io('FULL sign', () => ACP.inside >= ACP.cap), AI1: io('CO gas sensor (4–20 mA)', () => Math.round(wob(8, 2, .2)) + ' ppm') };
+IO['air-ai'] = { ETH1: io('Hall CCTV ×6 (RTSP)', () => '6 streams'), DI1: io('Security lane open', () => Math.sin(time * .05) > -.3), DO1: io('"Open another lane" light', () => wob(1800, 200, .1) > 2000), RS485: io('Flight information display', () => 'Gate B' + (1 + Math.floor(time / 40) % 4)) };
+IO['apron-ai'] = { ETH1: io('Apron CCTV ×4 (RTSP)', () => '4 streams'), DI1: io('Aircraft at gate', on), DO1: io('Apron warning beacon', () => Math.sin(time * .3) > .97) };
+IO['air-pic'] = { AI1: io('Ambient light (4–20 mA)', () => Math.round(night > .5 ? wob(12, 4, .1) : wob(8000, 800, .1)) + ' lux'), DI1: io('Cabinet door', off), DO1: io('Runway edge lights', () => night > .5), DO2: io('Approach lights', () => night > .5), RS485: io('PAPI light controller', () => 'On-slope') };
+IO['air-ioc'] = { DI1: io('Belt 1 running', on), DI2: io('Belt 2 running', on), DI3: io('Belt 3 running', () => Math.sin(time * .04) > -.5), DI4: io('Belt jam sensor', () => Math.sin(time * .07) > .97), DI5: io('Emergency stop', off), DO1: io('Belt 1 motor', on), DO2: io('Belt 2 motor', on), DO3: io('Diverter', () => Math.sin(time * .2) > 0) };
+IO['rail-pic'] = { DI1: io('Train in platform', () => RAIL.at === 1), DO1: io('Platform signal (red)', () => RAIL.at === 1), DO2: io('Door release', () => RAIL.at === 1), RS485: io('Next-stop screens', () => 'Next: ' + RAIL.nextName), AI1: io('Station supply (4–20 mA)', () => wob(24, .3, .1).toFixed(1) + ' V') };
+IO['rail-ai'] = { ETH1: io('Platform CCTV ×3 (RTSP)', () => '3 streams'), DO1: io('Crowd warning light', () => wob(60, 20, .2) > 80), RS485: io('Next-stop screens', () => 'Next: ' + RAIL.nextName) };
+IO['bus-ai'] = { ETH1: io('Stop IP camera (RTSP)', () => '1 stream'), DI1: io('Shelter door', off), DO1: io('"Extra bus" request light', () => wob(14, 6, .2) > 20) };
+IO['vil-ai'] = { CSI0: io('Gate camera', () => 'AI: person + vehicle'), ETH1: io('Road IP camera', () => '1 stream'), DI1: io('Gate open', () => Math.sin(time * .05) > 0), DO1: io('Warning beacon', () => Math.sin(time * .3) > .97) };
+IO['vil-ioc'] = { DI1: io('Hall door', off), DI2: io('Mains power OK', on), DO1: io('School bell', () => Math.sin(time * .2) > .96), DO2: io('Hall lights', () => night > .5) };
+IO['vil-pic'] = { AI1: io('Tank level (4–20 mA)', () => Math.round(wob(68, 4, .05)) + '%'), AI2: io('Pond temperature', () => wob(28, .4, .1).toFixed(1) + ' °C'), DI1: io('Pump overload', off),
+  DO1: io('Solar pump', () => night < .5), DO2: io('Pond aerator', () => night > .5), RS485: io('Solar inverter', () => (night > .5 ? 0 : wob(1.4, .1, .3)).toFixed(1) + ' kW') };
+['hw-anpr', 'hw-ioc', 'sat-ioc', 'fer-ai', 'fer-ioc', 'air-sub-pic', 'town-sub-ioc', 'sec-ioc', 'claim-ioc', 'air-edge', 'acp-anpr', 'acp-ioc', 'air-ai', 'apron-ai', 'air-pic', 'air-ioc', 'rail-pic', 'rail-ai', 'bus-ai', 'vil-ai', 'vil-ioc', 'vil-pic'].forEach(id => { if (DEV[id]) DEV[id].io = IO[id]; });
 
 const INS_KIND = { 'IRIV PiControl': 'pic', 'IRIV IO Controller MQTT': 'ioc', 'IRIV EdgeAI CM5': 'ai' };
 const insKind = d => d && d.io ? INS_KIND[d.model] : null;
@@ -18,6 +38,11 @@ const INS_LINKS = {
   pic: 'https://www.cytron.io/p-iriv-picontrol-cm4-industrial-controller',
   ioc: 'https://www.cytron.io/p-iriv-io-controller',
   ai: 'https://www.cytron.io/c-industry/c-industrial-edge-controller'
+};
+const INS_FILMS = {   // [page, poster, title]
+  ai: ['short-video-of-iriv-edgeai/', 'short-video-of-iriv-edgeai/images/tour-poster.jpg', 'IRIV EdgeAI CM5 tour'],
+  pic: ['short-video-of-iriv-pi/', 'short-video-of-iriv-pi/images/tour-poster.jpg', 'IRIV PiControl tour'],
+  ioc: ['iriv-controllers/', '', 'IRIV controllers: compare all three']
 };
 const INS = { ovr: {}, down: new Set(), feeds: {}, prev: {}, queue: {}, missed: {}, beat: {}, event: {}, last: {}, cur: null };
 const pinGroup = pin => pin.replace(/\d+$/, '');
@@ -68,7 +93,26 @@ const INS_RULES = {
   'jn-ai': [['Car crosses on red (ETH1)', 'DO1 trigger the red-light camera + save clip', 'DO1', 'ETH1'], ['Queue grows on one approach', 'send a new green split to the PiControl (RS485)', () => true, 'RS485']],
   'hw-anpr': [['Speed > 102 km/h between the cameras', 'DO1 "Slow down" sign + record', 'DO1', 'RS485'], ['Stopped vehicle in a lane', 'warning on the message sign (hw-ioc)', () => false, 'ETH1']],
   'hw-ioc': [['IRIV Edge publishes an incident message', 'RS485 sign shows it', () => true, 'RS485'], ['DI1 cabinet door open', 'tamper alarm', 'DI1', 'DI1']],
-  'sat-ioc': [['AI1 network pressure < 2.5 bar', 'DO2 start pump 2', 'DO2', 'AI1']]
+  'sat-ioc': [['AI1 network pressure < 2.5 bar', 'DO2 start pump 2', 'DO2', 'AI1']],
+  'fer-ai': [['More than 24 people waiting', 'DO1 "boat nearly full" light', 'DO1', 'ETH1']],
+  'fer-ioc': [['DI1 boat alongside the quay', 'DO1 lower the gangway', 'DO1', 'DI1'], ['Night or rain', 'DO2 mooring lights ON', 'DO2', 'DI1']],
+  'air-sub-pic': [['AI1 transformer T1 oil > 70 °C', 'DO1 cooling fans ON', 'DO1', 'AI1'], ['Incomer breaker opens', 'DO2 alarm + start the backup generator', 'DO2', 'DI1']],
+  'town-sub-ioc': [['DI4 earth fault', 'DO1 trip feeder 2 + alarm', 'DO1', 'DI4']],
+  'sec-ioc': [['DI4 arch detects metal', 'DO3 beacon + guide to a manual check', 'DO3', 'DI4']],
+  'claim-ioc': [['Flight reaches the gate (from IRIV Edge)', 'DO1 start the carousel', 'DO1', 'DO1']],
+  'air-edge': [['Any airport unit goes offline', 'DO1 operations alarm horn + notify the duty manager', 'DO1', 'ETH2']],
+  'acp-anpr': [['DI1 car at the barrier, plate read', 'DO1 open the entry barrier', 'DO1', 'DI1']],
+  'acp-ioc': [['Cars inside reach the capacity', 'DO1 FULL sign', 'DO1', 'DO1']],
+  'air-ai': [['Security queue longer than 10 min', 'DO1 "open another lane" light', 'DO1', 'ETH1']],
+  'apron-ai': [['Person within 3 m of an aircraft (ETH1)', 'DO1 apron beacon + snapshot', 'DO1', 'ETH1']],
+  'air-pic': [['AI1 ambient light < 400 lux', 'DO1 runway lights + DO2 approach lights ON', 'DO1', 'AI1']],
+  'air-ioc': [['DI4 belt jam', 'DO1 stop the belt + alarm', 'DI4', 'DI4'], ['DI5 emergency stop', 'all belt motors off', 'DI5', 'DI5']],
+  'rail-pic': [['Train stops in the platform (DI1)', 'DO1 signal red, DO2 release the doors, screens show the next stop', 'DO2', 'RS485']],
+  'rail-ai': [['More than 80 people on the platform', 'DO1 crowd warning light', 'DO1', 'ETH1']],
+  'bus-ai': [['More than 20 people waiting', 'DO1 "extra bus" light + request to the depot', 'DO1', () => `People waiting: ${Math.round(wob(14, 6, .2))}`]],
+  'vil-ai': [['Child steps into the road (CSI0)', 'DO1 warning beacon', 'DO1', 'DI1']],
+  'vil-ioc': [['Timetable says lesson over', 'DO1 ring the school bell', 'DO1', 'DO1']],
+  'vil-pic': [['AI1 tank level < 30%', 'DO1 start the solar pump', 'DO1', 'AI1'], ['Night and pond oxygen low', 'DO2 aerator ON', 'DO2', 'AI2']]
 };
 const ruleState = (id, spec) => typeof spec === 'function' ? !!spec() : pinRaw(id, spec) === true;
 const ruleLive = (id, spec) => typeof spec === 'function' ? spec() : pinText(id, spec);
@@ -204,7 +248,7 @@ const INS_CAMS = {
   'cp-ai': ['park', 'ETH1 · Level CCTV ×8 (RTSP)', 'Bay occupancy'], 'mall-ai': ['park', 'ETH1 · Rooftop IP cameras ×6', 'Bay occupancy'],
   'school-ai': ['road', 'CSI0 · Drop-off lane camera', 'Person + vehicle safety'], 'hub-ai': ['crowd', 'ETH1 · Platform CCTV ×4', 'Crowd counting'],
   'mk-anpr': ['plate', 'ETH1 · Barrier IP camera', 'Number-plate recognition'], 'pr-anpr': ['plate', 'ETH1 · Gate camera', 'Number-plate recognition'],
-  'jn-ai': ['road', 'ETH1 · Junction CCTV ×4', 'Vehicles, pedestrians, red-light'], 'hw-anpr': ['plate', 'ETH1 · Gantry ANPR ×2', 'Plates, speed, stopped vehicles']
+  'jn-ai': ['road', 'ETH1 · Junction CCTV ×4', 'Vehicles, pedestrians, red-light'], 'bus-ai': ['crowd', 'ETH1 · Stop camera', 'People counting'], 'air-ai': ['crowd', 'ETH1 · Departure hall CCTV ×6', 'Crowd counting'], 'fer-ai': ['crowd', 'ETH1 · Quay CCTV', 'People counting'], 'air-edge': ['control', 'ETH1 · Control-room camera', 'People count'], 'acp-anpr': ['plate', 'ETH1 · Entry ANPR camera', 'Number-plate recognition'], 'apron-ai': ['yard', 'ETH1 · Apron CCTV ×4', 'Person + vehicle safety'], 'rail-ai': ['crowd', 'ETH1 · Platform CCTV ×3', 'Crowd counting'], 'vil-ai': ['road', 'CSI0 · Gate camera', 'Person + vehicle safety'], 'hw-anpr': ['plate', 'ETH1 · Gantry ANPR ×2', 'Plates, speed, stopped vehicles']
 };
 function cameraHTML(d) {
   const c = INS_CAMS[d.id]; if (!c) return '';
@@ -347,6 +391,8 @@ function insightBottom(d) {
     <table class="ins-cmp"><thead><tr><th></th><th${col[0]}>PiControl</th><th${col[1]}>IO Controller</th><th${col[2]}>EdgeAI CM5</th></tr></thead>
       <tbody>${cmp.map(r => `<tr><td>${r[0]}</td><td${col[0]}>${r[1]}</td><td${col[1]}>${r[2]}</td><td${col[2]}>${r[3]}</td></tr>`).join('')}</tbody></table>
     <p class="mut ins-note">They work together: PiControl or EdgeAI as the main controller, IO Controllers as remote I/O. This is a ${names[kind]}.</p>
+    <h3>Watch the tour film</h3>
+    <a class="ins-film" href="${INS_FILMS[kind][0]}" target="_blank" rel="noopener noreferrer">${INS_FILMS[kind][1] ? `<img src="${INS_FILMS[kind][1]}" alt="" loading="lazy">` : ''}<span><b>${INS_FILMS[kind][2]}</b><small>Narrated film, every port and compatible parts ↗</small></span></a>
     <h3>Official product page</h3>
     <a class="ins-prod" href="${INS_LINKS[kind]}" target="_blank" rel="noopener noreferrer">${d.icon} ${kind === 'ai' ? 'IRIV industrial edge controllers' : d.model.replace(' MQTT', '')} on Cytron ↗</a></div>`;
 }

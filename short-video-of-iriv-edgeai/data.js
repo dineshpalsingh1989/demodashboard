@@ -31,8 +31,8 @@ const GROUPS = [
     body: 'An mPCIe socket (USB 2.0) takes a 4G or LoRa module, with the SIM slot on the side. The 4G PWR and WWAN LEDs on the front show its status.',
     chips: ['mPCIe (USB 2.0)', 'SIM slot', '4G or LoRa'], rects: [[662, 578, 701, 607]], labels: [{ label: 'SIM', x: 681, y: 607, row: 'bottom' }] },
   { id: 'power', img: 'front', color: '#e5383b', name: 'Power', title: '10–30 V DC in.',
-    body: 'Surge protected up to 60 V for 20 ms, and 11 W at full load, so a standard 24 V DIN-rail supply runs it with room for lights and sensors.',
-    chips: ['VIN', 'GND', '10–30 V DC', '11 W max'], rects: [[362, 545, 378, 575]], pins: pins(['VIN', 0, 't'], ['GND', 0, 'b']) },
+    body: 'Input: 10–30 V DC, with surge protection up to 60 V for 20 ms. Cytron lists 11 W under its specified CPU stress test (stress-ng --cpu 4 --cpu-method fft), excluding USB load. Size the supply for the controller plus cameras, lighting, sensors and other connected loads.',
+    chips: ['VIN', 'GND', '10–30 V DC', '11 W CPU test; USB excluded'], rects: [[362, 545, 378, 575]], pins: pins(['VIN', 0, 't'], ['GND', 0, 'b']) },
   { id: 'rs485', img: 'front', color: '#0a8a8f', name: 'RS485', title: 'Isolated RS485.',
     body: 'Up to 500 kbps with 5000 Vrms isolation. Send results to a PLC over Modbus, or read meters and sensors next to the camera.',
     chips: ['A', 'B', 'G', '5000 Vrms'], rects: [[377, 545, 423, 561]], pins: pins(['A', 1, 't'], ['B', 2, 't'], ['G', 3, 't']) },
@@ -79,7 +79,7 @@ const FEATURES = [
   ['Digital I/O', '2 isolated inputs (3–50 V), 2 dry-contact outputs (50 V, 500 mA)'], ['Light drivers', '2 outputs from VIN, 2 A each, PWM dimming'],
   ['Serial', '1× isolated RS485, up to 500 kbps'], ['Network', '2× Gigabit Ethernet, Wi-Fi 5, Bluetooth 5.0'],
   ['Expansion', 'mPCIe (USB 2.0) for 4G or LoRa, M.2 Key-M for NVMe SSD'], ['On board', 'RTC, ATECC608B crypto, 0.96" OLED, buzzer, 2 LEDs, 2 buttons'],
-  ['Power', 'DC 10–30 V, surge protected, 11 W max'], ['Build', 'Metal, fanless, DIN rail · 139 × 88 × 38 mm · −20 to 60 °C']
+  ['Power', 'DC 10–30 V, surge protected. 11 W in the specified CPU stress test, excluding USB load; budget connected loads separately.'], ['Build', 'Metal, fanless, DIN rail · 139 × 88 × 38 mm · −20 to 60 °C']
 ];
 const KITS = [
   ['Edge AI only', 'The controller, antenna, screwdriver and 4 silicone bumpers.'],

@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IRIV Controllers</title>
+<meta name="description" content="IRIV PiControl and IRIV EdgeAI CM5 on one page: both films, a side-by-side comparison, a picker, and how the two work together.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root { --ink: #1d1d1f; --muted: #6e6e73; --line: #d2d2d7; --soft: #f5f5f7; --accent: #f56300; --blue: #0071e3; --pi: #f56300; --edge: #0071e3; --bg: #fff; }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.5 Inter, -apple-system, "Segoe UI", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  button { font: inherit; }
+  nav { position: sticky; top: 0; z-index: 10; background: rgba(255,255,255,.96); border-bottom: 1px solid rgba(0,0,0,.08); }
+  nav .in { max-width: 1080px; margin: 0 auto; padding: 0 22px; height: 52px; display: flex; align-items: center; gap: 28px; }
+  nav b { font-size: 19px; font-weight: 700; letter-spacing: -.3px; margin-right: auto; }
+  nav .links { display: flex; gap: 26px; }
+  nav a { color: var(--ink); font-size: 13px; }
+  nav .buy { background: var(--blue); color: #fff; padding: 5px 12px; border-radius: 99px; font-size: 12px; }
+  nav .buy:hover { text-decoration: none; background: #0077ed; }
+  @media (max-width: 760px) { nav .links { display: none; } }
+  section { padding: 100px 22px; }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+  .center { text-align: center; }
+  .eyebrow { color: var(--accent); font-weight: 600; font-size: 19px; margin: 0 0 8px; }
+  h1, h2 { font-weight: 800; letter-spacing: -.035em; line-height: 1.05; margin: 0; }
+  h1 { font-size: clamp(48px, 9vw, 96px); }
+  h2 { font-size: clamp(38px, 6vw, 64px); }
+  .lede { font-size: clamp(19px, 2.4vw, 25px); color: var(--muted); font-weight: 500; margin: 16px 0 0; max-width: 760px; }
+  .center .lede { margin-left: auto; margin-right: auto; }
+  .grey { background: var(--soft); }
+  .dark { background: #000; color: #f5f5f7; }
+  .dark h2 { color: #f5f5f7; }
+  .dark .lede { color: #a1a1a6; }
+
+  /* hero: the two products */
+  .hero { padding-top: 70px; }
+  .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 56px; text-align: left; }
+  @media (max-width: 820px) { .duo { grid-template-columns: 1fr; } }
+  .prodcard { background: var(--soft); border-radius: 30px; padding: 30px 30px 34px; display: flex; flex-direction: column; }
+  .prodcard svg { width: 100%; height: auto; display: block; mix-blend-mode: multiply; }
+  .prodcard .tag { color: var(--c); font-weight: 700; font-size: 15px; margin-top: 8px; }
+  .prodcard h3 { font-size: 36px; letter-spacing: -.03em; margin: 4px 0 6px; }
+  .prodcard p { color: var(--muted); margin: 0; }
+  .prodcard ul { list-style: none; padding: 0; margin: 18px 0 22px; display: grid; gap: 8px; font-size: 15px; }
+  .prodcard li { display: flex; gap: 10px; }
+  .prodcard li::before { content: ''; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--c); margin-top: 8px; }
+  .prodcard .foot { margin-top: auto; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .price { font-weight: 700; margin-right: auto; }
+  .btn { border: 0; border-radius: 99px; padding: 10px 18px; font-weight: 600; font-size: 14px; cursor: pointer; display: inline-block; }
+  .btn.fill { background: var(--c, var(--ink)); color: #fff; }
+  .btn.line { background: #fff; color: var(--ink); box-shadow: 0 0 0 1px var(--line); }
+  .btn:hover { text-decoration: none; filter: brightness(1.05); }
+
+  /* films */
+  .films { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 50px; text-align: left; }
+  @media (max-width: 820px) { .films { grid-template-columns: 1fr; } }
+  .film video { width: 100%; display: block; border-radius: 20px; background: #111; aspect-ratio: 16 / 9; }
+  .film b { display: block; margin-top: 14px; font-size: 19px; }
+  .film span { color: #a1a1a6; font-size: 14px; }
+  .film a { color: #2997ff; font-size: 14px; }
+
+  /* compare */
+  .compare { margin-top: 50px; background: #fff; border-radius: 26px; overflow: clip; }
+  .crow { display: grid; grid-template-columns: minmax(130px, .8fr) 1fr 1fr; border-top: 1px solid #ececf0; }
+  .crow > div { padding: 14px 20px; font-size: 15px; }
+  .crow > div:first-child { color: var(--muted); font-weight: 600; font-size: 14px; }
+  .crow.head { position: sticky; top: 52px; z-index: 2; background: #fff; border-top: 0; box-shadow: 0 1px 0 #ececf0; }
+  .crow.head > div { padding: 18px 20px; font-weight: 800; font-size: 19px; letter-spacing: -.02em; color: var(--ink); }
+  .crow.head i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
+  .crow.group > div { grid-column: 1 / -1; background: var(--soft); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); padding: 10px 20px; }
+  .crow .no { color: #b0b0b5; }
+  .crow .win { font-weight: 700; }
+  @media (max-width: 640px) { .crow { grid-template-columns: 1fr 1fr; } .crow > div:first-child { grid-column: 1 / -1; padding-bottom: 0; } .crow.head > div:first-child { display: none; } }
+
+  /* picker */
+  .picker { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 22px; margin-top: 50px; text-align: left; }
+  @media (max-width: 860px) { .picker { grid-template-columns: 1fr; } }
+  .qs { display: grid; gap: 10px; }
+  .q { display: flex; align-items: center; gap: 16px; background: var(--soft); border-radius: 18px; padding: 16px 18px; }
+  .q > div:first-child { flex: 1; }
+  .q b { display: block; font-size: 16px; }
+  .q small { color: var(--muted); font-size: 13.5px; }
+  .seg { display: flex; background: #fff; border-radius: 99px; padding: 3px; box-shadow: 0 0 0 1px rgba(0,0,0,.06); flex: none; }
+  .seg button { border: 0; background: transparent; border-radius: 99px; padding: 6px 14px; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; }
+  .seg button.on { background: var(--ink); color: #fff; }
+  .answer { background: var(--ink); color: #f5f5f7; border-radius: 26px; padding: 30px; position: sticky; top: 76px; align-self: start; }
+  .answer small { color: #a1a1a6; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; font-size: 12px; }
+  .answer h3 { font-size: 32px; letter-spacing: -.03em; margin: 8px 0 10px; line-height: 1.1; }
+  .answer p { color: #c7c7cc; margin: 0 0 14px; }
+  .answer ul { margin: 0 0 20px; padding-left: 18px; color: #e5e5ea; font-size: 15px; display: grid; gap: 6px; }
+  .answer .btns { display: flex; flex-wrap: wrap; gap: 10px; }
+  .answer .btn.line { background: transparent; color: #f5f5f7; box-shadow: 0 0 0 1px #48484a; }
+
+  /* better together */
+  .stabs { display: inline-flex; gap: 4px; background: #e8e8ed; border-radius: 99px; padding: 5px; margin-top: 30px; }
+  .stabs button { border: 0; background: transparent; color: var(--muted); padding: 9px 18px; border-radius: 99px; font-weight: 600; font-size: 14px; cursor: pointer; }
+  .stabs button.on { background: #fff; color: var(--ink); box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+  .together { margin-top: 30px; background: #fff; border-radius: 30px; padding: 24px; }
+  .together svg { display: block; width: 100%; height: auto; }
+  .flow { fill: none; stroke-width: 3; stroke-dasharray: 8 10; animation: flow 1s linear infinite; }
+  @keyframes flow { to { stroke-dashoffset: -36; } }
+  .msg { transition: opacity .35s; }
+  .tsteps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 18px; text-align: left; }
+  @media (max-width: 760px) { .tsteps { grid-template-columns: 1fr; } }
+  .tstep { background: #fff; border-radius: 18px; padding: 18px; }
+  .tstep small { color: var(--c); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+  .tstep b { display: block; margin-top: 4px; }
+  .tstep p { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
+
+  /* tours */
+  .tours { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 50px; text-align: left; }
+  @media (max-width: 820px) { .tours { grid-template-columns: 1fr; } }
+  .tour { display: block; background: #fff; border-radius: 26px; overflow: hidden; color: var(--ink); box-shadow: 0 0 0 1px rgba(0,0,0,.05); transition: transform .2s, box-shadow .2s; }
+  .tour:hover { text-decoration: none; transform: translateY(-3px); box-shadow: 0 0 0 1px rgba(0,0,0,.06), 0 24px 40px -24px rgba(0,0,0,.4); }
+  .tour img { width: 100%; display: block; aspect-ratio: 16 / 9; object-fit: cover; }
+  .tour div { padding: 22px 26px 26px; }
+  .tour small { color: var(--c); font-weight: 700; }
+  .tour b { display: block; font-size: 24px; letter-spacing: -.02em; margin: 4px 0 6px; }
+  .tour p { margin: 0; color: var(--muted); font-size: 15px; }
+  .cta { margin-top: 22px; background: #1d1d1f; color: #fff; border-radius: 26px; padding: 32px 36px; display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between; text-align: left; }
+  .cta h3 { margin: 0; font-size: 26px; letter-spacing: -.02em; }
+  .cta p { margin: 6px 0 0; color: #a1a1a6; }
+  .cta a { background: #fff; color: var(--ink); border-radius: 99px; padding: 11px 20px; font-weight: 700; font-size: 15px; }
+  .cta a:hover { text-decoration: none; background: #f5f5f7; }
+  footer { border-top: 1px solid var(--line); padding: 26px 22px 40px; color: var(--muted); font-size: 12.5px; }
+  footer .wrap { display: grid; gap: 6px; }
+  .reveal { opacity: 0; transform: translateY(30px); transition: opacity .9s ease, transform .9s cubic-bezier(.2,.7,.2,1); }
+  .reveal.in { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } .flow { animation: none; } html { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+<nav><div class="in">
+  <b>IRIV Controllers</b>
+  <span class="links"><a href="#films">Films</a><a href="#compare">Compare</a><a href="#pick">Which one?</a><a href="#together">Together</a><a href="#tours">Tours</a></span>
+  <a class="buy" href="https://my.cytron.io/c-industrial-edge-controller" target="_blank" rel="noopener">Shop at Cytron</a>
+</div></nav>
+
+<section class="hero center">
+  <div class="wrap">
+    <p class="eyebrow">Cytron IRIV · IR4.0</p>
+    <h1>Two controllers. One family.</h1>
+    <p class="lede">IRIV PiControl handles the wiring: sensors, meters and machines. IRIV EdgeAI CM5 adds eyes: cameras and AI. Same Raspberry Pi heart, same DIN rail.</p>
+    <div class="duo" id="duo"></div>
+  </div>
+</section>
+
+<section class="dark center" id="films">
+  <div class="wrap">
+    <p class="eyebrow reveal">The films</p>
+    <h2 class="reveal">See the connections. Hear the story.</h2>
+    <p class="lede reveal">Two narrated films explain the controllers and their connections. Short English captions keep the story clear with the sound off.</p>
+    <div class="films reveal">
+      <div class="film"><video controls playsinline preload="metadata" poster="images/poster-picontrol.jpg"><source src="../short-video-of-iriv-pi/IRIV-PiControl-tour.mp4" type="video/mp4"><track kind="captions" srclang="en" label="English" src="../short-video-of-iriv-pi/IRIV-PiControl-tour.vtt" default></video>
+        <b>IRIV PiControl</b><span>Narrated · 1080p · </span><a href="../short-video-of-iriv-pi/IRIV-PiControl-tour.mp4" download>Download MP4</a></div>
+      <div class="film"><video controls playsinline preload="metadata" poster="images/poster-edgeai.jpg"><source src="../short-video-of-iriv-edgeai/IRIV-EdgeAI-CM5-tour.mp4" type="video/mp4"><track kind="captions" srclang="en" label="English" src="../short-video-of-iriv-edgeai/IRIV-EdgeAI-CM5-tour.vtt" default></video>
+        <b>IRIV EdgeAI CM5</b><span>Narrated · 1080p · </span><a href="../short-video-of-iriv-edgeai/IRIV-EdgeAI-CM5-tour.mp4" download>Download MP4</a></div>
+    </div>
+  </div>
+</section>
+
+<section class="grey" id="compare">
+  <div class="wrap">
+    <p class="eyebrow reveal">Compare</p>
+    <h2 class="reveal">Side by side.</h2>
+    <p class="lede reveal">The PiControl has more industrial I/O, including analog inputs and RS232. The EdgeAI has the camera ports, light drivers and AI accelerator.</p>
+    <div class="compare reveal" id="cmp"></div>
+  </div>
+</section>
+
+<section class="center" id="pick">
+  <div class="wrap">
+    <p class="eyebrow reveal">Which one?</p>
+    <h2 class="reveal">Which IRIV do I need?</h2>
+    <p class="lede reveal">Answer a few questions about the job. The answer updates as you go.</p>
+    <div class="picker reveal"><div class="qs" id="qs"></div><div class="answer" id="answer"></div></div>
+  </div>
+</section>
+
+<section class="grey center" id="together">
+  <div class="wrap">
+    <p class="eyebrow reveal">Better together</p>
+    <h2 class="reveal">One sees. One does.</h2>
+    <p class="lede reveal">On a bigger job, put both on the same network. The EdgeAI watches and decides; the PiControl runs the machines and reads the sensors.</p>
+    <div class="stabs reveal" id="stabs"><button data-s="junction" class="on">Smart junction</button><button data-s="bottling">Bottling line</button></div>
+    <div class="together reveal" id="tview"></div>
+    <div class="tsteps reveal" id="tsteps"></div>
+  </div>
+</section>
+
+<section class="grey center" id="tours" style="padding-top:0">
+  <div class="wrap">
+    <p class="eyebrow reveal">Go deeper</p>
+    <h2 class="reveal">Take the full tours.</h2>
+    <p class="lede reveal">Each tour has a photo map of every port, compatible Cytron parts, a system builder and ready-made parts lists.</p>
+    <div class="tours reveal">
+      <a class="tour" href="../short-video-of-iriv-pi/" style="--c:var(--pi)"><img src="images/poster-picontrol.jpg" alt="IRIV PiControl tour"><div><small>Tour</small><b>IRIV PiControl</b><p>32 terminals, RS232 and RS485, analog inputs and 49 compatible parts.</p></div></a>
+      <a class="tour" href="../short-video-of-iriv-edgeai/" style="--c:var(--edge)"><img src="images/poster-edgeai.jpg" alt="IRIV EdgeAI CM5 tour"><div><small>Tour with live AI demo</small><b>IRIV EdgeAI CM5</b><p>Camera ports, light drivers, up to 26 TOPS and 35 compatible parts.</p></div></a>
+    </div>
+    <div class="cta reveal"><div><h3>See both in a whole city.</h3><p>PiControls run the traffic lights and pumps, and EdgeAI cameras read plates and count queues, in the NeoVille smart city demo.</p></div><a href="../#mobility">Open the smart city demo</a></div>
+  </div>
+</section>
+
+<footer><div class="wrap">
+  <div>Specifications from Cytron’s product pages for the <a href="https://my.cytron.io/p-iriv-picontrol-cm4-industrial-controller" target="_blank" rel="noopener">IRIV PiControl</a> and the <a href="https://my.cytron.io/c-industrial-edge-controller/p-iriv-edge-ai-cm5" target="_blank" rel="noopener">IRIV EdgeAI CM5</a>, checked 29 October 2026. Prices exclude tax and vary by variant. Check each user manual before installation.</div>
+  <div>Product images and the IRIV name belong to Cytron Technologies. The “better together” views are illustrations, not live data.</div>
+</div></footer>
+
+<script>
+const PI = { id: 'pi', name: 'IRIV PiControl', color: '#f56300', tag: 'The I/O workhorse.', img: '../short-video-of-iriv-pi/images/front.png', px: 1000, vb: '50 225 910 540',
+  blurb: 'An industrial Raspberry Pi controller for sensors, meters and machines.', price: 'From RM1,489', tour: '../short-video-of-iriv-pi/', buy: 'https://my.cytron.io/p-iriv-picontrol-cm4-industrial-controller',
+  points: ['4 isolated digital inputs and 4 outputs', '4 analog inputs: 0–5 V, 0–10 V, 0–20 mA', 'Isolated RS485 and RS232', 'Raspberry Pi CM4 or CM5'] };
+const ED = { id: 'edge', name: 'IRIV EdgeAI CM5', color: '#0071e3', tag: 'The one that sees.', img: '../short-video-of-iriv-edgeai/images/iso.png', px: 800, vb: '40 0 720 800',
+  blurb: 'An industrial AI controller for cameras, inspection and CCTV analytics.', price: 'From RM2,487', tour: '../short-video-of-iriv-edgeai/', buy: 'https://my.cytron.io/c-industrial-edge-controller/p-iriv-edge-ai-cm5',
+  points: ['2 MIPI camera ports and 2 USB 3.0 ports', 'Up to 26 TOPS of AI', '2 light drivers for inspection lights', 'Isolated RS485, 2 inputs, 2 dry-contact outputs'] };
+
+/* ---------- hero cards ---------- */
+const photo = (p, vb = p.vb) => `<svg viewBox="${vb}" role="img" aria-label="${p.name}"><image href="${p.img}" width="${p.px}" height="${p.px}"/></svg>`;
+document.getElementById('duo').innerHTML = [PI, ED].map(p => `<div class="prodcard" style="--c:${p.color}">${photo(p)}
+  <div class="tag">${p.tag}</div><h3>${p.name}</h3><p>${p.blurb}</p><ul>${p.points.map(x => `<li>${x}</li>`).join('')}</ul>
+  <div class="foot"><span class="price">${p.price}</span><a class="btn line" href="${p.buy}" target="_blank" rel="noopener">Buy</a><a class="btn fill" href="${p.tour}">Take the tour</a></div></div>`).join('');
+
+/* ---------- comparison ---------- */
+// [label, PiControl, EdgeAI, which side has the edge: 'pi' | 'edge' | '']
+const ROWS = [
+  ['Brains'],
+  ['Compute module', 'Raspberry Pi CM4 or CM5', 'Raspberry Pi CM5'],
+  ['CPU', 'Cortex-A72 1.5 GHz (CM4) or Cortex-A76 2.4 GHz (CM5)', 'Cortex-A76 2.4 GHz'],
+  ['RAM', '1 to 16 GB', '8 or 16 GB'],
+  ['eMMC', '8 to 64 GB', '32 or 64 GB'],
+  ['AI accelerator', '', '13 or 26 TOPS (Raspberry Pi AI HAT+)', 'edge'],
+  ['Vision'],
+  ['Camera ports', '', '2× MIPI CSI, 4-lane', 'edge'],
+  ['USB', '2× USB 2.0', '2× USB 3.0', 'edge'],
+  ['Light drivers', '', '2 outputs from VIN, 2 A, PWM', 'edge'],
+  ['Industrial I/O'],
+  ['Digital inputs', '4 isolated, up to 50 V', '2 isolated, bidirectional, 3–50 V', 'pi'],
+  ['Digital outputs', '4 isolated, up to 50 V', '2 dry contacts, 50 V, 500 mA', 'pi'],
+  ['Analog inputs', '4 isolated: 0–5 V, 0–10 V, 0–20 mA', '', 'pi'],
+  ['RS485', '1 isolated', '1 isolated, up to 500 kbps'],
+  ['RS232', '1 isolated', '', 'pi'],
+  ['Connectivity'],
+  ['Ethernet', '1× Gigabit, 1× 10/100', '2× Gigabit', 'edge'],
+  ['Wireless', 'Wi-Fi 5, Bluetooth 5.0', 'Wi-Fi 5, Bluetooth 5.0'],
+  ['4G', 'Module in the Mini PCIe socket', 'Module in the mPCIe socket, SIM slot on the side'],
+  ['Storage', 'M.2 Key-M NVMe socket', 'M.2 Key-M NVMe socket'],
+  ['Display out', 'HDMI 2.0, 4K 60 Hz', 'HDMI 2.0, 4K 60 Hz'],
+  ['Build'],
+  ['Power', '10–30 V DC, surge protected', '10–30 V DC, surge protected. 11 W in the specified CPU stress test, excluding USB; connected loads need a separate allowance.'],
+  ['Size', '141.2 × 83.5 × 39.5 mm', '139 × 88 × 38 mm'],
+  ['On board', '0.96" OLED, RTC, crypto chip, buzzer', '0.96" OLED, RTC, crypto chip, buzzer'],
+  ['Mounting', 'Metal, fanless, DIN rail', 'Metal, fanless, DIN rail'],
+  ['Price', 'From RM1,489', 'From RM2,487']
+];
+const cell = (v, win) => v ? `<div class="${win ? 'win' : ''}">${v}</div>` : '<div class="no">—</div>';
+document.getElementById('cmp').innerHTML = `<div class="crow head"><div></div><div><i style="background:${PI.color}"></i>PiControl</div><div><i style="background:${ED.color}"></i>EdgeAI CM5</div></div>` +
+  ROWS.map(([label, a, b, win]) => a === undefined ? `<div class="crow group"><div>${label}</div></div>` : `<div class="crow"><div>${label}</div>${cell(a, win === 'pi')}${cell(b, win === 'edge')}</div>`).join('');
+
+/* ---------- picker ---------- */
+const QS = [
+  ['cam', 'Will it watch anything with a camera?', 'Inspection, counting, number plates, safety'],
+  ['light', 'Lights to strobe for inspection?', 'Ring or dome lights in time with each photo'],
+  ['analog', 'Any 4–20 mA or 0–10 V sensors?', 'Pressure, level, flow and temperature transmitters'],
+  ['io', 'More than 2 switches or relays to wire?', 'Digital inputs or outputs'],
+  ['rs232', 'An RS232 device?', 'Label printers, scanners, older PLCs'],
+  ['cell', 'A remote site that needs 4G?', 'Both controllers take a 4G module']
+];
+const ans = {};
+document.getElementById('qs').innerHTML = QS.map(([id, q, hint]) => `<div class="q"><div><b>${q}</b><small>${hint}</small></div><div class="seg" data-q="${id}"><button data-v="1">Yes</button><button data-v="0" class="on">No</button></div></div>`).join('');
+function decide() {
+  const sees = ans.cam || ans.light, wires = ans.analog || ans.rs232 || ans.io, why = [];
+  if (ans.cam) why.push('Camera ports and up to 26 TOPS of AI are on the EdgeAI.');
+  if (ans.light) why.push('Only the EdgeAI has built-in light drivers.');
+  if (ans.analog) why.push('Only the PiControl has analog inputs (0–5 V, 0–10 V, 0–20 mA).');
+  if (ans.rs232) why.push('Only the PiControl has RS232.');
+  if (ans.io) why.push('The PiControl has 4 inputs and 4 outputs; the EdgeAI has 2 of each.');
+  if (ans.cell) why.push('Either one takes a 4G module, so 4G doesn’t decide it.');
+  let pick, title, text, links;
+  if (sees && (ans.analog || ans.rs232)) { pick = 'both'; title = 'Use both, linked over Ethernet.'; text = 'The EdgeAI handles the cameras and AI; the PiControl reads the analog or RS232 equipment and runs the machines.'; links = [ED, PI]; }
+  else if (sees && ans.io) { pick = 'edge'; title = 'IRIV EdgeAI CM5, plus an IO extender.'; text = 'The EdgeAI does the vision. Add the 8×DI + 8×DO Modbus extender on RS485 for the extra switches, or pair it with a PiControl.'; links = [ED, PI]; }
+  else if (sees) { pick = 'edge'; title = 'IRIV EdgeAI CM5.'; text = 'Everything you need for vision is on one controller.'; links = [ED]; }
+  else if (wires || ans.cell) { pick = 'pi'; title = 'IRIV PiControl.'; text = 'More industrial I/O for less, with no AI hardware you don’t need.'; links = [PI]; }
+  else { pick = ''; title = 'Answer a question or two.'; text = 'Tap Yes on anything your project needs, and the recommendation appears here.'; links = [PI, ED]; }
+  const col = { pi: PI.color, edge: ED.color, both: '#30d158' }[pick] || '#a1a1a6';
+  document.getElementById('answer').innerHTML = `<small style="color:${col}">Recommended</small><h3>${title}</h3><p>${text}</p>${why.length ? `<ul>${why.map(w => `<li>${w}</li>`).join('')}</ul>` : ''}
+    <div class="btns">${links.map((p, i) => `<a class="btn ${i ? 'line' : 'fill'}" style="--c:${p.color}" href="${p.tour}">${p.name.replace('IRIV ', '')} tour</a>`).join('')}</div>`;
+}
+document.getElementById('qs').onclick = e => {
+  const b = e.target.closest('[data-v]'); if (!b) return;
+  const seg = b.parentElement; ans[seg.dataset.q] = b.dataset.v === '1';
+  seg.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); decide();
+};
+decide();
+
+/* ---------- better together ---------- */
+const SC = {
+  junction: { left: ['CCTV ×4', 'via ETH0'], right: [['Signal heads', 'DO0–DO3'], ['Loop detectors', 'DI0–DI3'], ['Message sign', 'RS485']],
+    msgs: ['EdgeAI → queue N–S 9 cars, E–W 3', 'PiControl ← give N–S 4 s more green', 'EdgeAI → ambulance seen on approach', 'PiControl ← green corridor for the ambulance', 'EdgeAI → red-light runner, plate WKA 2241', 'PiControl ← sign: “Slow down, queue ahead”'],
+    steps: [['EdgeAI', 'Counts and classifies', 'Junction CCTV streams over Ethernet; the AI measures each queue and spots emergency vehicles.', ED.color], ['Network', 'Sends one message', 'A short MQTT message carries the queue lengths, not the video.', '#86868b'], ['PiControl', 'Runs the signals', 'It switches the signal relays, reads the loop detectors and keeps a safe fixed plan if the network drops.', PI.color]] },
+  bottling: { left: ['Camera', 'MIPI0 + dome light L0'], right: [['Conveyor motor', 'DO0'], ['Tank level 4–20 mA', 'AN0'], ['Label printer', 'RS232']],
+    msgs: ['EdgeAI → bottle #1042 OK', 'EdgeAI → bottle #1043 NO CAP · rejected', 'PiControl ← tank 72 %, filler pressure normal', 'EdgeAI → yield 97.8 % this hour', 'PiControl ← print batch label B-2210', 'PiControl ← slow conveyor, rejects rising'],
+    steps: [['EdgeAI', 'Inspects every bottle', 'The camera and light are triggered per bottle, and faulty ones are blown off the line.', ED.color], ['Network', 'Shares the results', 'Pass, fail and yield go to the PiControl and the dashboard over MQTT.', '#86868b'], ['PiControl', 'Runs the line', 'It drives the conveyor, reads the 4–20 mA tank level and prints batch labels over RS232.', PI.color]] }
+};
+let scene = 'junction', msgI = 0;
+function drawTogether() {
+  const s = SC[scene];
+  const box = (x, y, w, h, title, sub, col) => `<g><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="16" fill="#f5f5f7"/><rect x="${x}" y="${y}" width="5" height="${h}" rx="2.5" fill="${col}"/>
+    <text x="${x + 20}" y="${y + h / 2 - 3}" font-size="17" font-weight="700" fill="#1d1d1f">${title}</text><text x="${x + 20}" y="${y + h / 2 + 18}" font-size="13" font-weight="600" fill="#6e6e73">${sub}</text></g>`;
+  const ry = [70, 175, 280];
+  document.getElementById('tview').innerHTML = `<svg viewBox="0 0 1100 400" role="img" aria-label="EdgeAI and PiControl working together">
+    ${box(20, 160, 200, 80, s.left[0], s.left[1], ED.color)}
+    <path class="flow" d="M220 200 L290 200" stroke="${ED.color}"/>
+    <rect x="290" y="80" width="230" height="240" rx="24" fill="#fff" stroke="#e5e5ea"/>
+    <svg x="300" y="90" width="210" height="190" viewBox="${ED.vb}"><image href="${ED.img}" width="${ED.px}" height="${ED.px}"/></svg>
+    <text x="405" y="304" text-anchor="middle" font-size="16" font-weight="800" fill="${ED.color}">EdgeAI CM5</text>
+    <path class="flow" d="M520 200 L600 200" stroke="#86868b"/>
+    <rect x="600" y="80" width="230" height="240" rx="24" fill="#fff" stroke="#e5e5ea"/>
+    <svg x="610" y="110" width="210" height="150" viewBox="40 220 920 560"><image href="${PI.img}" width="${PI.px}" height="${PI.px}"/></svg>
+    <text x="715" y="304" text-anchor="middle" font-size="16" font-weight="800" fill="${PI.color}">PiControl</text>
+    ${s.right.map((r, i) => `<path class="flow" d="M830 200 C 860 200, 860 ${ry[i] + 35}, 880 ${ry[i] + 35}" stroke="${PI.color}"/>${box(880, ry[i], 200, 70, r[0], r[1], PI.color)}`).join('')}
+    <rect x="300" y="18" width="520" height="44" rx="22" fill="#1d1d1f"/>
+    <text id="tmsg" class="msg" x="560" y="46" text-anchor="middle" font-size="15" font-weight="600" fill="#f5f5f7">${s.msgs[msgI % s.msgs.length]}</text>
+    <text x="560" y="190" text-anchor="middle" font-size="12" font-weight="700" fill="#86868b">ETHERNET</text><text x="560" y="222" text-anchor="middle" font-size="12" font-weight="700" fill="#86868b">MQTT</text>
+  </svg>`;
+  document.getElementById('tsteps').innerHTML = s.steps.map(([who, t, d, c]) => `<div class="tstep" style="--c:${c}"><small>${who}</small><b>${t}</b><p>${d}</p></div>`).join('');
+}
+document.getElementById('stabs').onclick = e => {
+  const b = e.target.closest('[data-s]'); if (!b) return;
+  scene = b.dataset.s; msgI = 0; drawTogether();
+  document.querySelectorAll('#stabs button').forEach(x => x.classList.toggle('on', x === b));
+};
+drawTogether();
+setInterval(() => {   // cycle the message strip while it is on screen
+  const el = document.getElementById('tmsg'); if (!el || document.hidden || el.getBoundingClientRect().bottom < 0 || el.getBoundingClientRect().top > innerHeight) return;
+  el.style.opacity = 0;
+  setTimeout(() => { msgI++; el.textContent = SC[scene].msgs[msgI % SC[scene].msgs.length]; el.style.opacity = 1; }, 350);
+}, 2600);
+
+/* ---------- scroll reveal ---------- */
+const ro = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); ro.unobserve(e.target); } }), { threshold: .12 });
+document.querySelectorAll('.reveal').forEach(n => ro.observe(n));
+</script>
+</body>
+</html>

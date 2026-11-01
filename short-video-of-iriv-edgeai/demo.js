@@ -1,7 +1,7 @@
 // Live AI demo: two simulated EdgeAI jobs drawn on a canvas, each a pure function of time t,
 // so the same scene plays on the page and inside the exported film.
-//   factory(): a photoelectric trigger (DI0) fires the camera (MIPI0) and light (L0); the AI checks
-//              each bottle and the reject jet (DO0) blows faulty ones into the bin.
+//   factory(): follow bottle 042 through a trigger/capture (DI0, MIPI0, L0), a missing-cap
+//              decision and a dry-contact signal (DO0) to an external reject mechanism.
 //   gate():    an IP camera (ETH0) tracks cars and people, reads plates and opens the barrier (DO0).
 // All readings are simulated for demonstration.
 
@@ -25,7 +25,7 @@ function demoFrame(c, W, H, title, port) {
   const s = W / 1600;
   c.font = `700 ${22 * s}px ${DEMO_FONT}`; c.fillStyle = DC.text; c.textAlign = 'left'; c.textBaseline = 'alphabetic'; c.fillText(title, 40 * s, 52 * s);
   c.font = `600 ${16 * s}px ${DEMO_FONT}`; c.fillStyle = DC.dim; c.fillText(port, 40 * s, 80 * s);
-  c.textAlign = 'right'; c.font = `500 ${14 * s}px ${DEMO_FONT}`; c.fillText('Simulation · illustrative values', W - 40 * s, H - 24 * s);
+  c.textAlign = 'right'; c.font = `600 ${22 * s}px ${DEMO_FONT}`; c.fillStyle = '#d2d9e5'; c.fillText('SIMULATION · illustrative values', W - 40 * s, H - 24 * s);
 }
 function lamps(c, W, H, items) {   // [label, port, on, color]
   const s = W / 1600, x0 = 40 * s, y = H - 120 * s;
@@ -56,10 +56,6 @@ function eventLog(c, W, lines) {
 }
 
 /* ---------- factory inspection ---------- */
-const FX_GAP = 1.7, FX_V = .15, FX_CAM = .42, FX_SENS = .36, FX_REJ = .72, FX_X0 = -.08;
-const DEFECTS = [null, 'NO CAP', 'NO LABEL', 'LOW FILL'];
-const part = i => ({ i, t0: i * FX_GAP + hash(i) * .25, defect: hash(i + .5) < .22 ? DEFECTS[1 + Math.floor(hash(i + .9) * 3)] : null, conf: 93 + Math.floor(hash(i + .3) * 6), ms: (6.4 + hash(i + .7) * 2.6).toFixed(1) });
-const tCam = p => p.t0 + (FX_CAM - FX_X0) / FX_V, tRej = p => p.t0 + (FX_REJ - FX_X0) / FX_V;
 
 function bottle(c, x, yb, w, h, p, alpha = 1) {
   c.save(); c.globalAlpha *= alpha;
@@ -73,82 +69,59 @@ function bottle(c, x, yb, w, h, p, alpha = 1) {
   c.restore();
 }
 
-function factory(c, t, W, H) {
-  const s = W / 1600, belt = H * .66, bw = W * .042, bh = H * .2;
-  demoFrame(c, W, H, 'Bottle inspection line', 'MIPI0 camera · DI0 trigger · L0 light · DO0 reject jet');
-  // conveyor
-  c.fillStyle = DC.line; dRR(c, W * .03, belt, W * .94, H * .03, H * .015); c.fill();
-  c.strokeStyle = 'rgba(255,255,255,.12)'; c.lineWidth = 2 * s;
-  const off = (t * FX_V * W) % (40 * s);
-  for (let x = W * .04 + off; x < W * .96; x += 40 * s) { c.beginPath(); c.moveTo(x, belt + H * .006); c.lineTo(x - 10 * s, belt + H * .024); c.stroke(); }
-  for (const x of [.08, .3, .52, .74, .92]) { c.fillStyle = '#1c2433'; c.fillRect(W * x - 6 * s, belt + H * .03, 12 * s, H * .1); }
-  // reject bin
-  c.fillStyle = '#1c2433'; dRR(c, W * (FX_REJ - .05), H * .76, W * .1, H * .1, 10 * s); c.fill();
-  c.font = `600 ${13 * s}px ${DEMO_FONT}`; c.fillStyle = DC.dim; c.textAlign = 'center'; c.fillText('REJECT BIN', W * FX_REJ, H * .815);
-
-  const first = Math.max(0, Math.floor((t - 9) / FX_GAP)), last = Math.floor(t / FX_GAP) + 1, parts = [];
-  for (let i = first; i <= last; i++) parts.push(part(i));
-  let di = false, light = false, jet = false, mqtt = false, lastCap = null;
-  for (const p of parts) {
-    const x = FX_X0 + (t - p.t0) * FX_V, tc = tCam(p), tr = tRej(p);
-    if (t < p.t0) continue;
-    if (Math.abs(x - FX_SENS) < .022) di = true;
-    if (t >= tc && t < tc + .14) light = true;
-    if (t >= tc && t < tc + .5) mqtt = true;
-    if (t >= tc) lastCap = p;
-    let px = x, yb = belt, alpha = 1;
-    if (p.defect && t >= tr) {   // blown off the belt into the bin
-      const f = Math.min(1, (t - tr) / .5); px = FX_REJ + f * .015; yb = belt + f * H * .17; alpha = 1 - Math.max(0, (t - tr - .5) / .3);
-      if (t < tr + .3) jet = true;
-      if (alpha <= 0) continue;
-    }
-    if (px > 1.05) continue;
-    bottle(c, W * px, yb, bw, bh, p, alpha);
-    if (t >= tc && px > FX_CAM - .07 && px < FX_REJ + .02 && yb === belt) {   // AI result rides with the bottle
-      const col = p.defect ? DC.bad : DC.ok, bx = W * px - bw * .8, by = belt - bh * 1.12;
-      c.strokeStyle = col; c.lineWidth = 3 * s; dRR(c, bx, by, bw * 1.6, bh * 1.12, 6 * s); c.stroke();
-      dPill(c, W * px, by - 18 * s, p.defect ? `${p.defect} ${p.conf}%` : `OK ${p.conf}%`, col, '#fff', 15 * s);
-    }
-  }
-  // photoelectric sensor (DI0)
-  const sy = belt - bh * .45;
-  c.fillStyle = '#3a4253'; c.fillRect(W * FX_SENS - 8 * s, sy - 30 * s, 16 * s, 30 * s);
-  c.setLineDash([8 * s, 6 * s]); c.strokeStyle = di ? DC.ok : 'rgba(255,69,58,.6)'; c.lineWidth = 2 * s;
-  c.beginPath(); c.moveTo(W * FX_SENS, sy); c.lineTo(W * FX_SENS, belt); c.stroke(); c.setLineDash([]);
-  // camera with ring light (MIPI0 + L0)
-  const cx = W * FX_CAM, cy = H * .2;
-  c.fillStyle = '#3a4253'; c.fillRect(cx - 4 * s, 0, 8 * s, cy - 30 * s);
-  const cone = c.createLinearGradient(0, cy, 0, belt); cone.addColorStop(0, light ? 'rgba(255,214,10,.35)' : 'rgba(10,132,255,.18)'); cone.addColorStop(1, 'rgba(10,132,255,0)');
-  c.fillStyle = cone; c.beginPath(); c.moveTo(cx - 18 * s, cy + 20 * s); c.lineTo(cx + 18 * s, cy + 20 * s); c.lineTo(cx + W * .065, belt); c.lineTo(cx - W * .065, belt); c.closePath(); c.fill();
-  dRR(c, cx - 34 * s, cy - 34 * s, 68 * s, 54 * s, 10 * s); c.fillStyle = '#20293a'; c.fill();
-  c.beginPath(); c.arc(cx, cy + 20 * s, 26 * s, 0, Math.PI); c.strokeStyle = light ? DC.amber : '#4b5468'; c.lineWidth = 7 * s; c.stroke();
-  c.beginPath(); c.arc(cx, cy + 8 * s, 12 * s, 0, 7); c.fillStyle = '#0a84ff'; c.fill();
-  dPill(c, cx, cy - 52 * s, 'CAM 1 · MIPI0', 'rgba(255,255,255,.1)', DC.text, 13 * s);
-  // reject air jet (DO0)
-  const jx = W * FX_REJ;
-  c.fillStyle = '#3a4253'; c.fillRect(jx - 5 * s, H * .44, 10 * s, belt - bh * 1.15 - H * .44);
-  if (jet) { c.fillStyle = 'rgba(255,214,10,.3)'; c.beginPath(); c.moveTo(jx - 6 * s, belt - bh * 1.15); c.lineTo(jx + 6 * s, belt - bh * 1.15); c.lineTo(jx + 30 * s, belt - bh * .2); c.lineTo(jx - 30 * s, belt - bh * .2); c.closePath(); c.fill(); }
-  dPill(c, jx, H * .44 - 18 * s, 'REJECT JET · DO0', jet ? DC.bad : 'rgba(255,255,255,.1)', DC.text, 13 * s);
-  // inset: what the camera saw
-  const ix = W * .66, iy = H * .07, iw = W * .3, ih = H * .3;
-  dRR(c, ix, iy, iw, ih, 14 * s); c.fillStyle = '#05080f'; c.fill(); c.strokeStyle = 'rgba(255,255,255,.12)'; c.lineWidth = 1.5 * s; c.stroke();
-  c.textAlign = 'left'; c.font = `600 ${13 * s}px ${DEMO_FONT}`; c.fillStyle = DC.dim; c.fillText('LAST CAPTURE · 1456×1088', ix + 14 * s, iy + 24 * s);
-  if (lastCap) {
-    const col = lastCap.defect ? DC.bad : DC.ok, flash = Math.max(0, 1 - (t - tCam(lastCap)) / .25);
-    bottle(c, ix + iw * .2, iy + ih * .9, bw * 1.5, bh * 1.05, lastCap);
-    c.strokeStyle = col; c.lineWidth = 3 * s; dRR(c, ix + iw * .2 - bw * 1.05, iy + ih * .2, bw * 2.1, ih * .74, 8 * s); c.stroke();
-    if (flash > 0) { c.fillStyle = `rgba(255,255,255,${.5 * flash})`; dRR(c, ix, iy, iw, ih, 14 * s); c.fill(); }
-    c.font = `800 ${30 * s}px ${DEMO_FONT}`; c.fillStyle = col; c.fillText(lastCap.defect || 'PASS', ix + iw * .42, iy + ih * .45);
-    c.font = `600 ${15 * s}px ${DEMO_FONT}`; c.fillStyle = DC.text; c.fillText(`Bottle #${1000 + lastCap.i} · ${lastCap.conf}% sure`, ix + iw * .42, iy + ih * .6);
-    c.fillStyle = DC.dim; c.fillText(`AI inference ${lastCap.ms} ms`, ix + iw * .42, iy + ih * .72);
-  } else { c.font = `600 ${16 * s}px ${DEMO_FONT}`; c.fillStyle = DC.dim; c.fillText('Waiting for the DI0 trigger…', ix + 14 * s, iy + ih * .55); }
-  // log and counters
-  let inspected = 0, bad = 0;
-  const all = []; for (let i = 0; i <= last; i++) { const p = part(i); if (tCam(p) <= t) { inspected++; if (p.defect) bad++; all.push(p); } }
-  eventLog(c, W, all.slice(-4).map(p => `${clock(tCam(p))}  #${1000 + p.i}  ${(p.defect || 'OK').padEnd(8)} ${p.ms} ms  → MQTT`));
-  lamps(c, W, H, [['Trigger', 'DI0', di, DC.ok], ['Light', 'L0', light, DC.amber], ['Reject', 'DO0', jet, DC.bad], ['Publish', 'ETH1 · MQTT', mqtt, DC.ai]]);
-  counters(c, W, H, [['Inspected', String(inspected)], ['Passed', String(inspected - bad), DC.ok], ['Rejected', String(bad), DC.bad], ['Yield', inspected ? Math.round((inspected - bad) / inspected * 100) + '%' : '—']]);
+// A single tracked bottle makes the complete input → decision → output chain visible.
+const INSPECTION_CYCLE = 18;
+function inspectionState(t) {
+  const elapsed = ((t % INSPECTION_CYCLE) + INSPECTION_CYCLE) % INSPECTION_CYCLE;
+  return { elapsed, phase: Math.min(2, Math.floor(elapsed / 6)), captured: elapsed >= 3.5, rejected: elapsed >= 15.5 };
 }
+function factory(c, t, W, H) {
+  const { elapsed: u, phase, captured, rejected } = inspectionState(t);
+  const s = Math.min(W / 1600, H / 900), smooth = n => { n = Math.max(0, Math.min(1,n)); return n*n*(3-2*n); };   // one uniform scale, centred, so the film is never squashed
+  const bg=c.createLinearGradient(0,0,0,H);bg.addColorStop(0,DC.bg0);bg.addColorStop(1,DC.bg1);c.fillStyle=bg;c.fillRect(0,0,W,H);
+  c.save(); c.translate((W - 1600 * s) / 2, (H - 900 * s) / 2); c.scale(s, s);
+  c.textBaseline='alphabetic';c.textAlign='left';c.fillStyle=DC.text;c.font=`700 30px ${DEMO_FONT}`;c.fillText('BOTTLE 042 · FOLLOW THE SAME ITEM',40,58);
+  c.textAlign='right';c.fillStyle='#d2d9e5';c.font=`600 22px ${DEMO_FONT}`;c.fillText('SIMULATION · ILLUSTRATIVE SEQUENCE',1560,57);
+  const titles=['1  DETECT','2  DECIDE','3  REJECT'],subs=['DI0 → camera + light','Missing cap → reject decision','DO0 → mechanism → event log'];
+  titles.forEach((title,i)=>{
+    const x=40+i*510, active=i===phase,col=[DC.ai,DC.amber,DC.bad][i];
+    dRR(c,x,105,490,112,18);c.fillStyle=active?col+'20':'#1a2435';c.fill();c.strokeStyle=active?col:'#344052';c.lineWidth=active?3:1;c.stroke();
+    c.textAlign='left';c.fillStyle=active?col:DC.dim;c.font=`800 30px ${DEMO_FONT}`;c.fillText(title,x+24,151);
+    c.font=`500 23px ${DEMO_FONT}`;c.fillStyle=active?DC.text:DC.dim;c.fillText(subs[i],x+24,190);
+  });
+  // Conveyor and a separate reject chute.
+  const belt=630, rejectX=1190;
+  dRR(c,55,belt,1450,25,12);c.fillStyle='#344052';c.fill();
+  c.strokeStyle='#647084';c.lineWidth=2;const off=u*35%40;
+  for(let x=70+off;x<1490;x+=40){c.beginPath();c.moveTo(x,belt+5);c.lineTo(x-10,belt+20);c.stroke();}
+  for(const x of [130,400,680,960,1430]){c.fillStyle='#283344';c.fillRect(x,belt+25,12,85);}
+  c.fillStyle='#26354a';dRR(c,1100,730,250,72,14);c.fill();c.textAlign='center';c.fillStyle='#d2d9e5';c.font=`600 22px ${DEMO_FONT}`;c.fillText('REJECT BIN',1225,778);
+  // Photoelectric trigger and camera/light.
+  const sensorX=520,camX=675,flash=captured&&u<4.2;
+  c.fillStyle=phase===0&&u>1.8?DC.ok:'#576479';c.fillRect(sensorX-14,555,28,30);
+  c.strokeStyle=phase===0&&u>1.8?DC.ok:'#576479';c.setLineDash([8,6]);c.beginPath();c.moveTo(sensorX,585);c.lineTo(sensorX,630);c.stroke();c.setLineDash([]);
+  dPill(c,sensorX,690,'DI0 · SENSOR','#26354a',DC.text,23);
+  c.fillStyle='#344052';c.fillRect(camX-5,230,10,70);dRR(c,camX-43,300,86,62,12);c.fillStyle='#344052';c.fill();
+  c.beginPath();c.arc(camX,332,18,0,Math.PI*2);c.fillStyle=flash?DC.amber:DC.ai;c.fill();
+  c.fillStyle=flash?'rgba(255,214,10,.24)':'rgba(10,132,255,.10)';c.beginPath();c.moveTo(camX-28,362);c.lineTo(camX+28,362);c.lineTo(camX+115,630);c.lineTo(camX-115,630);c.closePath();c.fill();
+  dPill(c,camX,265,'MIPI0 + L0','#26354a',DC.text,23);
+  let x=340+(675-340)*smooth(u/3.5),yb=belt;
+  if(u>=12){x=675+(rejectX-675)*smooth((u-12)/2);if(u>=14){x=rejectX+35*smooth((u-14)/1.3);yb=belt+210*smooth((u-14)/1.3);}}
+  const col=phase===0?DC.ai:DC.bad;
+  bottle(c,x,yb,90,210,{defect:'NO CAP'},1-smooth((u-14.8)/.7));
+  if(!rejected){c.strokeStyle=col;c.lineWidth=3;dRR(c,x-65,yb-220,130,220,10);c.stroke();dPill(c,x,yb-246,'BOTTLE 042',col,'#fff',22);}
+  // One large result replaces small counters and confidence/timing figures.
+  dRR(c,980,240,560,195,22);c.fillStyle='#080e18';c.fill();c.strokeStyle=phase>0?DC.bad:'#344052';c.lineWidth=2;c.stroke();
+  c.textAlign='left';c.fillStyle=DC.dim;c.font=`600 22px ${DEMO_FONT}`;c.fillText(captured?'CAMERA RESULT · BOTTLE 042':'WAITING FOR BOTTLE 042',1010,275);
+  c.fillStyle=phase===0?DC.text:DC.bad;c.font=`800 44px ${DEMO_FONT}`;c.fillText(rejected?'REJECTED':phase===1?'CAP MISSING':phase===2?'REJECT OUTPUT':captured?'CAPTURED':'READY',1010,327);
+  c.fillStyle=DC.text;c.font=`600 26px ${DEMO_FONT}`;c.fillText(phase===0?(captured?'Image sent to the model':'Sensor triggers the capture'):phase===1?'Decision: reject this bottle':rejected?'Bottle removed from the line':'Signal the external mechanism',1010,370);
+  c.fillStyle=DC.dim;c.font=`500 23px ${DEMO_FONT}`;c.fillText(rejected?'Logged: bottle 042 · missing cap':phase===2?'DO0 dry contact → reject control':'One item tracked through every step',1010,408);
+  dPill(c,1410,690,'DO0 · SIGNAL',phase===2?DC.bad:'#26354a',DC.text,23);
+  const summary=['The sensor triggers a camera capture and inspection light.','The model finds a missing cap and marks bottle 042 for rejection.','The output signals rejection, then the application logs the result.'][phase];
+  c.textAlign='center';c.fillStyle=DC.text;c.font=`600 27px ${DEMO_FONT}`;c.fillText(summary,800,852);
+  c.restore();
+}
+
 
 /* ---------- CCTV & ANPR gate ---------- */
 const GT_GAP = 3.4, GT_V = .13, GT_READ = .42, GT_BAR = .6, GT_X0 = -.12;

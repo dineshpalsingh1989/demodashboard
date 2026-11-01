@@ -1,0 +1,25 @@
+{
+  "product": "IRIV PiControl",
+  "base": "IRIV-PiControl-tour",
+  "scenes": [
+    {"id":"intro","minDuration":5,"display":"An industrial controller with a Raspberry Pi inside.","text":"Meet IRIV Pi Control. An industrial controller with a Raspberry Pi inside."},
+    {"id":"front","minDuration":5.5,"display":"32 terminals. Two Ethernet ports. Status at a glance.","text":"Industrial connections, network ports, and status indicators share one front panel."},
+    {"id":"power","minDuration":4.5,"display":"10–30 V DC input with surge protection.","text":"Power the controller from a suitable ten to thirty volt supply."},
+    {"id":"rs485","minDuration":4.8,"display":"Read meters and sensors over isolated Modbus RTU.","text":"Isolated R S four eighty five connects industrial meters and sensors."},
+    {"id":"rs232","minDuration":4.8,"display":"Connect compatible scanners, instruments and legacy equipment.","text":"R S two thirty two connects compatible scanners and legacy equipment."},
+    {"id":"do","minDuration":5,"display":"Four isolated output channels for external control circuits.","text":"Four isolated outputs signal external relays, indicators, and control circuits."},
+    {"id":"di","minDuration":4.8,"display":"Read buttons, limit switches and other digital signals.","text":"Four isolated inputs read buttons, limit switches, and digital signals."},
+    {"id":"an","minDuration":6,"display":"Read voltage or current transmitters. Shared analog ground.","text":"Four analog inputs read voltage or current transmitters, with a shared analog ground."},
+    {"id":"lan","minDuration":5,"display":"One Gigabit port and one 10/100 port for two networks.","text":"Two Ethernet ports connect the machine network and the office network."},
+    {"id":"status","minDuration":4.8,"display":"Status lights, programmable LEDs and a USER button.","text":"Status lights and a programmable button help with local operation."},
+    {"id":"wifi","minDuration":4.5,"display":"Dual-band Wi-Fi and Bluetooth. Antenna included.","text":"Built in Wi Fi and Bluetooth provide wireless connectivity."},
+    {"id":"usb","minDuration":5,"display":"Connect USB peripherals and an HDMI display.","text":"Connect U S B peripherals and a local H D M I display."},
+    {"id":"usbc","minDuration":5,"display":"USB-C for setup. Four knock-outs for optional antennas.","text":"U S B C handles setup. Antenna knock outs support optional expansion."},
+    {"id":"inside","minDuration":4.5,"display":"Expansion, a small display and security hardware inside.","text":"Inside, find expansion sockets, a small display, and security hardware."},
+    {"id":"oled","minDuration":4.8,"display":"Show an IP address, readings or alarms on the device.","text":"The built in display can show an address, readings, or alarms."},
+    {"id":"expand","minDuration":5.5,"display":"Add NVMe storage or a compatible Mini PCIe module.","text":"Add N V M E storage or a compatible expansion module."},
+    {"id":"rtc","minDuration":5.5,"display":"A backed-up clock, secure-key hardware and a local buzzer.","text":"A backed up clock, security chip, and buzzer support local operation."},
+    {"id":"specs","minDuration":6,"text":"Choose a Raspberry Pi Compute Module four or five configuration for your application."},
+    {"id":"outro","minDuration":8,"text":"Explore connections and compatible accessories in the interactive demo. Compare both controllers and build your system."}
+  ]
+}
