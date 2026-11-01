@@ -193,7 +193,7 @@ body.panel-open #story { left: calc((100% - 448px) / 2); }
   .brand-tag { display: inline; font-size: 8px; letter-spacing: 1px; }
   .search-trigger { width: 36px; height: 36px; padding: 0; justify-content: center; }
   .search-trigger kbd { display: none; }
-  .ctrls { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr 1.15fr 1.3fr; gap: 3px; border-top: 1px solid var(--line); padding-top: 10px; }
+  .ctrls { grid-column: 1 / -1; display: grid; grid-template-columns: .9fr .9fr 1.15fr 1fr 1.25fr; gap: 3px; border-top: 1px solid var(--line); padding-top: 10px; }
   .ctrls button { padding: 0 5px; gap: 5px; height: 35px; min-width: 0; font-size: 10px; }
   .ctrls button span { display: inline-flex; }
   .ctrls .primary { margin: 0; padding: 0 7px; font-size: 10px; }

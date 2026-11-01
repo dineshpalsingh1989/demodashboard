@@ -177,7 +177,21 @@ function initDirectory() {
   });
 }
 
+// the two IRIV tour films, from the toolbar
+function showFilms() {
+  const film = (href, poster, title, line) => '<a class="ins-film" href="' + href + '" target="_blank" rel="noopener noreferrer">' + (poster ? '<img src="' + poster + '" alt="" loading="lazy">' : '') + '<span><b>' + title + '</b><small>' + line + ' ↗</small></span></a>';
+  openPanel('#0277bd', headHTML('🎬', 'IRIV', 'IRIV EdgeAI & PiControl films') +
+    '<p class="p-sum">Two short narrated films with captions and a transcript. Each page also lets you explore every port and the compatible Cytron parts.</p>' +
+    '<h3>Watch</h3>' +
+    film('short-video-of-iriv-edgeai/', 'short-video-of-iriv-edgeai/images/tour-poster.jpg', 'IRIV EdgeAI CM5 · 2 min 9 s', 'Cameras first, a live AI demo, every port, compatible parts') +
+    film('short-video-of-iriv-pi/', 'short-video-of-iriv-pi/images/tour-poster.jpg', 'IRIV PiControl · 1 min 45 s', 'Pin map, 49 compatible parts, a system builder') +
+    film('iriv-controllers/', 'iriv-controllers/images/poster-edgeai.jpg', 'Compare all IRIV controllers', 'Which one do I need, and how they work together') +
+    '<h3>Download</h3><a class="ins-prod" href="short-video-of-iriv-edgeai/IRIV-EdgeAI-CM5-tour.mp4" download>⬇ EdgeAI CM5 tour (MP4)</a><a class="ins-prod" style="margin-top:8px" href="short-video-of-iriv-pi/IRIV-PiControl-tour.mp4" download>⬇ PiControl tour (MP4)</a>' +
+    '<h3>See them in the city</h3><button class="tourbtn" id="filmsUnits">Find every IRIV unit on the map →</button>', []);
+}
 function initUI() {
+  document.getElementById('bFilms').onclick = () => showFilms();
+  document.getElementById('panel').addEventListener('click', e => { if (e.target.closest('#filmsUnits')) document.getElementById('bIriv').click(); });
   document.querySelectorAll('[data-icon]').forEach(el => { el.innerHTML = uiIcon(el.dataset.icon); });
   document.getElementById('districtCount').textContent = blocks.length;
   document.getElementById('deviceCount').textContent = fint(TOTAL_DEVICES);

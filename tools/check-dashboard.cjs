@@ -112,6 +112,12 @@ async function layoutCheck(width, height) {
     console.log('frame ms · city ' + city.toFixed(1) + ' · airport ' + air.toFixed(1) + ' · terminal ' + hall.toFixed(1));
     assert(city < 1500 && air < 1500 && hall < 1500, 'frame time regressed badly (headless software rendering is slow; this only catches big jumps)');
   });
+  await step('IRIV films button lists both films', async () => {
+    await ev("document.getElementById('bFilms').click()"); await sleep(500);
+    assert.equal(await ev("document.querySelectorAll('#panel .ins-film').length"), 3, 'three film cards');
+    assert.deepEqual(await ev("[...document.querySelectorAll('#panel .ins-film')].map(a => a.getAttribute('href'))"), ['short-video-of-iriv-edgeai/', 'short-video-of-iriv-pi/', 'iriv-controllers/']);
+    await shot('films'); await ev('closePanel()');
+  });
   await step('Guided tour starts and stops', async () => {
     await ev("document.getElementById('bTour').click()"); await waitFor('!!tourList', 'tour to start');
     await ev('stopTour()'); assert.equal(await ev('tourList'), null);
