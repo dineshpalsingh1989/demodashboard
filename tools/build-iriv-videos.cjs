@@ -10,7 +10,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const cdp=(method,params={})=>new Promise((resolve,reject)=>{const id=++seq,timer=setTimeout(()=>{pending.delete(id);reject(Error('Timeout '+method));},45000);pending.set(id,{resolve,reject,timer});ws.send(JSON.stringify({id,method,params}));});
 async function ev(expression){const r=await cdp('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(r.exceptionDetails)throw Error(r.exceptionDetails.exception?.description||r.exceptionDetails.text);return r.result.value;}
 async function waitFor(expression){for(let i=0;i<300;i++){if(await ev(expression))return;await sleep(100);}throw Error('Timed out: '+expression);}
-const tours=[['pi','short-video-of-iriv-pi','IRIV-PiControl-tour'],['edge','short-video-of-iriv-edgeai','IRIV-EdgeAI-CM5-tour']].filter(([key])=>!only||only===key);
+const tours=[['pi','short-video-of-iriv-pi','IRIV-PiControl-tour'],['edge','short-video-of-iriv-edgeai','IRIV-EdgeAI-CM5-tour'],['hub','short-video-of-iriv-hub','IRIV-Edge-dashboard-tour']].filter(([key])=>!only||only===key);
 async function main(){
  const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.mp4':'video/mp4','.wav':'audio/wav','.vtt':'text/vtt; charset=utf-8','.png':'image/png','.jpg':'image/jpeg','.json':'application/json'};
  server=http.createServer((req,res)=>{
@@ -35,7 +35,7 @@ async function main(){
   console.log(key,`${info.duration.toFixed(2)} seconds; ${info.scenes.length} scenes`);
   if(check){await checkTour(key,folder,url);continue;}
   await ev("window.reviewCanvas=document.createElement('canvas');reviewCanvas.width=1920;reviewCanvas.height=1080;window.reviewContext=reviewCanvas.getContext('2d');");
-  const frames=key==='edge'?[2,SCENE_TIME('inspection',3),SCENE_TIME('inspection',8),SCENE_TIME('inspection',16),SCENE_TIME('power',3),SCENE_TIME('di',3),SCENE_TIME('cams',3),SCENE_TIME('outro',3)]:[2,SCENE_TIME('power',3),SCENE_TIME('di',3),SCENE_TIME('usb',3),SCENE_TIME('expand',3),SCENE_TIME('outro',3)];
+  const frames=key==='hub'?[2,SCENE_TIME('find',3),SCENE_TIME('rules',3),SCENE_TIME('failover',3),SCENE_TIME('control',3),SCENE_TIME('outro',3)]:key==='edge'?[2,SCENE_TIME('inspection',3),SCENE_TIME('inspection',8),SCENE_TIME('inspection',16),SCENE_TIME('power',3),SCENE_TIME('di',3),SCENE_TIME('cams',3),SCENE_TIME('outro',3)]:[2,SCENE_TIME('power',3),SCENE_TIME('di',3),SCENE_TIME('usb',3),SCENE_TIME('expand',3),SCENE_TIME('outro',3)];
   for(let i=0;i<frames.length;i++){
    const time=typeof frames[i]==='number'?frames[i]:await ev(frames[i]);
    const data=await ev(`render(reviewContext,${time});reviewCanvas.toDataURL('image/png').split(',')[1]`);
@@ -43,7 +43,7 @@ async function main(){
   }
   const poster=await ev("render(reviewContext,2.2);reviewCanvas.toDataURL('image/jpeg',.93).split(',')[1]");
   fs.writeFileSync(path.join(root,folder,'images/tour-poster.jpg'),Buffer.from(poster,'base64'));
-  fs.writeFileSync(path.join(root,'iriv-controllers/images',key==='pi'?'poster-picontrol.jpg':'poster-edgeai.jpg'),Buffer.from(poster,'base64'));
+  if(key!=='hub')fs.writeFileSync(path.join(root,'iriv-controllers/images',key==='pi'?'poster-picontrol.jpg':'poster-edgeai.jpg'),Buffer.from(poster,'base64'));
   if(!preview){
    await ev(`window.buildState={progress:0};exportVideo(p=>{buildState.progress=p;}).then(async blob=>{const r=await fetch('/__build/${key}',{method:'POST',body:blob});if(!r.ok)throw Error('Saving MP4 failed');buildState.done=true;buildState.bytes=blob.size;}).catch(e=>{buildState.error=e.message;});true`);
    let last=-1;for(let i=0;i<1800;i++){const state=await ev('buildState');if(state.error)throw Error(state.error);if(state.done){console.log('ENCODED',key,state.bytes);break;}const pct=Math.floor(state.progress*10)*10;if(pct!==last){console.log('ENCODING',key,pct+'%');last=pct;}if(i===1799)throw Error('Export timeout');await sleep(1000);}

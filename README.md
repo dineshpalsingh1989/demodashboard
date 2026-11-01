@@ -12,9 +12,10 @@ Click **IRIV films** in the top bar of the dashboard to open all of these, or us
 |---|---|---|
 | **IRIV EdgeAI CM5** | [Tour](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-edgeai/): a camera-first film, a live AI demo of a bottle inspection line and an ANPR gate, every port, compatible Cytron cameras, lights and parts | [MP4 · 2 min 9 s](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-edgeai/IRIV-EdgeAI-CM5-tour.mp4) |
 | **IRIV PiControl** | [Tour](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-pi/): an interactive map of every pin and port, 49 compatible Cytron parts by port, a system builder that checks port limits, and ready-made parts lists | [MP4 · 1 min 45 s](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-pi/IRIV-PiControl-tour.mp4) |
+| **IRIV Edge dashboard** | [Tour](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-hub/): the dashboard itself, recorded from this demo: the map of every unit, wiring, live rules, MQTT messages, offline behaviour and the airport control centre. All readings are simulated. | [MP4 · 1 min 10 s](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-hub/IRIV-Edge-dashboard-tour.mp4) |
 | **All IRIV controllers** | [Compare page](https://dineshpalsingh1989.github.io/demodashboard/iriv-controllers/): PiControl, IO Controller and EdgeAI CM5 side by side, a "Which IRIV do I need?" picker and how they work together | both films |
 
-Both films have English narration, short captions, chapter buttons and a transcript. Every IRIV device panel in the dashboard also has a **Watch the tour film** card.
+All three films have English narration, short captions, chapter buttons and a transcript. Every IRIV device panel in the dashboard also has a **Watch the tour film** card.
 
 ## What is on the map
 
@@ -98,6 +99,7 @@ The map is drawn on a canvas that is fully redrawn every frame, so most of the w
 - `iriv-controllers/` — one page for all IRIV controllers: films, comparison, picker and "better together" examples
 - `short-video-of-iriv-edgeai/` — IRIV EdgeAI CM5 tour: film, live AI demo (`demo.js`), port data, compatible Cytron cameras and parts, and the rendered MP4
 - `short-video-of-iriv-pi/` — IRIV PiControl tour page, film renderer (`film.js`), pin data (`data.js`), compatible Cytron parts and system recipes (`connect.js`), and the rendered MP4
+- `short-video-of-iriv-hub/` — IRIV Edge dashboard film: page, film renderer (`film.js`) and the recorded screens (`images/`, made by `tools/capture-iriv-hub-shots.cjs`)
 - `iriv-tour-media.js` / `.css` — shared player, footer, end card and MP4 export for both tours
 - `tools/` — smoke test (`check-dashboard.cjs`), film and narration builders, and the vendored MP4 muxer
 

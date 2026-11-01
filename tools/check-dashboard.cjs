@@ -114,8 +114,8 @@ async function layoutCheck(width, height) {
   });
   await step('IRIV films button lists both films', async () => {
     await ev("document.getElementById('bFilms').click()"); await sleep(500);
-    assert.equal(await ev("document.querySelectorAll('#panel .ins-film').length"), 3, 'three film cards');
-    assert.deepEqual(await ev("[...document.querySelectorAll('#panel .ins-film')].map(a => a.getAttribute('href'))"), ['short-video-of-iriv-edgeai/', 'short-video-of-iriv-pi/', 'iriv-controllers/']);
+    assert.equal(await ev("document.querySelectorAll('#panel .ins-film').length"), 4, 'four film cards');
+    assert.deepEqual(await ev("[...document.querySelectorAll('#panel .ins-film')].map(a => a.getAttribute('href'))"), ['short-video-of-iriv-edgeai/', 'short-video-of-iriv-pi/', 'short-video-of-iriv-hub/', 'iriv-controllers/']);
     await shot('films'); await ev('closePanel()');
   });
   await step('Guided tour starts and stops', async () => {

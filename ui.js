@@ -185,8 +185,9 @@ function showFilms() {
     '<h3>Watch</h3>' +
     film('short-video-of-iriv-edgeai/', 'short-video-of-iriv-edgeai/images/tour-poster.jpg', 'IRIV EdgeAI CM5 · 2 min 9 s', 'Cameras first, a live AI demo, every port, compatible parts') +
     film('short-video-of-iriv-pi/', 'short-video-of-iriv-pi/images/tour-poster.jpg', 'IRIV PiControl · 1 min 45 s', 'Pin map, 49 compatible parts, a system builder') +
+    film('short-video-of-iriv-hub/', 'short-video-of-iriv-hub/images/tour-poster.jpg', 'IRIV Edge dashboard · 1 min 10 s', 'The map, wiring, live rules, MQTT, offline mode, control centre') +
     film('iriv-controllers/', 'iriv-controllers/images/poster-edgeai.jpg', 'Compare all IRIV controllers', 'Which one do I need, and how they work together') +
-    '<h3>Download</h3><a class="ins-prod" href="short-video-of-iriv-edgeai/IRIV-EdgeAI-CM5-tour.mp4" download>⬇ EdgeAI CM5 tour (MP4)</a><a class="ins-prod" style="margin-top:8px" href="short-video-of-iriv-pi/IRIV-PiControl-tour.mp4" download>⬇ PiControl tour (MP4)</a>' +
+    '<h3>Download</h3><a class="ins-prod" href="short-video-of-iriv-edgeai/IRIV-EdgeAI-CM5-tour.mp4" download>⬇ EdgeAI CM5 tour (MP4)</a><a class="ins-prod" style="margin-top:8px" href="short-video-of-iriv-pi/IRIV-PiControl-tour.mp4" download>⬇ PiControl tour (MP4)</a><a class="ins-prod" style="margin-top:8px" href="short-video-of-iriv-hub/IRIV-Edge-dashboard-tour.mp4" download>⬇ IRIV Edge dashboard (MP4)</a>' +
     '<h3>See them in the city</h3><button class="tourbtn" id="filmsUnits">Find every IRIV unit on the map →</button>', []);
 }
 function initUI() {

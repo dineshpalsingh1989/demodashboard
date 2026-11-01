@@ -7,7 +7,7 @@ for ($i = 0; $i -lt $voices.Count; $i++) {
     if ($voices.Item($i).GetDescription() -match 'Zira') { $voice.Voice = $voices.Item($i); break }
 }
 $voice.Rate = 1
-foreach ($folder in @('short-video-of-iriv-pi', 'short-video-of-iriv-edgeai')) {
+foreach ($folder in @('short-video-of-iriv-pi', 'short-video-of-iriv-edgeai', 'short-video-of-iriv-hub')) {
     $config = Get-Content -LiteralPath (Join-Path $projectRoot "$folder/narration.json") -Raw -Encoding UTF8 | ConvertFrom-Json
     $audioDir = Join-Path $projectRoot ".tmp/video-build/$folder"
     New-Item -ItemType Directory -Path $audioDir -Force | Out-Null

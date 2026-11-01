@@ -1,0 +1,130 @@
+WEBVTT
+
+1
+00:00:00.550 --> 00:00:02.402
+Meet the IRIV Edge dashboard.
+
+2
+00:00:02.402 --> 00:00:04.892
+One screen for every controller, camera
+
+3
+00:00:04.892 --> 00:00:06.360
+and sensor in the city.
+
+4
+00:00:07.583 --> 00:00:09.383
+Every IRIV unit sits on the
+
+5
+00:00:09.383 --> 00:00:11.715
+map, exactly where it is installed.
+
+6
+00:00:11.715 --> 00:00:13.048
+Here is the airport.
+
+7
+00:00:14.250 --> 00:00:16.248
+One button lists every IRIV unit.
+
+8
+00:00:16.248 --> 00:00:17.399
+Click a row and the
+
+9
+00:00:17.399 --> 00:00:18.913
+map flies straight to it.
+
+10
+00:00:20.117 --> 00:00:21.268
+Open a unit to see
+
+11
+00:00:21.268 --> 00:00:22.547
+what it is wired to.
+
+12
+00:00:22.547 --> 00:00:24.594
+Sensors, relays and the network,
+
+13
+00:00:24.594 --> 00:00:26.065
+with their live states.
+
+14
+00:00:27.283 --> 00:00:29.486
+Below the wiring are the rules it runs.
+
+15
+00:00:29.486 --> 00:00:31.293
+Each one shows its live reading,
+
+16
+00:00:31.293 --> 00:00:32.704
+and whether it is firing.
+
+17
+00:00:33.917 --> 00:00:35.676
+Every change is published as an
+
+18
+00:00:35.676 --> 00:00:36.868
+M Q T T message, with
+
+19
+00:00:36.868 --> 00:00:38.344
+its topic and its payload.
+
+20
+00:00:39.550 --> 00:00:40.731
+Cut the network to see
+
+21
+00:00:40.731 --> 00:00:42.181
+how a unit behaves offline.
+
+22
+00:00:42.181 --> 00:00:44.652
+This PiControl keeps running its own rules and
+
+23
+00:00:44.652 --> 00:00:47.015
+buffers its messages until the link returns.
+
+24
+00:00:48.217 --> 00:00:50.917
+EdgeAI units open with a live camera view.
+
+25
+00:00:50.917 --> 00:00:53.103
+The video never leaves the device.
+
+26
+00:00:53.103 --> 00:00:54.774
+Only the results are sent.
+
+27
+00:00:55.983 --> 00:00:57.959
+At the airport, the control centre
+
+28
+00:00:57.959 --> 00:01:00.457
+brings cameras, flights, passengers and the
+
+29
+00:01:00.457 --> 00:01:02.142
+car park onto one video wall.
+
+30
+00:01:03.350 --> 00:01:05.329
+Open the live demo, press IRIV
+
+31
+00:01:05.329 --> 00:01:07.044
+units, and click any unit.
+
+32
+00:01:07.044 --> 00:01:09.683
+All readings in this film are simulated.
+

@@ -1,0 +1,16 @@
+{
+  "product": "IRIV Edge dashboard",
+  "base": "IRIV-Edge-dashboard-tour",
+  "scenes": [
+    {"id":"intro","minDuration":5.5,"display":"Controllers, cameras and sensors in one live view.","text":"Meet the IRIV Edge dashboard. One screen for every controller, camera and sensor in the city."},
+    {"id":"map","minDuration":5.5,"display":"Every unit sits where it is installed.","text":"Every IRIV unit sits on the map, exactly where it is installed. Here is the airport."},
+    {"id":"find","minDuration":5,"display":"One button lists every IRIV unit.","text":"One button lists every IRIV unit. Click a row and the map flies straight to it."},
+    {"id":"wiring","minDuration":6,"display":"See what each unit is wired to, with live states.","text":"Open a unit to see what it is wired to. Sensors, relays and the network, with their live states."},
+    {"id":"rules","minDuration":6,"display":"The automation rules it runs, live.","text":"Below the wiring are the rules it runs. Each one shows its live reading, and whether it is firing."},
+    {"id":"mqtt","minDuration":5.5,"display":"Every change is published as an MQTT message.","text":"Every change is published as an M Q T T message, with its topic and its payload."},
+    {"id":"failover","minDuration":7,"display":"Cut the network. See what keeps running.","text":"Cut the network to see how a unit behaves offline. This PiControl keeps running its own rules and buffers its messages until the link returns."},
+    {"id":"camera","minDuration":6,"display":"AI cameras: the video stays on the device.","text":"Edge A I units open with a live camera view. The video never leaves the device. Only the results are sent."},
+    {"id":"control","minDuration":6,"display":"One video wall for the whole airport.","text":"At the airport, the control centre brings cameras, flights, passengers and the car park onto one video wall."},
+    {"id":"outro","minDuration":6,"display":"Open the live demo and click any IRIV unit.","text":"Open the live demo, press IRIV units, and click any unit. All readings in this film are simulated."}
+  ]
+}
