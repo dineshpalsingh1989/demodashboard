@@ -106,6 +106,8 @@ function resetCityView() {
   document.getElementById('announcement').textContent = 'City view reset';
 }
 
+// newest places first in the directory, so they are easy to find
+const FEATURED = ['warehouse'];
 function initDirectory() {
   const dialog = document.getElementById('searchDialog');
   const input = document.getElementById('citySearch');
@@ -113,16 +115,43 @@ function initDirectory() {
   const count = document.getElementById('searchCount');
   let filter = 'all', matches = [], opener = null;
   const entries = [
-    ...ORDER.filter(id => id !== 'intro').map(id => ({id, type:'district', title:TOPICS[id].title, detail:TOPICS[id].kicker, icon:TOPICS[id].icon, keywords:TOPICS[id].sum, open:() => show(id)})),
+    ...[...FEATURED.filter(id => ORDER.includes(id)), ...ORDER.filter(id => id !== 'intro' && !FEATURED.includes(id))].map(id => ({id, type:'district', title:TOPICS[id].title, detail:(FEATURED.includes(id) ? 'New · ' : '') + TOPICS[id].kicker, icon:TOPICS[id].icon, keywords:TOPICS[id].sum + ' ' + (TOPICS[id].keywords || ''), open:() => show(id)})),
     ...DEVICES.map(d => ({id:d.id, type:'device', iriv:/^IRIV/.test(d.model), title:d.model + ' · ' + d.name, detail:d.loc || d.short || d.brand, icon:d.icon, keywords:[d.brand, d.conn, d.cat, d.zone, d.what].join(' '), open:() => showDevice(d.id)})),
     ...Object.entries(SCENARIOS).map(([id, s]) => ({id, type:'scenario', title:s.title, detail:s.sub, icon:s.icon, keywords:s.sub, open:() => runScenario(id)}))
   ];
   const normalize = value => value.toLowerCase().replace(/[–—-]/g, ' ').replace(/\s+/g, ' ');
+  // typos are forgiven: "werehouse" finds the warehouse, "logitical" finds logistics (one wrong letter per 4, at most 2)
+  const textOf = item => item._t || (item._t = normalize([item.title, item.detail, item.keywords, item.id].join(' ')));
+  const wordsOf = item => item._w || (item._w = [...new Set(textOf(item).split(/[^a-z0-9]+/).filter(w => w.length > 2))]);
+  function near(a, b, max) {
+    if (Math.abs(a.length - b.length) > max) return false;
+    let prev2 = null, prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+    for (let i = 1; i <= a.length; i++) {
+      const cur = [i]; let best = i;
+      for (let j = 1; j <= b.length; j++) {
+        cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+        if (prev2 && i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) cur[j] = Math.min(cur[j], prev2[j - 2] + 1);   // two letters swapped counts as one mistake
+        best = Math.min(best, cur[j]);
+      }
+      if (best > max) return false; prev2 = prev; prev = cur;
+    }
+    return prev[b.length] <= max;
+  }
+  function termMatch(term, item) {
+    if (textOf(item).includes(term)) return true;
+    if (term.length < 4) return false;
+    const max = Math.min(2, Math.floor(term.length / 4));
+    return wordsOf(item).some(w => near(term, w, max) || (w.length > term.length && near(term, w.slice(0, term.length), max)));
+  }
   function render() {
     const query = normalize(input.value.trim());
     const terms = query.split(' ').filter(Boolean);
-    matches = entries.filter(item => (filter === 'all' || (filter === 'iriv' ? item.iriv : item.type === filter)) && terms.every(term => normalize([item.title, item.detail, item.keywords, item.id].join(' ')).includes(term)));
-    if (query) matches.sort((a, b) => Number(normalize(b.title).includes(query)) - Number(normalize(a.title).includes(query)));
+    matches = entries.filter(item => (filter === 'all' || (filter === 'iriv' ? item.iriv : item.type === filter)) && terms.every(term => termMatch(term, item)));
+    if (query) {   // closest title first: the whole query in the title, then every word close to a title word; shorter titles win ties
+      const score = item => { const t = normalize(item.title), words = t.split(/[^a-z0-9]+/); return (t.includes(query) ? 2 : 0) + (terms.every(term => words.some(w => w.startsWith(term) || (term.length > 3 && near(term, w, Math.min(2, Math.floor(term.length / 4)))))) ? 1 : 0); };
+      const sc = new Map(matches.map(m => [m, score(m)]));
+      matches.sort((a, b) => sc.get(b) - sc.get(a) || (sc.get(a) ? a.title.length - b.title.length : 0));
+    }
     count.textContent = query ? `${matches.length} result${matches.length === 1 ? '' : 's'} for “${input.value.trim()}”` : `${matches.length} places, devices, and experiences to explore`;
     results.innerHTML = matches.length ? matches.map((item, i) => `<button class="search-result" data-result="${i}"><span class="result-icon" aria-hidden="true">${escapeUI(item.icon)}</span><span class="result-copy"><b>${escapeUI(item.title)}</b><small>${item.type[0].toUpperCase() + item.type.slice(1)} · ${escapeUI(item.detail)}</small></span>${uiIcon('arrow')}</button>`).join('') : '<div class="empty-search"><b>No matches yet</b><p>Try a place like “farm”, a device like “CT101”,<br>or a scenario like “flood”.</p></div>';
     results.scrollTop = 0;
@@ -187,6 +216,7 @@ function showFilms() {
     film('short-video-of-iriv-pi/', 'short-video-of-iriv-pi/images/tour-poster.jpg', 'IRIV PiControl · 1 min 45 s', 'Pin map, 49 compatible parts, a system builder') +
     film('short-video-of-iriv-hub/', 'short-video-of-iriv-hub/images/tour-poster.jpg', 'IRIV Edge dashboard · 1 min 10 s', 'The map, wiring, live rules, MQTT, offline mode, control centre') +
     film('iriv-controllers/', 'iriv-controllers/images/poster-edgeai.jpg', 'Compare all IRIV controllers', 'Which one do I need, and how they work together') +
+    film('warehouse-3d/', 'warehouse-3d/poster.jpg', 'Warehouse Command 3D', 'Forklifts, trucks and EdgeAI safety cameras in a 3D game view') +
     '<h3>Download</h3><a class="ins-prod" href="short-video-of-iriv-edgeai/IRIV-EdgeAI-CM5-tour.mp4" download>⬇ EdgeAI CM5 tour (MP4)</a><a class="ins-prod" style="margin-top:8px" href="short-video-of-iriv-pi/IRIV-PiControl-tour.mp4" download>⬇ PiControl tour (MP4)</a><a class="ins-prod" style="margin-top:8px" href="short-video-of-iriv-hub/IRIV-Edge-dashboard-tour.mp4" download>⬇ IRIV Edge dashboard (MP4)</a>' +
     '<h3>See them in the city</h3><button class="tourbtn" id="filmsUnits">Find every IRIV unit on the map →</button>', []);
 }

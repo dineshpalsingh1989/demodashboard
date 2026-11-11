@@ -86,6 +86,24 @@ const FARM_RADIO_PATH = ['LoRaWAN', 'SG50 solar gateway', '4G', 'LoRaWAN network
     payload: () => ({ simulated: true, model: 'UC511', valve_1: FARM.pump ? 'open' : 'closed', valve_2: 'closed', rule_source: 'IRIV Edge demo', soil_moisture_pct: Number(FARM.soil.toFixed(1)) })
   }, ['Open only the irrigation zones that need water', 'Use valve schedules', 'Read a connected pulse meter when fitted']);
 
+  addProduct({ id: 'air-gas', model: 'GS301', name: 'Restroom Odour Sensor', icon: '🚻', zone: 'airterminal',
+    x: 84, y: 18.9, z: 1.2, qty: 4, gw: 'air-gw', short: 'Terminal restrooms', loc: 'High on the wall of each terminal restroom',
+    power: '4 × AA batteries', productUrl: product('lorawan-sensor', 'gs301'),
+    what: 'A restroom sensor measures ammonia and hydrogen sulphide, the two gases people smell, plus temperature and humidity.',
+    why: 'Cleaning can follow actual need instead of a fixed round: a rising odour reading calls the nearest cleaner.',
+    m: [['Ammonia', () => wob(.4, .1, .1).toFixed(2) + ' ppm'], ['Hydrogen sulphide', () => wob(.02, .01, .1).toFixed(3) + ' ppm'], ['Cleanliness', () => 'Good'], ['Last cleaned', () => Math.round(wob(34, 8, .01)) + ' min ago']],
+    payload: () => ({ simulated: true, model: 'GS301', nh3_ppm: Number(wob(.4, .1, .1).toFixed(2)), h2s_ppm: Number(wob(.02, .01, .1).toFixed(3)) })
+  }, ['Call a cleaner when odour rises, not on a timer', 'Cleanliness history per restroom', 'Fewer complaints with the same staff']);
+
+  addProduct({ id: 'air-vs121', model: 'VS121', cat: 'ai', name: 'Lounge Occupancy AI', icon: '🛋️', zone: 'airfood',
+    x: 92.5, y: 19.3, z: 1.6, qty: 2, gw: 'air-gw', short: 'Premium lounge', loc: 'Ceiling of the premium lounge, beside duty free',
+    power: 'DC / PoE', productUrl: product('lorawan-sensor', 'vs121'), variant: 'AI workplace sensor; counts people in zones without identifying anyone.',
+    what: 'An AI occupancy sensor sees how many people are in each lounge zone — seats, buffet, quiet area — as anonymous counts, not video.',
+    why: 'The lounge team sees which zones fill up and opens or closes areas to match, and passengers see free-seat guidance.',
+    m: [['People in lounge', () => Math.round(wob(46, 6, .05))], ['Seating zone', () => Math.round(wob(62, 5, .07)) + '% full'], ['Quiet zone', () => Math.round(wob(31, 6, .06)) + '% full'], ['Detection', () => 'Anonymous AI count']],
+    payload: () => ({ simulated: true, model: 'VS121', total: Math.round(wob(46, 6, .05)), zones: { seating_pct: Math.round(wob(62, 5, .07)), quiet_pct: Math.round(wob(31, 6, .06)) } })
+  }, ['Live zone occupancy without cameras people can be identified on', 'Open or close lounge areas to match demand', 'Seat-availability guidance at the door']);
+
   addProduct({ id: 'farm-sg50', model: 'SG50', cat: 'gateway', name: 'Solar Farm Gateway', icon: '☀️', zone: 'farmbelt',
     x: -52.4, y: 35.4, z: 2.7, qty: 1, short: 'Remote farm mast', loc: 'Mast beside the remote farmyard, with an exposed solar panel',
     conn: 'LoRaWAN radio · 4G cellular backhaul', power: '30 W solar panel + 25 Ah battery', productUrl: product('lorawan-gateway', 'sg50'),

@@ -1,0 +1,1007 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Warehouse Command 3D</title>
+<meta name="description" content="A 3D view of three smart warehouses: forklifts with anti-collision, trucks, racks, a conveyor, a cold room, IRIV controllers and every Milesight sensor installed. All simulated.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #0b1220; --glass: rgba(12, 20, 36, .84); --line: rgba(120, 170, 255, .22); --ink: #e6efff; --mut: #8fa3c4; --acc: #ffb400; --cy: #3fd0ff; --ok: #3ddc84; --bad: #ff5468; --ms: #19b5a5; --iriv: #ff7a1a; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink); font: 13px/1.4 Inter, system-ui, sans-serif; }
+  canvas#c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  .hud { position: fixed; background: var(--glass); border: 1px solid var(--line); border-radius: 12px; backdrop-filter: blur(8px); box-shadow: 0 8px 30px rgba(0,0,0,.35); }
+  h2, .kpi b { font-family: "Chakra Petch", Inter, sans-serif; }
+  h2 { margin: 0 0 8px; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--mut); }
+  button { font: inherit; color: var(--ink); background: rgba(63, 208, 255, .08); border: 1px solid var(--line); border-radius: 8px; padding: 7px 11px; cursor: pointer; min-height: 34px; }
+  button:hover { background: rgba(63, 208, 255, .18); }
+  button.on { background: rgba(255, 180, 0, .18); border-color: var(--acc); color: #ffe3a1; }
+  button.danger { background: rgba(255, 84, 104, .2); border-color: var(--bad); color: #ffd0d6; }
+  button.safe { background: rgba(61, 220, 132, .14); border-color: var(--ok); color: #c9f7dc; }
+  button:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+  #top { top: 12px; left: 12px; right: 12px; display: flex; align-items: center; gap: 18px; padding: 8px 14px; flex-wrap: wrap; }
+  #top .brand { display: flex; flex-direction: column; margin-right: auto; }
+  #top .brand b { font: 700 17px "Chakra Petch", sans-serif; letter-spacing: .04em; }
+  #top .brand small { color: var(--mut); }
+  #top a { color: var(--cy); text-decoration: none; font-size: 12px; }
+  #top a.back-city { display: inline-block; margin-top: 4px; padding: 6px 12px; border-radius: 8px; background: #2469e8; color: #fff; font-weight: 700; font-size: 12.5px; width: fit-content; }   /* inside the dashboard */
+  .kpis { display: flex; gap: 14px; flex-wrap: wrap; }
+  .kpi { display: flex; flex-direction: column; min-width: 58px; }
+  .kpi small { color: var(--mut); font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; }
+  .kpi b { font-size: 19px; }
+  .kpi.warn b { color: var(--bad); } .kpi.good b { color: var(--ok); }
+  #side { top: 86px; left: 12px; width: 250px; padding: 12px; bottom: 76px; display: flex; flex-direction: column; gap: 6px; }
+  .site { display: block; width: 100%; text-align: left; margin-bottom: 6px; padding: 7px 10px; }
+  .site b { display: block; font-size: 13px; }
+  .site small { color: var(--mut); }
+  .site.on { border-color: var(--acc); background: rgba(255, 180, 0, .1); }
+  #sensorList { overflow: auto; flex: 1; min-height: 80px; margin: 0 -4px; padding: 0 4px; }
+  #sensorList h3 { font-size: 11px; color: var(--mut); margin: 10px 0 4px; letter-spacing: .06em; text-transform: uppercase; }
+  .sen { display: flex; gap: 8px; align-items: center; width: 100%; text-align: left; padding: 5px 7px; margin-bottom: 4px; min-height: 30px; border-color: transparent; background: rgba(255,255,255,.03); }
+  .sen i { font-style: normal; width: 22px; text-align: center; }
+  .sen span { display: flex; flex-direction: column; line-height: 1.2; }
+  .sen small { color: var(--mut); font-size: 11px; }
+  .sen.on { border-color: var(--cy); }
+  #feed { left: 274px; bottom: 76px; width: 380px; padding: 12px; max-height: 30vh; overflow: hidden; }
+  #feed ul { list-style: none; margin: 0; padding: 0; }
+  #feed li { padding: 4px 0; border-top: 1px solid rgba(255,255,255,.05); color: #c6d4ee; }
+  #feed li time { color: var(--mut); margin-right: 6px; font-variant-numeric: tabular-nums; }
+  #feed li.bad { color: #ffb3bd; } #feed li.ok { color: #b8f5d2; } #feed li.cam { color: #a9e8ff; } #feed li.crash { color: #fff; background: rgba(255, 84, 104, .25); }
+  #insp { top: 86px; right: 12px; width: 300px; padding: 14px; max-height: calc(100vh - 170px); overflow: auto; }
+  #insp .tag { display: inline-block; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--acc); }
+  #insp .tag.ms { color: var(--ms); } #insp .tag.iriv { color: var(--iriv); }
+  #insp h3 { margin: 2px 0 6px; font: 700 20px "Chakra Petch", sans-serif; }
+  #insp dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0 0 10px; }
+  #insp dt { color: var(--mut); } #insp dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+  #insp p { color: #c6d4ee; margin: 0 0 10px; }
+  #insp img { display: block; width: 100%; height: 120px; object-fit: contain; background: #f4f6f8; border-radius: 8px; margin: 6px 0 10px; }
+  #insp .path { font-size: 11.5px; color: var(--mut); border-top: 1px solid var(--line); padding-top: 8px; }
+  .bar { height: 6px; background: rgba(255,255,255,.08); border-radius: 3px; overflow: hidden; margin: 2px 0 10px; }
+  .bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--ok), var(--acc)); }
+  .bar.low i { background: var(--bad); }
+  #cmd { left: 12px; right: 12px; margin: 0 auto; width: fit-content; max-width: calc(100% - 24px); bottom: 12px; display: flex; gap: 6px; padding: 8px; flex-wrap: wrap; justify-content: center; }
+  body.loading::after { content: 'Loading warehouse…'; position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); padding: 10px 18px; border-radius: 999px; background: var(--glass); border: 1px solid var(--line); color: var(--ink); font-weight: 600; animation: pulse 1.2s ease-in-out infinite; pointer-events: none; }
+  @keyframes pulse { 50% { opacity: .5; } }
+  #toast { position: fixed; top: 92px; left: 50%; transform: translateX(-50%); padding: 8px 14px; border-radius: 8px; background: rgba(255, 84, 104, .92); color: #fff; font-weight: 600; opacity: 0; transition: opacity .3s; pointer-events: none; }
+  #toast.show { opacity: 1; }
+  #err { position: fixed; inset: 0; display: none; place-items: center; text-align: center; padding: 16px; }
+  .hint { color: var(--mut); font-size: 12px; margin: 0; }
+  @media (max-width: 1100px) { #feed { display: none; } }
+  @media (max-width: 900px) { #side { display: none; } }
+  @media (max-width: 640px) {
+    #top { left: 8px; right: 8px; gap: 8px; } .kpi b { font-size: 15px; } .kpi { min-width: 48px; } #top .brand small { display: none; }
+    #insp { top: auto; bottom: 70px; left: 16px; right: 16px; width: auto; max-height: 38vh; } #insp.empty { display: none; }
+    #cmd { left: 8px; right: 8px; width: auto; flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; } #cmd button { padding: 6px 8px; white-space: nowrap; flex: none; }
+  }
+</style>
+</head>
+<body>
+<canvas id="c" aria-label="3D warehouse view. Drag to rotate, right-drag to pan, scroll to zoom, click an object to inspect it."></canvas>
+
+<header id="top" class="hud">
+  <div class="brand"><b>WAREHOUSE COMMAND</b><small id="siteLine">KL Fulfilment Hub · Shah Alam</small><a href="../">← Smart city dashboard</a></div>
+  <div class="kpis">
+    <div class="kpi"><small>Shift</small><b id="kClock">08:00</b></div>
+    <div class="kpi"><small>Inbound</small><b id="kIn">0</b></div>
+    <div class="kpi"><small>Outbound</small><b id="kOut">0</b></div>
+    <div class="kpi"><small>Rack fill</small><b id="kOcc">0%</b></div>
+    <div class="kpi"><small>Fleet busy</small><b id="kFleet">0/0</b></div>
+    <div class="kpi"><small>Battery avg</small><b id="kBat">0%</b></div>
+    <div class="kpi" id="kAvBox"><small>Collisions avoided</small><b id="kAv">0</b></div>
+    <div class="kpi" id="kColBox"><small>Collisions</small><b id="kCol">0</b></div>
+    <div class="kpi" id="kNearBox"><small>Near-misses</small><b id="kNear">0</b></div>
+  </div>
+</header>
+
+<aside id="side" class="hud">
+  <h2>Locations</h2><div id="siteList"></div>
+  <h2 style="margin-top:6px">Installed sensors <span id="sCount"></span></h2>
+  <div id="sensorList"></div>
+  <p class="hint">Keys 1–3 switch sites · S sensors · C anti-collision</p>
+</aside>
+
+<aside id="insp" class="hud" aria-live="polite"></aside>
+
+<section id="feed" class="hud"><h2>Live events</h2><ul id="feedList"></ul></section>
+
+<nav id="cmd" class="hud" aria-label="Commands">
+  <button id="bAnti" class="safe" title="Anti-collision (key C)">🛡 Anti-collision ON</button>
+  <button id="bIn">＋ Inbound truck</button>
+  <button id="bOut">＋ Outbound order</button>
+  <button id="bSensors" class="on">Sensors <kbd>S</kbd></button>
+  <button id="bCones" class="on">Camera views</button>
+  <button id="bHeat">Heatmap</button>
+  <button id="bNight">Night</button>
+  <button id="bSpeed">Speed 1×</button>
+  <button id="bPause">Pause</button>
+  <button id="bView">Reset view</button>
+</nav>
+<div id="toast" role="status"></div>
+<div id="err"><p>The 3D view needs WebGL and an internet connection to load three.js.</p></div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js"></script>
+<script>
+'use strict';
+// All forklifts, trucks, sensor readings and events are simulated for the demo.
+const $ = s => document.querySelector(s);
+if (!window.THREE) { $('#err').style.display = 'grid'; throw new Error('three.js did not load'); }
+
+const SITES = [
+  { name: 'KL Fulfilment Hub', city: 'Shah Alam', racks: 4, forklifts: 6, workers: 5, inDocks: 3, outDocks: 3, occ: .55 },
+  { name: 'Penang Electronics DC', city: 'Bayan Lepas', racks: 3, forklifts: 4, workers: 3, inDocks: 2, outDocks: 2, occ: .35 },
+  { name: 'Johor Port Cross-dock', city: 'Pasir Gudang', racks: 2, forklifts: 5, workers: 4, inDocks: 4, outDocks: 4, occ: .7 },
+];
+SITES.forEach(s => s.stats = { in: 0, out: 0, near: 0, parcels: 0, col: 0, av: 0 });
+
+// layout (metres): the corridor runs along x at z = CZ with one lane each way; aisles run along z
+const CZ = 20, LANE = 1.1, COLX = -38.6, SPOTX = -40.6, CARRY = .35, ACC = 1.6, DEC = 3.2;
+const laneZ = dir => CZ + (dir > 0 ? LANE : -LANE);
+const inAisle = z => z < CZ - 2.5;
+const keyOf = x => 'k' + Math.round(x * 10);
+const rnd = (a, b) => a + Math.random() * (b - a), pickOne = a => a[Math.floor(Math.random() * a.length)];
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+// ---------- renderer ----------
+const renderer = new THREE.WebGLRenderer({ canvas: $('#c'), antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
+renderer.outputEncoding = THREE.sRGBEncoding; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+const scene = new THREE.Scene();
+const lin = c => new THREE.Color(c).convertSRGBToLinear();
+const camera = new THREE.PerspectiveCamera(40, 1, .3, 600);
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.maxPolarAngle = 1.4; controls.minDistance = 6; controls.maxDistance = 180;
+controls.addEventListener('start', () => { fly = null; follow = null; });
+function resetView() { fly = null; follow = null; camera.position.set(-54, 56, 82); controls.target.set(-6, 0, 8); }
+const hemi = new THREE.HemisphereLight(0xdfeaff, 0x4a4438, .6); scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xfff0d8, 2.1); sun.position.set(-45, 85, 40); sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -.0005; sun.shadow.normalBias = .03;
+Object.assign(sun.shadow.camera, { left: -70, right: 70, top: 70, bottom: -70, near: 10, far: 240 }); scene.add(sun);
+const bayLights = [];   // high-bay lamps light the floor at night
+for (const x of [-27, 0, 27]) for (const z of [-12, 10]) { const l = new THREE.PointLight(0xfff1d0, 0, 34, 1.6); l.position.set(x, 8, z); scene.add(l); bayLights.push(l); }
+
+const mats = {};
+// Phong instead of the physical material: a much smaller shader (opens faster), and still shiny steel and glossy paint
+function PBR(o) {
+  const { roughness = .7, metalness = 0, ...rest } = o;
+  return new THREE.MeshPhongMaterial(Object.assign({ shininess: (1 - roughness) * 90 + 4, specular: new THREE.Color(metalness > .3 ? 0x555555 : 0x1a1a1a) }, rest));
+}
+const M = (c, o = {}) => { const k = c + JSON.stringify(o); return mats[k] || (mats[k] = PBR(Object.assign({ color: lin(c), roughness: .7, metalness: .1 }, o, o.emissive !== undefined ? { emissive: lin(o.emissive) } : {}))); };
+function box(w, h, d, mat, x, y, z, parent, shadow = true) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); m.castShadow = shadow; m.receiveShadow = true; parent.add(m); return m;
+}
+function cyl(r, h, mat, x, y, z, parent, axis = 'y', seg = 16) {
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, seg), mat); m.position.set(x, y, z);
+  if (axis === 'x') m.rotation.z = Math.PI / 2; if (axis === 'z') m.rotation.x = Math.PI / 2;
+  m.castShadow = true; m.receiveShadow = true; parent.add(m); return m;
+}
+function canvasTex(c) { const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = renderer.capabilities.getMaxAnisotropy(); return t; }
+function label(text, color = '#e6efff', scale = 3.2) {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 72; const x = c.getContext('2d');
+  x.fillStyle = 'rgba(10,18,32,.85)'; x.fillRect(0, 0, 256, 72); x.fillStyle = color; x.fillRect(0, 0, 7, 72);
+  x.font = '700 38px "Chakra Petch", sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(text, 131, 38);
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: canvasTex(c), transparent: true })); s.scale.set(scale, scale * 72 / 256, 1); s.userData.label = true; return s;
+}
+function iconSprite(icon, border) {
+  const c = document.createElement('canvas'); c.width = c.height = 72; const x = c.getContext('2d');
+  x.fillStyle = '#ffffff'; x.strokeStyle = border; x.lineWidth = 7; x.beginPath(); x.roundRect(6, 6, 60, 60, 16); x.fill(); x.stroke();
+  x.font = '36px "Segoe UI Emoji","Apple Color Emoji",sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(icon, 36, 39);
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: canvasTex(c), sizeAttenuation: false, depthTest: false, transparent: true }));
+  s.scale.set(.03, .03, 1); s.renderOrder = 10; return s;
+}
+function glowTex(rgb) {
+  const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'), g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+  g.addColorStop(0, `rgba(${rgb},1)`); g.addColorStop(.5, `rgba(${rgb},.45)`); g.addColorStop(1, `rgba(${rgb},0)`); x.fillStyle = g; x.fillRect(0, 0, 64, 64); return canvasTex(c);
+}
+const BLUE_SPOT = glowTex('60,150,255'), WARM = glowTex('255,214,150'), RED_GLOW = glowTex('255,70,90');
+
+// ---------- floor: concrete, joints, lanes, walkway, aisle numbers, dock bays, charging bays ----------
+function floorTexture(site, docks, rackXs) {
+  const P = 24, c = document.createElement('canvas'); c.width = 84 * P; c.height = 56 * P;
+  const x = c.getContext('2d'), X = v => (v + 42) * P, Z = v => (v + 28) * P;
+  x.fillStyle = '#6f7680'; x.fillRect(0, 0, c.width, c.height);
+  for (let i = 0; i < 9000; i++) { x.fillStyle = `rgba(${Math.random() < .5 ? '255,255,255' : '0,0,0'},${Math.random() * .05})`; x.fillRect(Math.random() * c.width, Math.random() * c.height, 2 + Math.random() * 5, 2 + Math.random() * 5); }
+  x.strokeStyle = 'rgba(0,0,0,.18)'; x.lineWidth = 2;
+  for (let v = -42; v <= 42; v += 6) { x.beginPath(); x.moveTo(X(v), 0); x.lineTo(X(v), c.height); x.stroke(); }
+  for (let v = -28; v <= 28; v += 6) { x.beginPath(); x.moveTo(0, Z(v)); x.lineTo(c.width, Z(v)); x.stroke(); }
+  rackXs.forEach(r => { x.fillStyle = 'rgba(30,40,55,.25)'; x.fillRect(X(r - 1.5), Z(-19.4), 3 * P, 32.8 * P); x.fillStyle = '#ffc400'; x.fillRect(X(r - 1.6), Z(13.1), 3.2 * P, .25 * P); });
+  // corridor: solid yellow edges, dashed white centre, arrows on each lane
+  x.fillStyle = 'rgba(40,46,56,.35)'; x.fillRect(0, Z(CZ - 2.5), c.width, 5 * P);
+  x.fillStyle = '#ffc400'; x.fillRect(0, Z(CZ - 2.55), c.width, .14 * P); x.fillRect(0, Z(CZ + 2.45), c.width, .14 * P);
+  x.fillStyle = '#ffffff'; for (let v = -41; v < 42; v += 2) x.fillRect(X(v), Z(CZ - .05), P, .1 * P);
+  const arrow = (ax, az, dir) => { x.save(); x.translate(X(ax), Z(az)); x.scale(dir, 1); x.fillStyle = 'rgba(255,255,255,.75)'; x.beginPath(); x.moveTo(.9 * P, 0); x.lineTo(0, -.45 * P); x.lineTo(0, -.18 * P); x.lineTo(-.9 * P, -.18 * P); x.lineTo(-.9 * P, .18 * P); x.lineTo(0, .18 * P); x.lineTo(0, .45 * P); x.fill(); x.restore(); };
+  for (let v = -36; v < 40; v += 9) { arrow(v, laneZ(1), 1); arrow(v + 4.5, laneZ(-1), -1); }
+  // pedestrian walkway with zebra crossings at the aisle mouths
+  x.fillStyle = '#2f9e5b'; x.fillRect(0, Z(15.3), c.width, 1.4 * P);
+  x.fillStyle = 'rgba(255,255,255,.85)'; for (let v = -41.5; v < 42; v += 1) x.fillRect(X(v), Z(15.35), .45 * P, 1.3 * P);
+  // aisle numbers and stop bars
+  const aisles = [...new Set(rackXs.flatMap(r => [r - 4, r + 4]))].sort((a, b) => a - b);
+  x.font = `700 ${P * .9}px Inter, sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle';
+  aisles.forEach((a, i) => { x.fillStyle = '#ffffff'; x.fillRect(X(a - 1.4), Z(17.4), 2.8 * P, .2 * P); x.fillStyle = 'rgba(255,255,255,.9)'; x.fillText('A' + String(i + 1).padStart(2, '0'), X(a), Z(14.2)); });
+  // dock staging bays, hatched
+  docks.forEach(d => {
+    x.strokeStyle = '#ffc400'; x.lineWidth = .14 * P; x.strokeRect(X(d.x - 2.2), Z(22.8), 4.4 * P, 5 * P);
+    x.save(); x.beginPath(); x.rect(X(d.x - 2.2), Z(22.8), 4.4 * P, 5 * P); x.clip(); x.strokeStyle = 'rgba(255,196,0,.35)'; x.lineWidth = .1 * P;
+    for (let k = -6; k < 8; k++) { x.beginPath(); x.moveTo(X(d.x - 2.2 + k * .9), Z(22.8)); x.lineTo(X(d.x - 2.2 + k * .9 + 5), Z(27.8)); x.stroke(); } x.restore();
+    x.fillStyle = d.kind === 'in' ? '#3fd0ff' : '#ffb400'; x.fillText(d.name.replace('Inbound ', 'IN ').replace('Outbound ', 'OUT '), X(d.x), Z(24));
+  });
+  // charging and parking bays on the west wall, and the travel lane to them
+  for (let i = 0; i < 6; i++) { const z = 12 - 3 * i; x.strokeStyle = '#3d8bff'; x.lineWidth = .1 * P; x.strokeRect(X(-41.9), Z(z - 1), 2.8 * P, 2 * P); x.fillStyle = '#3d8bff'; x.fillText('⚡', X(-40.5), Z(z)); }
+  x.setLineDash([P * .6, P * .4]); x.strokeStyle = 'rgba(255,255,255,.6)'; x.lineWidth = .08 * P; x.beginPath(); x.moveTo(X(COLX), Z(-5)); x.lineTo(X(COLX), Z(17.4)); x.stroke(); x.setLineDash([]);
+  x.fillStyle = '#e8eef4'; x.fillRect(X(38.2), Z(-26), 3.6 * P, 18 * P);   // cold room floor
+  return canvasTex(c);
+}
+
+// ---------- world ----------
+let world, S, follow = null, fly = null, selected = null, speed = 1, paused = false, night = false, nightK = 0, antiCol = true;
+let showSensors = true, showCones = true, showHeat = false;
+const ring = new THREE.Mesh(new THREE.RingGeometry(1.6, 1.9, 48), new THREE.MeshBasicMaterial({ color: 0x3fd0ff, transparent: true, opacity: .9, side: THREE.DoubleSide }));
+ring.rotation.x = -Math.PI / 2; ring.visible = false; scene.add(ring);
+const SPARK_N = 80, sparkPos = new Float32Array(SPARK_N * 3), sparkVel = new Float32Array(SPARK_N * 3);
+const sparks = new THREE.Points(new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(sparkPos, 3)), new THREE.PointsMaterial({ color: 0xffb040, size: .22, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
+sparks.frustumCulled = false; scene.add(sparks); let sparkLife = 0;
+
+// compile shaders one material at a time, with a pause between, so opening never freezes the page.
+// A scratch scene with copies of the same lights and fog gives the same shader keys, so the real frame reuses them.
+async function compileGradually(renderer, root, camera, lights, fog, pause) {
+  // one material per shader variant is enough: the rest reuse the compiled program
+  const key = (m, o) => [m.type, !!m.map, m.vertexColors, m.transparent, m.alphaTest > 0, m.side, !!o.isInstancedMesh, !!o.instanceColor, !!m.onBeforeCompile && m.onBeforeCompile.toString().length].join();
+  const seen = new Map(); root.traverse(o => { const m = o.material; if (m && !Array.isArray(m) && !seen.has(key(m, o))) seen.set(key(m, o), o); });
+  for (const o of seen.values()) {
+    const mat = o.material;
+    const tmp = new THREE.Scene(); tmp.fog = fog; lights.forEach(l => tmp.add(l.clone()));
+    tmp.add(o.isInstancedMesh ? new THREE.InstancedMesh(o.geometry, mat, 1) : o.isSprite ? new THREE.Sprite(mat) : o.isPoints ? new THREE.Points(o.geometry, mat) : o.isLineSegments ? new THREE.LineSegments(o.geometry, mat) : new THREE.Mesh(o.geometry, mat));
+    renderer.compile(tmp, camera); await pause();
+  }
+  const all = new THREE.Scene(); all.fog = fog; lights.forEach(l => all.add(l.clone())); const parent = root.parent; all.add(root);
+  renderer.compile(all, camera); if (parent) parent.add(root); else all.remove(root);   // the rest, now all cache hits
+}
+// builds in steps with a pause between them, so the page keeps painting (and the loading badge keeps moving)
+const breathe = () => new Promise(r => setTimeout(r, 0));
+let building = false;
+async function build(site) {
+  building = true; document.body.classList.add('loading');
+  if (world) { scene.remove(world); world.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material && o.material.map && o.material.map !== BLUE_SPOT && o.material.map !== WARM && o.material.map !== RED_GLOW) o.material.map.dispose(); }); }
+  world = new THREE.Group();
+  S = { site, slots: [], racks: [], docks: [], forklifts: [], trucks: [], workers: [], cams: [], sensors: [], tasks: [], belt: [], locks: {}, pairs: {}, doors: [], time: 8 * 60, spawnT: 2, heat: new Float32Array(84 * 56), heatT: 0, checkT: 0, crashes: [] };
+  selected = null; follow = null; fly = null; ring.visible = false;
+  $('#siteLine').textContent = site.name + ' · ' + site.city;
+
+  const docks = [];
+  // docks line up with the rack centres, so dock and aisle traffic never share a line
+  for (let i = 0; i < site.inDocks; i++) docks.push({ x: -32 + 8 * i, kind: 'in', name: 'Inbound ' + (i + 1) });
+  for (let i = 0; i < site.outDocks; i++) docks.push({ x: 32 - 8 * i, kind: 'out', name: 'Outbound ' + (i + 1) });
+  const rackXs = []; for (let i = 0; i < site.racks; i++) rackXs.push(-8 - 8 * i, 8 + 8 * i); rackXs.sort((a, b) => a - b);
+
+  // ground, yard and floor
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), M('#2a3340', { roughness: 1 })); ground.rotation.x = -Math.PI / 2; ground.position.y = -.03; ground.receiveShadow = true; world.add(ground);
+  const yard = new THREE.Mesh(new THREE.PlaneGeometry(96, 70), M('#3a4048', { roughness: .95 })); yard.rotation.x = -Math.PI / 2; yard.position.set(0, -.02, 63); yard.receiveShadow = true; world.add(yard);
+  docks.forEach(d => { for (const sx of [-1.9, 1.9]) box(.18, .02, 13, M('#e6ebf0'), d.x + sx, .002, 35, world, false); });
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(84, 56), PBR({ map: floorTexture(site, docks, rackXs), roughness: .55, metalness: .05 }));
+  floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; world.add(floor);
+
+  // building: insulated panel walls (tall at the back, glazing band on the sides), steel frame, roof trusses, high-bay lights
+  const panel = M('#c9d1db', { roughness: .6, metalness: .3 }), steel = M('#56657a', { metalness: .6, roughness: .4 }), glass = PBR({ color: lin('#9ec9ef'), transparent: true, opacity: .22, roughness: .1, metalness: .2, depthWrite: false });
+  box(84, 8, .3, panel, 0, 4, -28.1, world);
+  for (let x = -42; x < 42; x += 2) box(.06, 8, .05, M('#b5bfcb'), x, 4, -27.9, world, false);
+  for (const sx of [-42.1, 42.1]) { box(.3, 3, 56, panel, sx, 1.5, 0, world); box(.12, 5, 56, glass, sx, 5.5, 0, world, false); }
+  box(84, .3, .4, M('#3a4658'), 0, 8.1, -28, world);
+  for (let x = -42; x <= 42; x += 12) {
+    box(.45, 9, .45, steel, x, 4.5, -28, world); box(.45, 9, .45, steel, x, 4.5, 28, world);
+    box(.25, .55, 56, steel, x, 9, 0, world);   // truss top chord
+    for (let z = -26; z <= 26; z += 4) { const d = box(.08, .9, .08, steel, x, 8.55, z, world, false); d.rotation.x = (z / 4) % 2 ? .6 : -.6; }
+  }
+  for (let z = -28; z <= 28; z += 7) box(84, .14, .14, steel, 0, 9.3, z, world, false);
+  const fixtureMat = M('#2b3442', { metalness: .5 }), lampMat = PBR({ color: lin('#fff6dc'), emissive: lin('#fff1c8'), emissiveIntensity: .25 });
+  S.lampMat = lampMat; S.poolMat = new THREE.MeshBasicMaterial({ map: WARM, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending });
+  for (let x = -36; x <= 36; x += 12) for (let z = -20; z <= 20; z += 10) {
+    cyl(.02, 1.2, steel, x, 8.4, z, world); const f = new THREE.Mesh(new THREE.CylinderGeometry(.25, .5, .35, 18), fixtureMat); f.position.set(x, 7.6, z); world.add(f);
+    const lens = new THREE.Mesh(new THREE.CircleGeometry(.45, 18), lampMat); lens.rotation.x = Math.PI / 2; lens.position.set(x, 7.42, z); world.add(lens);
+    const pool = new THREE.Mesh(new THREE.PlaneGeometry(9, 9), S.poolMat); pool.rotation.x = -Math.PI / 2; pool.position.set(x, .03, z); world.add(pool);
+  }
+
+  // front wall with roll-up dock doors, levellers, bumpers and dock lights
+  const gaps = docks.map(d => d.x).sort((a, b) => a - b); let from = -42;
+  for (const gx of [...gaps, 44.2]) { const to = gx - 2.2; if (to > from) { box(to - from, 4.4, .3, panel, (from + to) / 2, 2.2, 28.1, world); box(to - from, 3.6, .12, glass, (from + to) / 2, 6.2, 28.1, world, false); } from = gx + 2.2; }
+  for (const d of docks) {
+    const g = new THREE.Group(); g.position.set(d.x, 0, 28); world.add(g);
+    box(.35, 4.4, .45, M('#ffc400'), -2.1, 2.2, 0, g); box(.35, 4.4, .45, M('#ffc400'), 2.1, 2.2, 0, g); box(4.6, .5, .5, steel, 0, 4.6, 0, g);
+    box(.4, .6, .3, M('#1c1f24'), -1.5, .7, .3, g); box(.4, .6, .3, M('#1c1f24'), 1.5, .7, .3, g);   // bumpers
+    box(3.6, .06, 1.4, M('#7d8794', { metalness: .6 }), 0, .03, -.6, g);   // leveller
+    const door = box(4, 4, .1, M('#dfe5ec', { metalness: .4 }), 0, 2.2, -.2, g);
+    for (let k = 0; k < 8; k++) box(4.02, .04, .12, M('#b8c2ce'), 0, -1.8 + k * .5, 0, door, false);
+    d.light = new THREE.Mesh(new THREE.SphereGeometry(.22, 14, 10), PBR({ color: lin('#3ddc84'), emissive: lin('#3ddc84'), emissiveIntensity: 1.5 }));
+    d.light.position.set(2.1, 4.95, .35); g.add(d.light);
+    const l = label(d.name.replace('Inbound', 'IN').replace('Outbound', 'OUT'), d.kind === 'in' ? '#3fd0ff' : '#ffb400', 2.6); l.position.set(0, 5.9, .3); g.add(l);
+    g.userData = { kind: 'dock', ref: d }; Object.assign(d, { g, door, open: 0, truck: null, busy: false });
+  }
+  S.docks = docks;
+
+  performance.mark('wh:shell'); await breathe();
+  // racks: back-to-back, 8 bays x 3 levels per face, with bracing, wire decks and end guards
+  const upright = M('#1f5fbf', { metalness: .4, roughness: .45 }), beam = M('#f28c28', { metalness: .3, roughness: .5 }), deck = M('#9aa4b0', { metalness: .6, roughness: .5 });
+  rackXs.forEach((r, ri) => {
+    const g = new THREE.Group(); world.add(g);
+    const rack = { name: 'Rack ' + String.fromCharCode(65 + ri), x: r, slots: [], g }; g.userData = { kind: 'rack', ref: rack };
+    for (let k = 0; k <= 8; k++) for (const dx of [-1.3, 0, 1.3]) {
+      box(.1, 4.9, .1, upright, r + dx, 2.45, -19 + 4 * k, g);
+      if (dx !== 0) for (let y = .6; y < 4.6; y += 1.1) { const b = box(.03, 1.25, .03, upright, r + dx * .5 + Math.sign(dx) * .0, y, -19 + 4 * k, g, false); b.rotation.z = (y / 1.1 | 0) % 2 ? .95 : -.95; b.scale.y = 1.15; b.position.x = r + dx * .5; }
+    }
+    for (const y of [1.6, 3.2, 4.8]) for (const dx of [-1.3, -.05, .05, 1.3]) box(.08, .14, 32, beam, r + dx, y, -3, g);
+    for (const y of [1.66, 3.26]) for (const s of [-1, 1]) box(1.2, .02, 32, deck, r + s * .65, y, -3, g, false);
+    for (const z of [-19.3, 13.3]) { box(3, .5, .2, M('#ffc400'), r, .25, z, g); }
+    const l = label(rack.name.slice(-1), '#ffb400', 1.5); l.position.set(r, 5.8, 13.6); g.add(l);
+    for (const s of [-1, 1]) for (let b = 0; b < 8; b++) for (let lv = 0; lv < 3; lv++) {
+      const slot = { rack, x: r + s * .65, z: -17 + 4 * b, y: [.1, 1.69, 3.29][lv], s, aisleX: r + s * 4, mesh: null, res: false, name: rack.name.slice(-1) + (s < 0 ? 'L' : 'R') + '-' + (b + 1) + '-' + (lv + 1) };
+      S.slots.push(slot); rack.slots.push(slot);
+      if (Math.random() < site.occ) { slot.mesh = pallet(); slot.mesh.position.set(slot.x, slot.y, slot.z); world.add(slot.mesh); }
+    }
+    S.racks.push(rack);
+  });
+
+  // conveyor with rollers, guard rails and parcels; packing tables at the end
+  const cg = new THREE.Group(); world.add(cg); cg.userData = { kind: 'conveyor' };
+  box(1.5, .1, 33, M('#22262d', { roughness: .4 }), 0, .9, -1.5, cg);
+  for (let z = -17.8; z < 15; z += .5) cyl(.05, 1.4, M('#9aa4b0', { metalness: .7, roughness: .3 }), 0, .97, z, cg, 'x', 8);
+  box(.08, .25, 33, M('#ffc400'), -.78, 1.08, -1.5, cg); box(.08, .25, 33, M('#ffc400'), .78, 1.08, -1.5, cg);
+  for (let z = -17; z <= 14; z += 3.5) { box(.08, .9, .08, steel, -.65, .45, z, cg); box(.08, .9, .08, steel, .65, .45, z, cg); }
+  box(.5, .9, .6, M('#3b4656'), .95, .45, 14.4, cg);   // motor + gearbox
+  for (let i = 0; i < 12; i++) { const b = box(rnd(.5, .85), rnd(.3, .55), rnd(.5, .75), M(pickOne(['#c8a46a', '#b98f52', '#d9c29a'])), rnd(-.25, .25), 1.2, -18 + i * 2.8, cg); b.position.y = 1.02 + b.geometry.parameters.height / 2; S.belt.push(b); b.userData.keep = true; }
+  for (const sx of [-3, 3]) { box(2.2, .08, 1.1, M('#cfd6de'), sx, .95, 14.5, world); for (const dx of [-1, 1]) for (const dz of [-.45, .45]) box(.06, .95, .06, steel, sx + dx, .47, 14.5 + dz, world); }
+
+  // cold room in the east corner
+  const cold = new THREE.Group(); world.add(cold); cold.userData = { kind: 'cold' };
+  const ins = M('#f4f7fa', { roughness: .5 });
+  box(3.7, 3.2, .15, ins, 40, 1.6, -26, cold); box(3.7, 3.2, .15, ins, 40, 1.6, -8, cold); box(.15, 3.2, 18, ins, 41.8, 1.6, -17, cold);
+  box(.15, 3.2, 7, ins, 38.2, 1.6, -22.5, cold); box(.15, 3.2, 8.4, ins, 38.2, 1.6, -12.3, cold); box(.12, 2.6, 2.4, M('#9fd3ff', { transparent: true, opacity: .5 }), 38.2, 1.3, -17.8, cold);
+  box(3.7, .12, 18, M('#e8eef4', { transparent: true, opacity: .35 }), 40, 3.25, -17, cold, false);
+  for (let z = -25; z < -9; z += 2.2) { const p = pallet(); p.position.set(40.3, .1, z); cold.add(p); }
+  const cl = label('COLD ROOM 2–6 °C', '#3fd0ff', 3.4); cl.position.set(40, 4.2, -17); cold.add(cl);
+
+  // sprinkler riser on the back wall, staff door on the west wall, charger units by the parking bays
+  cyl(.12, 7, M('#d32f2f'), -10, 3.5, -27.6, world); box(.5, .3, .3, M('#b71c1c'), -10, 1.2, -27.5, world);
+  box(.1, 2.4, 1.4, M('#455a64'), -41.95, 1.2, -14, world);
+  for (let i = 0; i < 6; i++) { const z = 12 - 3 * i; box(.5, 1.4, .8, M('#263238'), -41.65, .7, z, world); box(.52, .25, .6, M('#3d8bff', { emissive: '#1d4bbf' }), -41.65, 1.2, z, world); }
+
+  performance.mark('wh:racks'); await breathe();
+  // forklifts start parked on their charging bays
+  for (let i = 0; i < site.forklifts; i++) S.forklifts.push(makeForklift(i));
+  const names = ['Aina', 'Ravi', 'Mei Ling', 'Hafiz', 'Siti', 'Jason'];
+  for (let i = 0; i < site.workers; i++) S.workers.push(makeWorker(names[i % names.length], i));
+
+  // IRIV EdgeAI cameras with their views
+  const camDefs = [['CAM-01 Docks west', -20, 8.3, 27.7, -20, 22], ['CAM-02 Docks east', 20, 8.3, 27.7, 20, 22], ['CAM-03 Aisles west', -41.7, 8.3, -27.7, -18, -4], ['CAM-04 Aisles east', 41.7, 8.3, -27.7, 18, -4], ['CAM-05 Conveyor', 0, 8.3, -27.7, 0, 2]];
+  for (const [name, x, y, z, lx, lz] of camDefs) {
+    const g = new THREE.Group(); g.position.set(x, y, z); world.add(g);
+    const body = new THREE.Group(); g.add(body); box(.35, .3, .7, M('#f2f4f7'), 0, 0, 0, body); cyl(.12, .1, M('#111'), 0, 0, .38, body, 'z'); body.lookAt(lx, 0, lz);
+    const dir = new THREE.Vector3(lx - x, -y, lz - z), h = dir.length();
+    const geo = new THREE.ConeGeometry(h * .42, h, 32, 1, true); geo.translate(0, -h / 2, 0);
+    const cone = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0x3fd0ff, transparent: true, opacity: .06, depthWrite: false, side: THREE.DoubleSide }));
+    cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), dir.normalize()); cone.userData.cone = true; g.add(cone);
+    const cam = { name, g, det: 0, near: 0, look: new THREE.Vector3(lx, 0, lz) }; S.cams.push(cam);
+    addSensor({ kind: 'camera', brand: 'IRIV', model: 'IP camera', icon: '📷', name, where: 'High on the wall, looking at ' + (name.split(' ').slice(1).join(' ').toLowerCase()), pos: [x, y, z], g, noModel: true,
+      reads: () => [['Stream', '1080p · 25 fps'], ['AI on', 'IRIV EdgeAI CM5'], ['Detections', cam.det], ['Near-misses', cam.near]], how: 'Video goes over Ethernet (PoE) to the IRIV EdgeAI CM5, which runs person, forklift and plate models on site.' });
+  }
+  sensorsFor(site, docks);
+
+  // traffic heatmap
+  const hc = document.createElement('canvas'); hc.width = 84; hc.height = 56; S.heatCtx = hc.getContext('2d'); S.heatTex = new THREE.CanvasTexture(hc);
+  S.heatMesh = new THREE.Mesh(new THREE.PlaneGeometry(84, 56), new THREE.MeshBasicMaterial({ map: S.heatTex, transparent: true, depthWrite: false }));
+  S.heatMesh.rotation.x = -Math.PI / 2; S.heatMesh.position.y = .04; world.add(S.heatMesh);
+
+  performance.mark('wh:actors'); await breathe();
+  // every truck look, built now behind the loading badge (and its shaders compiled below), so a truck arriving never stutters
+  const looks = new THREE.Group(); looks.visible = false; looks.userData.keep = true; world.add(looks);
+  for (const kind of ['in', 'out']) { for (const c of TRUCK_COLORS) { const k = kind + c; truckLooks[k] = truckLooks[k] || truckLook(kind, c); looks.add(truckLooks[k]); } await breathe(); }
+  mergeStatic();   // the world joins the scene only after its shaders are compiled, so no frame compiles them all at once
+  performance.mark('wh:merged'); await breathe();
+  await compileGradually(renderer, world, camera, [hemi, sun, ...bayLights], scene.fog, breathe);   // shaders now, in small steps, not on the first visible frame
+  scene.add(world); performance.mark('wh:compiled'); await breathe();
+  applyToggles(); renderSites(); renderSensorList(); inspect(null);
+  $('#feedList').innerHTML = '';
+  log(site.name + ': shift started. ' + site.forklifts + ' forklifts with anti-collision tags, ' + S.sensors.length + ' sensors and cameras online.', 'ok');
+  building = false; document.body.classList.remove('loading');
+}
+
+// ---------- sensors ----------
+const IMG = { 'EM300-SLD': 'EM300-SLD.svg', 'EM400-TLD': 'EM400-TLD.svg', 'TS302': 'TS302.svg', 'IRIV EdgeAI CM5': 'IRIV-EdgeAI-CM5.png', 'IRIV PiControl': 'IRIV-PiControl.png', 'IRIV IO Controller MQTT': 'IRIV-IO-Controller-MQTT.png' };
+const imgOf = m => '../images/' + (IMG[m] || m + '.png');
+function addSensor(d) {
+  const g = d.g || new THREE.Group();
+  if (!d.g) { g.position.set(...d.pos); world.add(g); if (!d.noModel) sensorModel(d, g); }
+  const sp = iconSprite(d.icon, d.brand === 'IRIV' ? '#ff7a1a' : d.kind === 'camera' ? '#3d8bff' : '#19b5a5'); sp.position.set(0, d.kind === 'camera' ? .7 : .75, 0); sp.userData.sensorIcon = true; g.add(sp);
+  g.userData = { kind: 'sensor', ref: d }; d.g = g; d.sprite = sp; S.sensors.push(d); return d;
+}
+function sensorModel(d, g) {
+  const white = M('#f5f7f9', { roughness: .4 }), led = M('#3ddc84', { emissive: '#3ddc84' });
+  switch (d.shape) {
+    case 'gateway': box(.5, .5, .18, white, 0, 0, 0, g); for (const x of [-.18, .18]) cyl(.025, .6, M('#222'), x, .55, 0, g); box(.06, .06, .02, led, .15, .12, .1, g, false); break;
+    case 'button': cyl(.12, .06, white, 0, 0, 0, g, 'z'); cyl(.07, .04, M('#ff3d3d', { emissive: '#661010' }), 0, 0, .05, g, 'z'); break;
+    case 'clamp': box(.36, .5, .14, M('#37474f'), 0, 0, 0, g); for (const y of [-.12, .05]) { const t = new THREE.Mesh(new THREE.TorusGeometry(.07, .025, 8, 16), M('#263238')); t.position.set(0, y, .1); g.add(t); } break;
+    case 'iriv': box(.7, .55, .25, M('#1e252e'), 0, 0, 0, g); box(.71, .14, .26, M('#ff7a1a', { emissive: '#401800' }), 0, .14, 0, g); box(.06, .06, .02, led, .26, -.15, .13, g, false); break;
+    case 'probe': box(.24, .3, .08, white, 0, 0, 0, g); cyl(.012, .6, M('#222'), .05, -.45, .02, g); break;
+    case 'counter': box(.4, .12, .3, white, 0, 0, 0, g); cyl(.06, .03, M('#111'), 0, -.07, 0, g); break;
+    case 'leak': box(.22, .1, .14, white, 0, 0, 0, g); cyl(.01, .4, M('#222'), 0, -.2, 0, g); break;
+    case 'tof': box(.22, .12, .22, white, 0, 0, 0, g); cyl(.05, .03, M('#111'), 0, -.07, 0, g); break;
+    default: box(.26, .32, .1, white, 0, 0, 0, g); box(.05, .05, .02, led, .08, .1, .06, g, false);
+  }
+}
+function sensorsFor(site, docks) {
+  const busyChargers = () => S.forklifts.filter(f => f.atHome && f.battery < 95).length;
+  const MS = (o) => addSensor(Object.assign({ brand: 'Milesight', kind: 'lorawan', how: 'Reports over LoRaWAN to the UG65 gateway, then over MQTT to IRIV Edge.' }, o));
+  MS({ model: 'UG65', shape: 'gateway', icon: '📡', name: 'LoRaWAN gateway', where: 'West wall, 7 m up, by the office', pos: [-41.7, 7, 16], how: 'Collects every LoRaWAN sensor in the building and forwards the data over Ethernet to IRIV Edge.',
+    reads: () => [['Sensors heard', S.sensors.filter(s => s.kind === 'lorawan').length - 1], ['Uplinks today', 1200 + Math.floor(S.time * 3)], ['Backhaul', 'Ethernet · online']] });
+  const amb = { t: 29.5, rh: 64 };
+  [['West wall', -41.75, 2.4, -2], ['East wall', 41.75, 2.4, 0], ['Back wall', -24, 2.4, -27.9], ['Dock area', 12, 2.4, 27.85]].forEach(([w, x, y, z], i) =>
+    MS({ model: 'EM300-TH', icon: '🌡️', name: 'Temperature & humidity · ' + w, where: w + ', 2.4 m up', pos: [x, y, z], reads: () => [['Temperature', (amb.t + i * .4 + Math.sin(S.time / 30 + i) * .3).toFixed(1) + ' °C'], ['Humidity', Math.round(amb.rh - i) + ' %RH'], ['Battery', '96%']] }));
+  const coldT = () => 3.6 + Math.sin(S.time / 20) * .8;
+  MS({ model: 'TS302', shape: 'probe', icon: '❄️', name: 'Cold room probe · north', where: 'Inside the cold room, probe in the air stream', pos: [41.6, 2.2, -22], reads: () => [['Probe', coldT().toFixed(1) + ' °C'], ['Band', '2–6 °C · OK'], ['Door', 'Closed']] });
+  MS({ model: 'TS302', shape: 'probe', icon: '❄️', name: 'Cold room probe · south', where: 'Inside the cold room, near the door', pos: [41.6, 2.2, -11], reads: () => [['Probe', (coldT() + .5).toFixed(1) + ' °C'], ['Band', '2–6 °C · OK'], ['Door', 'Closed']] });
+  MS({ model: 'EM300-SLD', shape: 'leak', icon: '💧', name: 'Leak · cold room drain', where: 'Floor by the cold room evaporator drain', pos: [39.2, .15, -25.3], reads: () => [['Leak', 'Dry'], ['Last event', 'None today']] });
+  MS({ model: 'EM300-SLD', shape: 'leak', icon: '💧', name: 'Leak · sprinkler riser', where: 'Base of the sprinkler riser, back wall', pos: [-9.4, .15, -27.4], reads: () => [['Leak', 'Dry'], ['Riser valve', 'Open']] });
+  MS({ model: 'AM319', icon: '🌬️', name: 'Air quality · packing area', where: 'Column by the packing tables, 1.8 m up', pos: [-5, 1.8, 14.2], reads: () => [['CO₂', Math.round(620 + Math.sin(S.time / 15) * 80) + ' ppm'], ['PM2.5', Math.round(14 + Math.sin(S.time / 9) * 4) + ' µg/m³'], ['TVOC', '0.18 mg/m³'], ['Temperature', '28.6 °C']] });
+  MS({ model: 'VS133', shape: 'counter', icon: '👥', name: 'People counter · staff door', where: 'Ceiling above the staff door, west wall', pos: [-41.2, 2.8, -14], reads: () => [['In today', 46 + Math.floor(S.time / 40)], ['Out today', 41 + Math.floor(S.time / 45)], ['On site now', S.workers.length + 2]] });
+  for (const sx of [-3, 3]) MS({ model: 'WS101', shape: 'button', icon: '🔘', name: 'Call button · packing ' + (sx < 0 ? 1 : 2), where: 'Packing table ' + (sx < 0 ? 1 : 2), pos: [sx + 1, 1.05, 14.0], presses: 0,
+    reads() { return [['Presses today', 12 + this.presses], ['Action', 'Sends an outbound pick']]; }, action: 'Press button', press() { this.presses++; spawnTruck('out', true); log('WS101 at packing ' + (sx < 0 ? 1 : 2) + ' pressed: outbound pick requested.', 'ok'); } });
+  MS({ model: 'WS558', icon: '💡', name: 'High-bay lighting controller', where: 'Lighting panel, west wall', pos: [-41.75, 1.6, 19.5], reads: () => [['Circuits', '8 × on'], ['Level', night ? '100%' : '30% (daylight)'], ['Power', (night ? 6.4 : 1.9).toFixed(1) + ' kW']] });
+  MS({ model: 'CT105', shape: 'clamp', icon: '⚡', name: 'Conveyor motor current', where: 'Conveyor motor feeder, packing end', pos: [1.25, 1.3, 14.4], reads: () => [['Current', (11.5 + Math.sin(S.time * 2) * .6).toFixed(1) + ' A'], ['Motor', 'Running']] });
+  MS({ model: 'CT101', shape: 'clamp', icon: '🔌', name: 'Forklift charger circuit', where: 'Charger distribution board, west wall', pos: [-41.7, 1.6, 15], reads: () => [['Chargers in use', busyChargers()], ['Current', (busyChargers() * 9.5 + .4).toFixed(1) + ' A']] });
+  docks.forEach(d => MS({ model: 'EM400-TLD', shape: 'tof', icon: '📏', name: 'Trailer presence · ' + d.name, where: 'Above ' + d.name + ' door, looking out', pos: [d.x - 1.4, 4.35, 28.35], reads: () => [['Distance', d.truck && d.truck.state === 'Docked' ? '0.4 m' : '> 4 m'], ['Trailer', d.truck && d.truck.state === 'Docked' ? 'Present · ' + d.truck.plate : 'None']] }));
+  const IR = o => addSensor(Object.assign({ brand: 'IRIV', kind: 'iriv', shape: 'iriv' }, o));
+  IR({ model: 'IRIV EdgeAI CM5', icon: '🧠', name: 'Vision AI · 5 cameras', where: 'Control cabinet, west wall', pos: [-41.6, 2.2, 22], how: 'Runs the camera models on site: ANPR at the docks, PPE checks, and people–forklift proximity. Sends speed limits to the forklifts and events to IRIV Edge.',
+    reads: () => [['Camera streams', S.cams.length], ['Inference', (17 + Math.random() * 5).toFixed(0) + ' ms'], ['Events today', S.cams.reduce((a, c) => a + c.det, 0)], ['CPU temp', (53 + Math.random() * 3).toFixed(1) + ' °C']] });
+  IR({ model: 'IRIV PiControl', icon: '🎛️', name: 'Conveyor controller', where: 'Panel at the conveyor drive', pos: [1.6, 1.0, 15.1], how: 'Starts and stops the conveyor drive over RS485, reads the photo-eyes on digital inputs and counts parcels.',
+    reads: () => [['Drive', 'RS485 · 50 Hz'], ['Photo-eyes', '4 × DI'], ['Parcels today', S.site.stats.parcels]] });
+  IR({ model: 'IRIV IO Controller MQTT', icon: '🔀', name: 'Dock doors & lights', where: 'Between the dock doors', pos: [0, 2.2, 27.75], how: 'Opens the roll-up doors and switches the red/green dock lights from MQTT commands; reads the door limit switches.',
+    reads: () => [['Doors open', S.docks.filter(d => d.open > .5).length + ' of ' + S.docks.length], ['Outputs', 'Doors + lights'], ['Link', 'MQTT · online']] });
+}
+
+// ---------- models ----------
+// a pallet is one mesh with vertex colours (one draw call), built from a few cached shapes
+const PALLET_MAT = PBR({ vertexColors: true, roughness: .7 }), palletShapes = [];
+function tinted(geo, c, x, y, z) { geo.translate(x, y, z); const k = lin(c), n = geo.attributes.position.count, a = new Float32Array(n * 3); for (let i = 0; i < n; i++) a.set([k.r, k.g, k.b], i * 3); geo.setAttribute('color', new THREE.BufferAttribute(a, 3)); return geo; }
+function palletShape() {
+  if (palletShapes.length < 12) {
+    const h = [.75, .9, 1.05][palletShapes.length % 3], wrap = palletShapes.length % 4 === 0, c = pickOne(wrap ? ['#9fc6e8', '#a9d8ab', '#efb3b3'] : ['#c8a46a', '#b98f52', '#d2b07a']);
+    const parts = [tinted(new THREE.BoxGeometry(1.2, .14, 1.2), '#9a7b4f', 0, .07, 0), tinted(new THREE.BoxGeometry(1.08, h, 1.08), c, 0, .14 + h / 2, 0)];
+    if (!wrap) parts.push(tinted(new THREE.BoxGeometry(1.09, .06, .16), '#8a6b3c', 0, .12 + h, 0));
+    palletShapes.push(THREE.BufferGeometryUtils.mergeBufferGeometries(parts));
+  }
+  return pickOne(palletShapes);
+}
+function pallet() { const m = new THREE.Mesh(palletShape(), PALLET_MAT); m.castShadow = m.receiveShadow = true; m.userData.pallet = true; return m; }
+// replace many small meshes with one mesh per material, in root's space: far fewer draw calls
+function mergeMeshes(root, meshes) {
+  if (meshes.length < 2) return;
+  root.updateMatrixWorld(true);
+  const inv = new THREE.Matrix4().copy(root.matrixWorld).invert(), by = new Map();
+  for (const o of meshes) {
+    const k = o.material.uuid + '|' + Object.keys(o.geometry.attributes).sort().join() + '|' + !!o.geometry.index;
+    if (!by.has(k)) by.set(k, { mat: o.material, geos: [], cast: false, recv: false });
+    const e = by.get(k); e.geos.push(o.geometry.clone().applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, o.matrixWorld))); e.cast = e.cast || o.castShadow; e.recv = e.recv || o.receiveShadow;
+  }
+  meshes.forEach(o => o.parent.remove(o));
+  for (const e of by.values()) {
+    const geo = e.geos.length === 1 ? e.geos[0] : THREE.BufferGeometryUtils.mergeBufferGeometries(e.geos);
+    const m = new THREE.Mesh(geo, e.mat); m.castShadow = e.cast; m.receiveShadow = e.recv; root.add(m);
+    if (e.geos.length > 1) e.geos.forEach(g => g.dispose());
+  }
+}
+// everything that never moves becomes a handful of meshes; clickable groups keep an invisible box for picking
+const PICK_MAT = new THREE.MeshBasicMaterial({ visible: false });
+function mergeStatic() {
+  const moving = o => { for (let p = o; p && p !== world; p = p.parent) { const u = p.userData; if (u.keep || u.pallet || u.cone || ['forklift', 'worker', 'truck', 'sensor'].includes(u.kind)) return true; } return o === S.heatMesh; };
+  S.docks.forEach(d => { d.door.userData.keep = d.light.userData.keep = true; });
+  world.updateMatrixWorld(true);
+  world.children.filter(g => ['rack', 'conveyor', 'cold', 'dock'].includes(g.userData.kind)).forEach(g => {
+    const b = new THREE.Box3(); g.traverse(o => { if (o.isMesh && !moving(o)) b.expandByObject(o); });
+    const size = b.getSize(new THREE.Vector3()), c = g.worldToLocal(b.getCenter(new THREE.Vector3()));
+    const proxy = new THREE.Mesh(new THREE.BoxGeometry(size.x, size.y, size.z), PICK_MAT); proxy.position.copy(c); proxy.userData.keep = true; g.add(proxy);
+  });
+  const list = []; world.traverse(o => { if (o.isMesh && !moving(o)) list.push(o); });
+  mergeMeshes(world, list);
+}
+function makeForklift(i) {
+  const g = new THREE.Group(), id = 'FL-0' + (i + 1), yel = M('#f4b400', { roughness: .45, metalness: .2 }), dark = M('#2a3038', { metalness: .4, roughness: .5 }), black = M('#141618', { roughness: .9 }), chrome = M('#aab4be', { metalness: .8, roughness: .25 });
+  box(1.15, .55, 1.9, yel, 0, .62, -.1, g);   // chassis
+  const cw = cyl(.62, 1.16, dark, 0, .72, -1.05, g, 'x', 20); cw.scale.set(1, 1, .9);   // counterweight
+  box(1.2, .12, .5, black, 0, .25, .78, g); box(1.24, .1, 1.1, black, 0, .36, -.2, g);
+  const wheels = [];
+  for (const [x, z, r] of [[-.62, .55, .32], [.62, .55, .32], [-.6, -.95, .26], [.6, -.95, .26]]) { const w = cyl(r, .26, black, x, r, z, g, 'x', 18); cyl(r * .55, .27, chrome, x, r, z, g, 'x', 12); wheels.push(w); }
+  for (const [x, z] of [[-.55, .55], [.55, .55], [-.55, -1.05], [.55, -1.05]]) box(.07, 1.35, .07, dark, x, 1.55, z, g);   // overhead guard posts
+  box(1.2, .06, 1.7, dark, 0, 2.24, -.25, g); for (let k = -2; k <= 2; k++) box(.05, .07, 1.6, black, k * .22, 2.28, -.25, g, false);
+  box(.62, .14, .6, M('#263238'), 0, 1.0, -.45, g); box(.62, .6, .12, M('#263238'), 0, 1.3, -.75, g);   // seat
+  const sw = new THREE.Mesh(new THREE.TorusGeometry(.16, .025, 8, 20), black); sw.position.set(0, 1.35, .2); sw.rotation.x = -1.0; g.add(sw);
+  // driver
+  box(.42, .5, .3, M('#c6ff00', { emissive: '#223300' }), 0, 1.35, -.45, g); const hd = new THREE.Mesh(new THREE.SphereGeometry(.14, 14, 10), M('#c68e62')); hd.position.set(0, 1.78, -.45); g.add(hd);
+  const helm = new THREE.Mesh(new THREE.SphereGeometry(.16, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), M('#ffffff')); helm.position.set(0, 1.83, -.45); g.add(helm);
+  for (const x of [-.18, .18]) box(.12, .42, .12, M('#283593'), x, 1.05, -.2, g, false);
+  // lights
+  const headL = M('#fffbe6', { emissive: '#fff4c8' }); for (const x of [-.5, .5]) box(.14, .1, .06, headL, x, 2.05, .6, g, false);
+  for (const x of [-.45, .45]) box(.12, .12, .05, M('#ff2a2a', { emissive: '#a00000' }), x, .9, -1.68, g, false);
+  const beacon = new THREE.Mesh(new THREE.CylinderGeometry(.09, .1, .14, 12), PBR({ color: lin('#ff8f00'), emissive: lin('#ff6f00'), emissiveIntensity: 1 })); beacon.position.set(0, 2.36, -.8); g.add(beacon);
+  // mast (outer fixed, inner rises), carriage with backrest and forks
+  const mg = new THREE.Group(); mg.position.set(0, 0, .88); g.add(mg);
+  for (const x of [-.42, .42]) box(.1, 2.6, .14, dark, x, 1.35, 0, mg);
+  box(.94, .1, .12, dark, 0, 2.62, 0, mg); box(.94, .1, .12, dark, 0, .5, 0, mg);
+  const inner = new THREE.Group(); mg.add(inner); for (const x of [-.32, .32]) box(.08, 2.5, .1, M('#3a424c'), x, 1.35, .06, inner); box(.72, .08, .1, M('#3a424c'), 0, 2.6, .06, inner);
+  const chains = []; for (const x of [-.18, .18]) { const c = box(.03, 1, .03, black, x, 1.2, .1, mg, false); chains.push(c); }
+  const fg = new THREE.Group(); fg.position.set(0, .1, .12); mg.add(fg);
+  box(.96, .45, .07, dark, 0, .28, 0, fg);
+  for (let k = -3; k <= 3; k++) box(.04, .7, .04, dark, k * .15, .85, 0, fg, false); box(.96, .05, .05, dark, 0, 1.2, 0, fg, false);
+  for (const x of [-.3, .3]) { box(.13, .05, 1.22, chrome, x, .03, .62, fg); box(.13, .5, .05, chrome, x, .26, .03, fg); }
+  // blue safety spot on the floor in the travel direction
+  const spot = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.1), new THREE.MeshBasicMaterial({ map: BLUE_SPOT, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: .9 }));
+  spot.rotation.x = -Math.PI / 2; spot.position.set(0, .03, 3.2); g.add(spot);
+  const halo = new THREE.Mesh(new THREE.PlaneGeometry(4.4, 4.4), new THREE.MeshBasicMaterial({ map: RED_GLOW, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0 }));
+  halo.rotation.x = -Math.PI / 2; halo.position.y = .04; g.add(halo);
+  const l = label(id, '#ffb400', 1.4); l.position.set(0, 3, 0); g.add(l);
+  const home = 12 - 3 * i;
+  g.position.set(SPOTX, 0, home); g.rotation.y = Math.PI / 2; world.add(g);
+  mergeMeshes(g, g.children.filter(c => c.isMesh && !wheels.includes(c) && ![beacon, spot, halo].includes(c))); mergeMeshes(mg, mg.children.filter(c => c.isMesh && !chains.includes(c))); mergeMeshes(fg, fg.children.filter(c => c.isMesh)); mergeMeshes(inner, inner.children.filter(c => c.isMesh));
+  const f = { g, mg, fg, inner, chains, wheels, spot, halo, beacon, id, n: i, q: [], task: null, load: null, v: 0, ux: 1, uz: 0, going: false, dist: 0, done: 0, state: 'Parked · charging', slow: false,
+    battery: rnd(45, 100), home, atHome: true, end: { x: SPOTX, z: home }, idleT: 0, crashT: 0, blockT: 0, creepT: 0, waitWhy: '' };
+  g.userData = { kind: 'forklift', ref: f };
+  return f;
+}
+function makeWorker(name, i) {
+  const g = new THREE.Group(), vest = M(i % 2 ? '#c6ff00' : '#ff7a00', { emissive: i % 2 ? '#1a2600' : '#261200' }), legM = M('#283593');
+  const legs = [-.11, .11].map(x => { const p = new THREE.Group(); p.position.set(x, .85, 0); g.add(p); box(.14, .85, .16, legM, 0, -.42, 0, p); box(.15, .1, .24, M('#222'), 0, -.82, .04, p); return p; });
+  box(.46, .62, .28, vest, 0, 1.18, 0, g); for (const y of [1.05, 1.3]) box(.47, .04, .29, M('#e0e0e0', { emissive: '#555' }), 0, y, 0, g, false);
+  const arms = [-.3, .3].map(x => { const p = new THREE.Group(); p.position.set(x, 1.45, 0); g.add(p); box(.12, .6, .14, vest, 0, -.28, 0, p); return p; });
+  const head = new THREE.Mesh(new THREE.SphereGeometry(.15, 14, 10), M('#c68e62')); head.position.y = 1.68; g.add(head);
+  const hat = new THREE.Mesh(new THREE.SphereGeometry(.18, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), M('#ffee58')); hat.position.y = 1.73; g.add(hat);
+  const alert = new THREE.Mesh(new THREE.RingGeometry(.9, 1.15, 32), new THREE.MeshBasicMaterial({ color: 0xff5468, transparent: true, opacity: 0, side: THREE.DoubleSide }));
+  alert.rotation.x = -Math.PI / 2; alert.position.y = .06; g.add(alert);
+  g.position.set(rnd(-30, 30), 0, 16); world.add(g);
+  mergeMeshes(g, g.children.filter(c => c.isMesh && c !== alert));
+  const w = { g, legs, arms, name, alert, target: null, wait: rnd(0, 3), cool: 0, ph: rnd(0, 6), role: pickOne(['Picker', 'Dock checker', 'Inventory clerk']) };
+  g.userData = { kind: 'worker', ref: w };
+  return w;
+}
+
+// ---------- forklift jobs: queues of small actions ----------
+function go(f, x, z, rev) { f.q.push({ t: 'go', x, z, rev }); f.end = { x, z }; }
+const act = (f, fn) => f.q.push({ t: 'fn', fn });
+const lift = (f, y) => f.q.push({ t: 'lift', y });
+function unlock(k, f) { if (S.locks[k] === f) delete S.locks[k]; }
+// Axis-aligned routes. Aisles hold one forklift at a time (a lock); the corridor has a lane each way, so forklifts never meet head-on.
+function route(f, x, z) {
+  let p = f.end;
+  if (inAisle(p.z)) {
+    if (Math.abs(p.x - x) < .05 && z !== undefined && inAisle(z)) { go(f, x, z); return; }
+    const k = keyOf(p.x), ax = p.x, lz = laneZ(Math.sign(x - p.x) || 1);
+    go(f, ax, CZ - 2.9); f.q.push({ t: 'until', ok: () => laneClear(ax, laneZ(-1), f) && laneClear(ax, lz, f), why: 'Giving way at the aisle mouth' });   // wait at the stop bar; corridor traffic goes first
+    go(f, ax, lz); act(f, () => unlock(k, f)); p = f.end;
+  }
+  const dir = Math.sign(x - p.x) || 1, lz = laneZ(dir);
+  if (Math.abs(p.z - lz) > .05) go(f, p.x, lz);
+  if (z !== undefined && inAisle(z)) {
+    if (Math.abs(x - p.x) > 5.1) go(f, x - dir * 5, lz);   // wait 5 m short of the aisle mouth, clear of anyone leaving it
+    f.q.push({ t: 'lock', key: keyOf(x) }); go(f, x, lz); go(f, x, z);
+  } else { if (Math.abs(f.end.x - x) > .05) go(f, x, lz); if (z !== undefined && Math.abs(z - f.end.z) > .05) go(f, x, z); }
+}
+// nobody standing on this lane at x, and nobody driving towards x within 6.5 m
+function laneClear(x, lz, f) {
+  if (!antiCol) return true;   // without anti-collision nobody checks before merging
+  return !S.forklifts.some(o => { if (o === f || o.atHome) return false; const p = o.g.position, dx = x - p.x; return Math.abs(p.z - lz) < 1.3 && Math.abs(dx) < (o.v > .1 && Math.sign(dx) === Math.sign(o.ux) ? 6.5 : 1.8); });
+}
+function leaveHome(f) { if (!f.atHome) return; f.atHome = false; f.q.push({ t: 'lock', key: keyOf(COLX) }); go(f, COLX, f.home); }
+function goHome(f) {
+  f.state = 'Returning to charger'; route(f, COLX, f.home);
+  act(f, () => unlock(keyOf(COLX), f)); f.q.push({ t: 'face', h: Math.PI / 2 }); go(f, SPOTX, f.home, true);
+  act(f, () => { f.atHome = true; f.state = 'Parked · charging'; });
+}
+function freeSlot(x) { return nearest(S.slots.filter(s => !s.mesh && !s.res), x); }
+function fullSlot(x) { return nearest(S.slots.filter(s => s.mesh && !s.res), x); }
+// prefer aisles near the dock that nobody is working in, so forklifts spread out instead of queueing for one aisle
+function nearest(list, x) {
+  const busy = {}; S.slots.forEach(s => { if (s.res) busy[s.aisleX] = (busy[s.aisleX] || 0) + 1; });
+  const cost = s => Math.abs(s.aisleX - x) + (CZ - s.z) * .25 + (busy[s.aisleX] || 0) * 14 + (S.locks[keyOf(s.aisleX)] ? 10 : 0);
+  list.sort((a, b) => cost(a) - cost(b)); return list.length ? pickOne(list.slice(0, 4)) : null;
+}
+
+function start(f, t, slot) {
+  const d = t.dock, tr = d.truck, standZ = 28.2 + 1 + 1.4 * t.k - 1.5;
+  slot.res = true; f.task = { ...t, slot }; f.idleT = 0; leaveHome(f);
+  const toRack = () => { route(f, slot.aisleX, slot.z); f.q.push({ t: 'face', h: Math.atan2(-slot.s, 0) }); };
+  const enterDock = () => {   // one forklift serves a dock at a time (see dispatch), so the dock is free on arrival
+    route(f, d.x); f.q.push({ t: 'until', ok: () => !d.busy && (f.g.position.z > CZ || laneClear(d.x, laneZ(1), f)) && (d.busy = true), why: 'Waiting for ' + d.name }); go(f, d.x, standZ);
+  };
+  const leaveDock = () => { f.q.push({ t: 'until', ok: () => laneClear(d.x, laneZ(1), f), why: 'Giving way before backing out' }); go(f, d.x, laneZ(1), true); act(f, () => { d.busy = false; truckCheck(d); }); };
+  if (t.type === 'in') {
+    f.state = 'To ' + d.name; enterDock(); lift(f, .1);
+    act(f, () => { const p = tr.pallets[t.k]; tr.pallets[t.k] = null; tr.g.remove(p); f.load = p; f.fg.add(p); p.position.set(0, .05, .62); f.state = 'Storing → ' + slot.name; });
+    lift(f, CARRY); leaveDock(); toRack();
+    lift(f, slot.y + .08); go(f, slot.aisleX - slot.s * 1.85, slot.z); lift(f, slot.y);
+    act(f, () => { const p = f.load; f.fg.remove(p); world.add(p); p.position.set(slot.x, slot.y, slot.z); p.rotation.set(0, 0, 0); slot.mesh = p; slot.res = false; f.load = null; S.site.stats.in++; });
+    go(f, slot.aisleX, slot.z, true); lift(f, .1);
+  } else {
+    f.state = 'Picking ' + slot.name; toRack();
+    lift(f, slot.y); go(f, slot.aisleX - slot.s * 1.85, slot.z);
+    act(f, () => { const p = slot.mesh; world.remove(p); f.fg.add(p); p.position.set(0, .05, .62); slot.mesh = null; slot.res = false; f.load = p; f.state = 'To ' + d.name; });
+    lift(f, slot.y + .1); go(f, slot.aisleX, slot.z, true); lift(f, CARRY);
+    enterDock(); lift(f, .1);
+    act(f, () => { const p = f.load; f.fg.remove(p); tr.g.add(p); p.position.set(0, .1, 1 + 1.4 * t.k); tr.loaded++; f.load = null; S.site.stats.out++; });
+    leaveDock();
+  }
+  act(f, () => { f.task = null; f.done++; f.state = 'Idle'; f.idleT = 0; });
+}
+function dispatch() {
+  for (let i = 0; i < S.tasks.length; i++) {
+    const idle = S.forklifts.filter(f => !f.task && !f.q.length && f.battery > 25 && f.crashT <= 0);
+    if (!idle.length) return;
+    const t = S.tasks[i];
+    if (S.forklifts.some(o => o.task && o.task.dock === t.dock)) continue;   // one forklift per dock: nobody queues on the corridor
+    const slot = t.type === 'in' ? freeSlot(t.dock.x) : fullSlot(t.dock.x);
+    if (!slot) continue;
+    const f = idle.reduce((a, b) => Math.abs(a.g.position.x - t.dock.x) <= Math.abs(b.g.position.x - t.dock.x) ? a : b);
+    S.tasks.splice(i--, 1); start(f, t, slot);
+  }
+}
+
+// nearest forklift in front of f along (ux, uz), within its lane width; the lower number has right of way when two block each other
+const prio = f => Math.abs(f.ux) > .7 ? 1 : 0;   // corridor traffic has right of way over forklifts crossing or merging
+function obstacle(f, ux, uz) {
+  let best = Infinity, who = null;
+  for (const o of S.forklifts) {
+    if (o === f) continue;
+    const dx = o.g.position.x - f.g.position.x, dz = o.g.position.z - f.g.position.z, fwd = dx * ux + dz * uz;
+    if (fwd <= 0 || fwd > 5) continue;
+    if (Math.abs(dx * uz - dz * ux) > 1.9) continue;   // lanes are 2.2 m apart, so the other lane never blocks
+    if (o.going && (prio(f) > prio(o) || (prio(f) === prio(o) && f.n < o.n))) { const bx = -dx, bz = -dz, of = bx * o.ux + bz * o.uz; if (of > 0 && of < 5 && Math.abs(bx * o.uz - bz * o.ux) < 1.9) continue; }
+    if (fwd < best) { best = fwd; who = o; }
+  }
+  return { d: best, who };
+}
+function stepForklift(f, dt) {
+  f.going = false;
+  if (f.crashT > 0) {
+    f.crashT -= dt; f.v = 0; f.g.position.y = Math.max(0, Math.sin(f.crashT * 38) * .03 * Math.min(1, f.crashT));
+    f.halo.material.opacity = .5 + .5 * Math.sin(performance.now() / 90);
+    if (f.crashT <= 0) { f.g.position.y = 0; f.halo.material.opacity = 0; f.state = f.task ? 'Back to work' : 'Idle'; }
+    return;
+  }
+  const a = f.q[0], p = f.g.position;
+  if (!a) {
+    f.v = 0;
+    if (f.atHome) { f.battery = Math.min(100, f.battery + dt * 1.6); f.state = f.battery < 99.5 ? 'Parked · charging' : 'Parked · full'; }
+    else if (!f.task) { f.idleT += dt; if (f.idleT > 3 || f.battery < 30) goHome(f); }
+    return;
+  }
+  f.waitWhy = '';
+  if (a.t === 'go') {
+    const dx = a.x - p.x, dz = a.z - p.z, d = Math.hypot(dx, dz);
+    if (d < .02) { p.x = a.x; p.z = a.z; f.q.shift(); return; }
+    const ux = dx / d, uz = dz / d; f.ux = ux; f.uz = uz; f.going = true;
+    const want = a.rev ? Math.atan2(-dx, -dz) : Math.atan2(dx, dz), r = f.g.rotation.y;
+    if (Math.abs(Math.atan2(Math.sin(want - r), Math.cos(want - r))) > .02) { f.v = 0; turn(f, want, dt); return; }   // stop, then turn on the spot
+    const vmax = (a.rev ? 1.3 : f.load ? 2.5 : 3.4) * (f.slow ? .3 : 1);
+    let vt = Math.min(vmax, Math.sqrt(2 * DEC * d) + .25);
+    if (antiCol && f.creepT <= 0) {
+      const ob = obstacle(f, ux, uz);
+      if (ob.who) {
+        vt = Math.min(vt, Math.sqrt(2 * DEC * Math.max(0, ob.d - 2.4)));
+        if (ob.d < 3.6) { const k = [f.id, ob.who.id].sort().join(); if (!S.pairs[k] || S.time - S.pairs[k] > 12) { S.pairs[k] = S.time; S.site.stats.av++; log('Anti-collision: ' + f.id + ' braked for ' + ob.who.id + ' at ' + ob.d.toFixed(1) + ' m.', 'cam'); } }
+        if (vt < .05) { f.blockT += dt; f.waitWhy = 'Stopped for ' + ob.who.id; if (f.blockT > 20 && ob.who.waitWhy === 'Stopped for ' + f.id) { f.creepT = 1.5; f.blockT = 0; } } else f.blockT = 0;   // two forklifts blocking each other for 20 s: one creeps past
+      } else f.blockT = 0;
+    }
+    f.creepT -= dt;
+    f.v += clamp(vt - f.v, -DEC * dt, ACC * dt);
+    const s = Math.min(d, Math.max(0, f.v) * dt);
+    p.x += ux * s; p.z += uz * s; f.dist += s; f.battery = Math.max(3, f.battery - s * .05);
+    f.wheels.forEach(w => { w.rotation.x += (a.rev ? -s : s) / .3; });
+    const ci = Math.floor(p.x + 42), ri = Math.floor(p.z + 28); if (ci >= 0 && ci < 84 && ri >= 0 && ri < 56) S.heat[ri * 84 + ci] += dt;
+    f.spot.position.z = a.rev ? -3.2 : 3.2;
+  } else if (a.t === 'face') { f.v = 0; if (turn(f, a.h, dt)) f.q.shift(); }
+  else if (a.t === 'lift') {
+    f.v = 0; const d = a.y - f.fg.position.y;
+    if (Math.abs(d) < .005) { f.fg.position.y = a.y; f.q.shift(); } else { const s = Math.sign(d) * Math.min(Math.abs(d), 1.1 * dt); f.fg.position.y += s; f.battery -= Math.abs(s) * .1; }
+    f.inner.position.y = Math.max(0, f.fg.position.y - 1.2); f.chains.forEach(c => { c.scale.y = 1 + f.fg.position.y * .8; c.position.y = 1.2 + f.fg.position.y * .4; });
+  } else if (a.t === 'until') { f.v = 0; f.waitWhy = a.why; if (a.ok()) f.q.shift(); }
+  else if (a.t === 'lock') { f.v = 0; if (!S.locks[a.key] || S.locks[a.key] === f) { S.locks[a.key] = f; f.q.shift(); } else f.waitWhy = 'Waiting for aisle (' + S.locks[a.key].id + ' inside)'; }
+  else { f.q.shift(); a.fn(); }
+  f.mg.rotation.x = f.load ? -.05 : 0;
+}
+function turn(f, want, dt) {
+  const r = f.g.rotation.y, d = Math.atan2(Math.sin(want - r), Math.cos(want - r));
+  if (Math.abs(d) < .02) { f.g.rotation.y = want; return true; }
+  f.g.rotation.y = r + Math.sign(d) * Math.min(Math.abs(d), 1.9 * dt); return false;
+}
+// with anti-collision off, forklifts do not see each other, and contact is a real collision
+function collisions() {
+  const L = S.forklifts;
+  for (let i = 0; i < L.length; i++) for (let j = i + 1; j < L.length; j++) {
+    const a = L[i], b = L[j], pa = a.g.position, pb = b.g.position, d = Math.hypot(pa.x - pb.x, pa.z - pb.z);
+    if (d > 1.9 || (a.atHome && b.atHome)) continue;
+    const k = a.id + b.id;
+    if (S.pairs[k] && S.time - S.pairs[k] < 15) continue;
+    if (Math.abs(a.v) + Math.abs(b.v) < .4 || a.crashT > 0 || b.crashT > 0) continue;
+    const closing = (pb.x - pa.x) * (b.v * b.ux - a.v * a.ux) + (pb.z - pa.z) * (b.v * b.uz - a.v * a.uz);
+    if (closing >= 0) continue;   // only a forklift driving into another is a collision, not two drifting apart
+    S.pairs[k] = S.time; S.site.stats.col++;
+    const imp = (Math.abs(a.v) + Math.abs(b.v)) * 3.6;
+    for (const f of [a, b]) { f.crashT = 4.5; f.v = 0; f.state = 'Collision · inspection'; }
+    const nx = (pb.x - pa.x) / (d || 1), nz = (pb.z - pa.z) / (d || 1); pa.x -= nx * .35; pa.z -= nz * .35; pb.x += nx * .35; pb.z += nz * .35;
+    burst((pa.x + pb.x) / 2, 1, (pa.z + pb.z) / 2);
+    const m = label('⚠ COLLISION', '#ff5468', 3.2); m.position.set((pa.x + pb.x) / 2, 4, (pa.z + pb.z) / 2); world.add(m); S.crashes.push({ m, t: 6 });
+    log('COLLISION: ' + a.id + ' hit ' + b.id + ' at ' + imp.toFixed(1) + ' km/h. Both stopped for inspection.', 'crash');
+    toast(a.id + ' and ' + b.id + ' collided · turn anti-collision on');
+  }
+}
+function burst(x, y, z) {
+  for (let i = 0; i < SPARK_N; i++) { sparkPos.set([x, y, z], i * 3); const a = Math.random() * 6.28, s = rnd(1.5, 5); sparkVel.set([Math.cos(a) * s, rnd(1.5, 5), Math.sin(a) * s], i * 3); }
+  sparkLife = 1; sparks.geometry.attributes.position.needsUpdate = true;
+}
+
+// ---------- trucks ----------
+const PLATE = () => pickOne(['W', 'B', 'P', 'J', 'V', 'N']) + pickOne(['A', 'C', 'D', 'R', 'T', 'X']) + pickOne(['A', 'B', 'K', 'M', 'S']) + ' ' + Math.floor(rnd(1000, 9999));
+const TRUCK_COLORS = ['#c62828', '#1565c0', '#f5f5f5', '#2e7d32', '#6a1b9a'], truckLooks = {};   // one merged model per kind and cab colour, cloned for every truck
+function truckLook(kind, cabC) {
+  const g = new THREE.Group(), white = M('#eef1f4', { roughness: .4 }), dark = M('#24282e'), cab = M(cabC, { roughness: .35, metalness: .3 }), glassM = M('#1c2b3a', { metalness: .7, roughness: .1 }), tyre = M('#111', { roughness: .9 }), stripe = M(kind === 'in' ? '#3fd0ff' : '#ffb400');
+  box(2.5, .12, 10, dark, 0, .06, 5, g);
+  box(.06, 2.7, 10, white, -1.25, 1.45, 5, g); box(.06, 2.7, 10, white, 1.25, 1.45, 5, g); box(2.5, 2.7, .06, white, 0, 1.45, 10, g);
+  box(2.52, .06, 10, PBR({ color: lin('#ffffff'), transparent: true, opacity: .18, depthWrite: false }), 0, 2.82, 5, g, false);
+  for (let z = .5; z < 10; z += 1.6) for (const x of [-1.27, 1.27]) box(.04, 2.7, .08, M('#c4ccd6'), x, 1.45, z, g, false);
+  box(.07, .45, 9.6, stripe, -1.29, 2.1, 5, g, false); box(.07, .45, 9.6, stripe, 1.29, 2.1, 5, g, false);
+  box(2.5, 2.4, 2.4, cab, 0, 1.75, 11.6, g); box(2.5, .5, 2.4, cab, 0, 3.15, 11.4, g);
+  box(2.3, .9, .06, glassM, 0, 2.3, 12.82, g); for (const x of [-1.26, 1.26]) box(.06, .8, 1.2, glassM, x, 2.3, 12, g, false);
+  box(2.6, .35, .3, M('#9aa4b0', { metalness: .7 }), 0, .7, 12.9, g);
+  for (const x of [-1.25, 1.25]) { box(.1, .4, .1, dark, x * 1.12, 2.4, 12.6, g, false); }
+  for (const x of [-.8, .8]) box(.3, .14, .05, M('#fffbe6', { emissive: '#fff4c8' }), x, 1.0, 12.85, g, false);
+  for (const z of [1.4, 2.6, 11.0, 12.3]) for (const x of [-1.2, 1.2]) { cyl(.48, .38, tyre, x, .48, z, g, 'x', 18); cyl(.26, .4, M('#b0bac4', { metalness: .8 }), x, .48, z, g, 'x', 10); }
+  mergeMeshes(g, g.children.filter(c => c.isMesh));
+  return g;
+}
+function spawnTruck(kind, manual) {
+  const d = S.docks.find(d => d.kind === kind && !d.truck);
+  if (!d) { if (manual) toast('All ' + (kind === 'in' ? 'inbound' : 'outbound') + ' docks are busy'); return; }
+  const cabC = pickOne(TRUCK_COLORS), key = kind + cabC;
+  if (!truckLooks[key]) truckLooks[key] = truckLook(kind, cabC);
+  const g = truckLooks[key].clone(); g.position.set(d.x, 0, 95); world.add(g);
+  const tr = { g, d, kind, plate: PLATE(), state: 'Arriving', n: Math.floor(rnd(3, 6.99)), pallets: [], loaded: 0 };
+  if (kind === 'in') for (let k = 0; k < tr.n; k++) { const p = pallet(); p.position.set(0, .1, 1 + 1.4 * k); g.add(p); tr.pallets.push(p); }
+  g.userData = { kind: 'truck', ref: tr };
+  d.truck = tr; S.trucks.push(tr);
+  log('Truck ' + tr.plate + ' en route to ' + d.name + (kind === 'in' ? ' with ' + tr.n + ' pallets' : ' to collect ' + tr.n + ' pallets') + '.');
+}
+function stepTruck(tr, dt) {
+  const p = tr.g.position, d = tr.d;
+  if (tr.state === 'Arriving') {
+    p.z -= Math.min(p.z - 28.2, Math.max(1.4, (p.z - 28.2) * .7) * dt);
+    if (p.z - 28.2 < .01) {
+      p.z = 28.2; tr.state = 'Docked';
+      const cam = S.cams[d.x < 0 ? 0 : 1]; cam.det++;
+      log('EdgeAI ' + cam.name.slice(0, 6) + ' ANPR: ' + tr.plate + ' matched booking. EM400-TLD sees the trailer, IO Controller opens ' + d.name + '.', 'cam');
+      for (let k = 0; k < tr.n; k++) S.tasks.push({ type: tr.kind, dock: d, k: tr.kind === 'in' ? k : tr.n - 1 - k });
+    }
+  } else if (tr.state === 'Leaving') {
+    tr.v = Math.min(10, (tr.v || 0) + 4 * dt); p.z += tr.v * dt;
+    if (p.z > 100) { world.remove(tr.g); d.truck = null; S.trucks.splice(S.trucks.indexOf(tr), 1); if (selected && selected.ref === tr) inspect(null); }
+  }
+  d.light.material.color.copy(lin(tr.state === 'Docked' ? '#ff5468' : '#ffb400')); d.light.material.emissive.copy(d.light.material.color);
+}
+function truckCheck(d) {
+  const tr = d.truck; if (!tr || tr.state !== 'Docked') return;
+  if ((tr.kind === 'in' && tr.pallets.every(p => !p)) || (tr.kind === 'out' && tr.loaded >= tr.n)) { tr.state = 'Leaving'; log('Truck ' + tr.plate + ' ' + (tr.kind === 'in' ? 'unloaded' : 'loaded') + ' at ' + d.name + '. Door closed.', 'ok'); }
+}
+
+// ---------- people and the EdgeAI safety layer ----------
+function stepWorker(w, dt) {
+  const p = w.g.position;
+  w.cool -= dt; w.alert.material.opacity = Math.max(0, w.alert.material.opacity - dt * .6);
+  const walk = on => { const s = on ? Math.sin(S.time * 7 + w.ph) * .5 : 0; w.legs[0].rotation.x = s; w.legs[1].rotation.x = -s; w.arms[0].rotation.x = -s * .8; w.arms[1].rotation.x = s * .8; };
+  if (w.wait > 0) { w.wait -= dt; walk(false); return; }
+  if (!w.target) {
+    const r = Math.random(), d = S.docks.length ? pickOne(S.docks) : null;
+    w.target = r < .3 && d ? { x: d.x + rnd(-2.4, 2.4), z: rnd(23.5, 26.5) } : r < .5 ? { x: pickOne([-3, 3]), z: 13.6 } : { x: rnd(-36, 36), z: rnd(15.6, 16.4) };
+  }
+  if (S.forklifts.some(f => f.g.position.distanceTo(p) < 2.6)) { walk(false); return; }   // people stop for forklifts
+  const dx = w.target.x - p.x, dz = w.target.z - p.z, d = Math.hypot(dx, dz);
+  if (d < .1) { w.target = null; w.wait = rnd(1.5, 5); return; }
+  const s = Math.min(d, 1.3 * dt); p.x += dx / d * s; p.z += dz / d * s; w.g.rotation.y = Math.atan2(dx, dz); walk(true);
+}
+function safety() {
+  for (const f of S.forklifts) {
+    f.slow = false;
+    for (const w of S.workers) {
+      const d = f.g.position.distanceTo(w.g.position);
+      if (d < 4) f.slow = true;
+      if (d < 1.9 && w.cool <= 0 && Math.abs(f.v) > .2) {
+        w.cool = 10; w.alert.material.opacity = 1; S.site.stats.near++;
+        const cam = S.cams.reduce((a, b) => a.look.distanceTo(w.g.position) < b.look.distanceTo(w.g.position) ? a : b); cam.near++; cam.det++;
+        log('EdgeAI ' + cam.name.slice(0, 6) + ': ' + f.id + ' within ' + d.toFixed(1) + ' m of ' + w.name + '. Speed limited.', 'bad');
+      }
+    }
+    f.beacon.material.emissiveIntensity = f.slow || f.crashT > 0 ? (Math.sin(performance.now() / 80) > 0 ? 2.2 : .2) : (Math.sin(performance.now() / 300 + f.n) > .6 ? 1.6 : .5);
+    f.spot.visible = Math.abs(f.v) > .1;
+  }
+}
+
+// ---------- simulation ----------
+function tick(dt) {
+  S.time += dt;
+  S.spawnT -= dt;
+  if (S.spawnT <= 0) { const occ = occupancy(); S.spawnT = rnd(12, 22); spawnTruck(occ > .8 ? 'out' : occ < .25 ? 'in' : pickOne(['in', 'out'])); }
+  dispatch();
+  S.forklifts.forEach(f => stepForklift(f, dt));
+  if (!antiCol) collisions();
+  [...S.trucks].forEach(tr => stepTruck(tr, dt));
+  S.workers.forEach(w => stepWorker(w, dt));
+  safety();
+  S.docks.forEach(d => { d.open += ((d.truck && d.truck.state === 'Docked' ? 1 : 0) - d.open) * Math.min(1, dt * 1.5); d.door.position.y = 2.2 + d.open * 3.3; });
+  for (const b of S.belt) { b.position.z += 2.2 * dt; if (b.position.z > 14.8) { b.position.z -= 32.8; S.site.stats.parcels++; } }
+  for (const s of SITES) if (s !== S.site && Math.random() < dt * .08) { s.stats[pickOne(['in', 'out'])]++; s.stats.parcels += 3; }
+  S.crashes = S.crashes.filter(c => { c.t -= dt; c.m.position.y += dt * .2; if (c.t <= 0) world.remove(c.m); return c.t > 0; });
+  S.heatT += dt; if (S.heatT > .5) { S.heatT = 0; if (showHeat) drawHeat(); }
+  S.checkT += dt; if (S.checkT > 5) { S.checkT = 0; selfCheck(); }
+}
+function occupancy() { return S.slots.filter(s => s.mesh).length / S.slots.length; }
+function drawHeat() {
+  const img = S.heatCtx.createImageData(84, 56), max = Math.max(1, ...S.heat);
+  for (let i = 0; i < S.heat.length; i++) { const v = Math.min(1, Math.sqrt(S.heat[i] / max)); if (!v) continue; img.data[i * 4] = 255 * Math.min(1, v * 2); img.data[i * 4 + 1] = 255 * (v < .5 ? v * 1.6 : 1.6 - v * 1.4); img.data[i * 4 + 2] = 255 * (1 - v) * .9; img.data[i * 4 + 3] = 70 + 150 * v; }
+  S.heatCtx.putImageData(img, 0, 0); S.heatTex.needsUpdate = true;
+}
+// self-check: reserved slots belong to running jobs, rack pallets sit in the rack, and each aisle lock is held by one forklift that is really in it or heading there
+function selfCheck() {
+  const jobs = S.forklifts.filter(f => f.task).map(f => f.task.slot);
+  console.assert(S.slots.filter(s => s.res).every(s => jobs.includes(s)), 'reserved slot without a job');
+  console.assert(S.slots.every(s => !(s.mesh && s.mesh.parent !== world)), 'slot pallet not in the rack');
+  console.assert(Object.values(S.locks).every(f => S.forklifts.includes(f)), 'lock held by an unknown forklift');
+}
+
+// ---------- HUD ----------
+function log(text, cls = '') {
+  const li = document.createElement('li'); li.className = cls; li.innerHTML = '<time>' + clock(S ? S.time : 480) + '</time>'; li.append(text);
+  const ul = $('#feedList'); ul.prepend(li); while (ul.children.length > 8) ul.lastChild.remove();
+}
+const clock = t => String(Math.floor(t / 60) % 24).padStart(2, '0') + ':' + String(Math.floor(t % 60)).padStart(2, '0');
+function toast(t) { const el = $('#toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toast.h); toast.h = setTimeout(() => el.classList.remove('show'), 2600); }
+function renderSites() {
+  $('#siteList').innerHTML = SITES.map((s, i) => '<button class="site' + (s === (S && S.site) ? ' on' : '') + '" data-i="' + i + '"><b>' + (i + 1) + ' · ' + s.name + '</b><small>' + s.city + ' · in ' + s.stats.in + ' · out ' + s.stats.out + ' · ' + s.forklifts + ' forklifts</small></button>').join('');
+}
+function renderSensorList() {
+  $('#sCount').textContent = '(' + S.sensors.length + ')';
+  const groups = [['IRIV controllers', s => s.brand === 'IRIV' && s.kind !== 'camera'], ['Cameras (EdgeAI)', s => s.kind === 'camera'], ['Milesight LoRaWAN', s => s.brand === 'Milesight']];
+  $('#sensorList').innerHTML = groups.map(([t, f]) => '<h3>' + t + '</h3>' + S.sensors.map((s, i) => f(s) ? '<button class="sen" data-s="' + i + '"><i>' + s.icon + '</i><span><b>' + s.model + '</b><small>' + s.name + '</small></span></button>' : '').join('')).join('');
+}
+function hud() {
+  const st = S.site.stats, busy = S.forklifts.filter(f => f.task).length;
+  $('#kClock').textContent = clock(S.time); $('#kIn').textContent = st.in; $('#kOut').textContent = st.out;
+  $('#kOcc').textContent = Math.round(occupancy() * 100) + '%'; $('#kFleet').textContent = busy + '/' + S.forklifts.length;
+  $('#kBat').textContent = Math.round(S.forklifts.reduce((a, f) => a + f.battery, 0) / S.forklifts.length) + '%';
+  $('#kAv').textContent = st.av; $('#kAvBox').classList.toggle('good', st.av > 0);
+  $('#kCol').textContent = st.col; $('#kColBox').classList.toggle('warn', st.col > 0);
+  $('#kNear').textContent = st.near; $('#kNearBox').classList.toggle('warn', st.near > 0);
+  if (!document.querySelector('#siteList button:hover')) renderSites();
+  inspect(selected, true);
+}
+const row = (k, v) => '<dt>' + k + '</dt><dd>' + v + '</dd>';
+const followBtn = obj => '<button data-follow>' + (follow === obj ? 'Stop following' : 'Follow') + '</button>';
+function inspect(obj, refresh) {
+  if (!refresh) {
+    selected = obj; ring.visible = !!obj; if (!obj) follow = null;
+    document.querySelectorAll('.sen').forEach(b => b.classList.toggle('on', !!obj && obj.kind === 'sensor' && S.sensors[+b.dataset.s] === obj.ref));
+  }
+  const el = $('#insp'); el.classList.toggle('empty', !obj);
+  if (!obj) { el.innerHTML = '<span class="tag">Inspector</span><h3>' + S.site.name + '</h3><p>Click a forklift, truck, rack, worker, dock or any sensor icon. Drag to rotate, right-drag to pan, scroll to zoom.</p><p>Turn <b>anti-collision off</b> to see what happens without it.</p><dl>' + row('Pallet slots', S.slots.length) + row('Sensors & cameras', S.sensors.length) + row('Tasks waiting', S.tasks.length) + row('Aisles in use', Object.keys(S.locks).length) + '</dl><p class="hint">All data is simulated.</p>'; return; }
+  const k = obj.kind, r = obj.ref;
+  let h = '';
+  if (k === 'forklift') h = '<span class="tag">Forklift · 2.5 t</span><h3>' + r.id + '</h3><dl>' + row('Status', r.waitWhy || r.state) + row('Speed', (Math.abs(r.v) * 3.6).toFixed(1) + ' km/h' + (r.slow ? ' · <b style="color:var(--bad)">limited</b>' : '')) + row('Load', r.load ? '1 pallet' : 'Empty') + row('Fork height', r.fg.position.y.toFixed(2) + ' m') + row('Battery', Math.round(r.battery) + '%') + '</dl><div class="bar' + (r.battery < 30 ? ' low' : '') + '"><i style="width:' + r.battery + '%"></i></div><dl>' + row('Jobs done', r.done) + row('Distance', (r.dist / 1000).toFixed(2) + ' km') + row('Anti-collision tag', antiCol ? 'UWB · active' : '<b style="color:var(--bad)">off</b>') + '</dl>' + followBtn(obj);
+  else if (k === 'truck') h = '<span class="tag">' + (r.kind === 'in' ? 'Inbound' : 'Outbound') + ' truck</span><h3>' + r.plate + '</h3><dl>' + row('Status', r.state) + row('Dock', r.d.name) + row(r.kind === 'in' ? 'Pallets left' : 'Loaded', r.kind === 'in' ? r.pallets.filter(Boolean).length + ' of ' + r.n : r.loaded + ' of ' + r.n) + '</dl><div class="bar"><i style="width:' + (r.kind === 'in' ? (1 - r.pallets.filter(Boolean).length / r.n) : r.loaded / r.n) * 100 + '%"></i></div>' + followBtn(obj);
+  else if (k === 'rack') { const full = r.slots.filter(s => s.mesh).length; h = '<span class="tag">Storage</span><h3>' + r.name + '</h3><dl>' + row('Pallets', full + ' of ' + r.slots.length) + row('Moving now', r.slots.filter(s => s.res).length) + '</dl><div class="bar"><i style="width:' + full / r.slots.length * 100 + '%"></i></div>'; }
+  else if (k === 'worker') h = '<span class="tag">Team</span><h3>' + r.name + '</h3><dl>' + row('Role', r.role) + row('PPE', 'Helmet ✓ · vest ✓') + row('Status', r.wait > 0 ? 'Working' : 'Walking') + '</dl><p class="hint">PPE and distance to forklifts are checked by the EdgeAI cameras.</p>';
+  else if (k === 'dock') h = '<span class="tag">Dock</span><h3>' + r.name + '</h3><dl>' + row('Truck', r.truck ? r.truck.plate + ' · ' + r.truck.state : 'Free') + row('Door', r.open > .5 ? 'Open' : 'Closed') + row('Forklift inside', r.busy ? 'Yes' : 'No') + row('Queue', S.tasks.filter(t => t.dock === r).length + ' jobs') + '</dl>';
+  else if (k === 'conveyor') h = '<span class="tag">Sortation</span><h3>Parcel conveyor</h3><dl>' + row('Belt speed', '2.2 m/s') + row('Parcels sorted', S.site.stats.parcels) + row('Controller', 'IRIV PiControl') + '</dl>';
+  else if (k === 'cold') h = '<span class="tag">Cold chain</span><h3>Cold room</h3><dl>' + row('Set point', '4 °C') + row('Probes', '2 × TS302') + row('Leak sensor', 'EM300-SLD') + '</dl>';
+  else if (k === 'sensor') {
+    const brandCls = r.brand === 'IRIV' ? 'iriv' : r.kind === 'camera' ? '' : 'ms';
+    const path = r.kind === 'camera' ? 'Camera → Ethernet → IRIV EdgeAI CM5 → MQTT → IRIV Edge' : r.brand === 'IRIV' ? 'IRIV controller → MQTT → IRIV Edge → dashboard' : 'Sensor → LoRaWAN → UG65 → MQTT → IRIV Edge';
+    h = '<span class="tag ' + brandCls + '">' + r.brand + (r.kind === 'lorawan' ? ' · LoRaWAN' : r.kind === 'camera' ? ' · camera' : ' · controller') + '</span><h3>' + r.icon + ' ' + r.model + '</h3><p>' + r.name + '</p>' +
+      (r.kind !== 'camera' ? '<img src="' + imgOf(r.model) + '" alt="' + r.model + '" onerror="this.remove()">' : '') +
+      '<dl>' + r.reads().map(([a, b]) => row(a, b)).join('') + row('Installed', r.where) + '</dl><p>' + r.how + '</p>' + (r.action ? '<button data-press>' + r.action + '</button>' : '') + '<p class="path">' + path + '</p>';
+  }
+  if (refresh && el.dataset.k === k && el.querySelector('img') && k === 'sensor') { el.querySelector('dl').outerHTML = '<dl>' + r.reads().map(([a, b]) => row(a, b)).join('') + row('Installed', r.where) + '</dl>'; return; }   // keep the photo from reloading
+  el.dataset.k = k; el.innerHTML = h;
+}
+
+// picking with a click (not a drag)
+const ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
+let down = null;
+renderer.domElement.addEventListener('pointerdown', e => { down = [e.clientX, e.clientY]; });
+renderer.domElement.addEventListener('pointerup', e => {
+  if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 5) return;
+  mouse.set(e.clientX / innerWidth * 2 - 1, -e.clientY / innerHeight * 2 + 1); ray.setFromCamera(mouse, camera);
+  const icons = showSensors ? S.sensors.map(s => s.sprite) : [];
+  const hits = [...ray.intersectObjects(icons), ...ray.intersectObjects(world.children, true).filter(h => !h.object.userData.cone && h.object !== S.heatMesh && !(h.object.material && h.object.material.blending === THREE.AdditiveBlending))];
+  for (const h of hits) { let o = h.object; while (o && !o.userData.kind) o = o.parent; if (o) { select(o); return; } }
+  inspect(null);
+});
+function select(o) { inspect({ kind: o.userData.kind, ref: o.userData.ref || {}, obj: o }); }
+$('#insp').addEventListener('click', e => {
+  if (e.target.closest('[data-follow]')) { follow = follow === selected ? null : selected; inspect(selected, true); }
+  if (e.target.closest('[data-press]') && selected && selected.ref.press) selected.ref.press();
+});
+$('#siteList').addEventListener('click', e => { const b = e.target.closest('[data-i]'); if (b) switchSite(+b.dataset.i); });
+$('#sensorList').addEventListener('click', e => {
+  const b = e.target.closest('[data-s]'); if (!b) return;
+  const s = S.sensors[+b.dataset.s]; select(s.g);
+  const p = new THREE.Vector3(); s.g.getWorldPosition(p); fly = { to: new THREE.Vector3(p.x, Math.min(p.y, 2), p.z), dist: 15, t: 0, dir: new THREE.Vector3(p.x > 0 ? -.45 : .45, .78, .45).normalize() };
+});
+function switchSite(i) { if (building || SITES[i] === S.site) return Promise.resolve(); S.site.occ = occupancy(); resetView(); return build(SITES[i]); }
+
+function applyToggles() {
+  world.traverse(o => { if (o.userData.cone) o.visible = showCones; if (o.userData.sensorIcon) o.visible = showSensors; });
+  S.heatMesh.visible = showHeat; if (showHeat) drawHeat();
+  $('#bHeat').classList.toggle('on', showHeat); $('#bCones').classList.toggle('on', showCones); $('#bSensors').classList.toggle('on', showSensors); $('#bNight').classList.toggle('on', night);
+  const b = $('#bAnti'); b.textContent = antiCol ? '🛡 Anti-collision ON' : '⚠ Anti-collision OFF'; b.className = antiCol ? 'safe' : 'danger';
+}
+function setAnti(v) { antiCol = v; applyToggles(); log(v ? 'Anti-collision turned on: forklifts brake for each other and wait for free aisles.' : 'Anti-collision turned OFF (demo): forklifts no longer see each other.', v ? 'ok' : 'bad'); }
+$('#bAnti').onclick = () => setAnti(!antiCol);
+$('#bIn').onclick = () => spawnTruck('in', true);
+$('#bOut').onclick = () => spawnTruck('out', true);
+$('#bHeat').onclick = () => { showHeat = !showHeat; applyToggles(); };
+$('#bCones').onclick = () => { showCones = !showCones; applyToggles(); };
+$('#bSensors').onclick = () => { showSensors = !showSensors; applyToggles(); };
+$('#bNight').onclick = () => { night = !night; applyToggles(); };
+$('#bSpeed').onclick = () => { speed = speed === 4 ? 1 : speed * 2; $('#bSpeed').textContent = 'Speed ' + speed + '×'; };
+$('#bPause').onclick = () => { paused = !paused; $('#bPause').textContent = paused ? 'Resume' : 'Pause'; $('#bPause').classList.toggle('on', paused); };
+$('#bView').onclick = resetView;
+addEventListener('keydown', e => {
+  if (e.target.closest('input, textarea')) return;
+  const k = e.key.toLowerCase();
+  if (e.key >= '1' && e.key <= '3') switchSite(+e.key - 1);
+  else if (k === 'h') $('#bHeat').click(); else if (k === 's') $('#bSensors').click(); else if (k === 'c') $('#bAnti').click(); else if (k === 'n') $('#bNight').click();
+  else if (e.key === ' ' && e.target === document.body) { e.preventDefault(); $('#bPause').click(); }
+  else if (e.key === 'Escape') inspect(null);
+});
+
+function resize() { renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
+addEventListener('resize', resize);
+
+// day and night: sky, sun, high-bay lamps and their pools of light
+const DAY_BG = lin('#1b2738'), NIGHT_BG = lin('#05080f'), bgc = new THREE.Color();
+function lighting(dt) {
+  nightK += ((night ? 1 : 0) - nightK) * Math.min(1, dt * 2);
+  bgc.copy(DAY_BG).lerp(NIGHT_BG, nightK); scene.background = bgc;
+  hemi.intensity = .6 - .45 * nightK; sun.intensity = 2.1 - 1.95 * nightK;
+  S.lampMat.emissiveIntensity = .25 + 2.2 * nightK; S.poolMat.opacity = .55 * nightK;
+  bayLights.forEach(l => { l.intensity = 1.3 * nightK; });
+}
+
+let last = performance.now(), hudT = 0;
+const tmp = new THREE.Vector3();
+function frame(now) {
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  if (!building) { if (!paused) for (let i = 0; i < speed; i++) tick(dt); lighting(dt); }
+  if (sparkLife > 0) {
+    sparkLife -= dt; for (let i = 0; i < SPARK_N; i++) { sparkVel[i * 3 + 1] -= 12 * dt; for (let a = 0; a < 3; a++) sparkPos[i * 3 + a] += sparkVel[i * 3 + a] * dt; if (sparkPos[i * 3 + 1] < .02) { sparkPos[i * 3 + 1] = .02; sparkVel[i * 3 + 1] *= -.3; } }
+    sparks.geometry.attributes.position.needsUpdate = true; sparks.material.opacity = Math.max(0, sparkLife);
+  }
+  if (selected && selected.obj) {
+    selected.obj.getWorldPosition(tmp); ring.position.set(tmp.x, .06, tmp.z); if (selected.kind === 'truck') ring.position.z += 6;
+    if (follow === selected) { const d = ring.position.clone().sub(controls.target).multiplyScalar(.08); d.y = 0; controls.target.add(d); camera.position.add(d); }
+  }
+  if (fly) {
+    fly.t = Math.min(1, fly.t + dt / 1.2); const k = fly.t * fly.t * (3 - 2 * fly.t), dir = fly.dir;   // look from above and in front, so the view never ends inside a rack
+    controls.target.lerp(fly.to, k * .25 + .02); const want = controls.target.clone().addScaledVector(dir, fly.dist);
+    camera.position.lerp(want, k * .25 + .02); if (fly.t >= 1 && controls.target.distanceTo(fly.to) < .05) fly = null;
+  }
+  hudT += dt; if (hudT > .3 && !building) { hudT = 0; hud(); }
+  controls.update(); renderer.render(scene, camera);
+  if (!frame.done && !building) { frame.done = true; performance.mark('wh:first-frame'); }   // read by tools/check-performance.cjs
+  requestAnimationFrame(frame);
+}
+resize(); resetView();
+document.fonts.ready.then(() => { build(SITES[0]); requestAnimationFrame(frame); });
+// inside the dashboard (an iframe), the top-left link goes back to the city instead of loading the dashboard again
+if (window.top !== window) { const a = document.querySelector('#top a'); a.textContent = '⬅ Back to city'; a.className = 'back-city'; a.onclick = e => { e.preventDefault(); window.parent.postMessage('warehouse:close', '*'); }; window.parent.postMessage('warehouse:ready', '*'); }
+window.WH = { get S() { return S; }, SITES, switchSite, spawnTruck, setAnti, get antiCol() { return antiCol; } };
+</script>
+</body>
+</html>

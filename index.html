@@ -3,9 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Smart City Explorer</title>
+<title>Smart City Explorer V2.0</title>
 <meta name="description" content="Explore an interactive smart city simulation. Discover connected districts, IoT devices, energy systems, and real-world scenarios.">
 <meta name="theme-color" content="#f4f7fb">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js" as="script">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js" as="script">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -24,6 +26,9 @@
   body.night{background:#070d1c}
   canvas{position:fixed;inset:0;display:block;touch-action:none;cursor:grab}
   canvas.drag{cursor:grabbing} canvas.hover{cursor:pointer}
+  body.boot3d #city{visibility:hidden}   /* the 3D map is loading (city3d.js) */
+  body.boot3d::after{content:'Loading 3D map…';position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);padding:10px 18px;border-radius:999px;background:rgba(255,255,255,.9);color:#1d2939;font:600 13px Inter,system-ui,sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.12);animation:boot3d 1.2s ease-in-out infinite;pointer-events:none}
+  @keyframes boot3d{50%{opacity:.55}}
 
   .top{position:fixed;top:16px;left:16px;right:16px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;pointer-events:none;z-index:5}
   .brand{display:flex;gap:12px;align-items:center;background:var(--panel);padding:10px 16px 10px 10px;border-radius:16px;box-shadow:var(--shadow);pointer-events:auto;backdrop-filter:blur(10px)}
@@ -202,7 +207,7 @@
 <header class="top">
   <div class="brand">
     <div class="logo" data-icon="city" aria-hidden="true"></div>
-    <div><h1>Smart City</h1><p>An interactive city simulation</p></div>
+    <div><h1>Smart City</h1><p>V2.0 · An interactive city simulation</p></div>
   </div>
   <button id="bSearch" class="search-trigger" aria-haspopup="dialog" aria-controls="searchDialog"><span data-icon="search"></span><span class="search-label">Find a place or device</span><kbd>/</kbd></button>
   <nav class="ctrls" aria-label="Explore the city">
@@ -224,6 +229,7 @@
 </section>
 
 <div class="view-tools" role="group" aria-label="View preferences">
+  <button id="bScenic" aria-label="Scenic view" title="Hide map overlays to explore the city" aria-pressed="false"><span data-icon="leaf"></span><span>Scenic</span></button>
   <button id="bDev" aria-label="Show device markers" title="Show device markers" aria-pressed="true"><span data-icon="signal"></span><span>Devices</span></button>
   <button id="bFlow" aria-label="Show traffic flow" title="Traffic flow: lanes coloured green when moving freely, amber when slow, red when queued" aria-pressed="false"><span data-icon="car"></span><span>Traffic</span></button>
   <button id="bIriv" aria-label="Find IRIV units on the map" title="Find every IRIV PiControl, IO Controller and EdgeAI on the map" aria-haspopup="dialog"><span data-icon="signal"></span><span>IRIV units</span></button>
@@ -918,6 +924,7 @@ const DEVICES = [
     loc: 'Park pond and storm-water drains', short: 'Pond & drains', conn: 'LoRaWAN', power: 'Battery',
     what: 'A contactless ultrasonic distance sensor that measures water level from above. The edge computer raises a flood warning when levels rise quickly.',
     why: 'Mounted over the pond outlet and storm drains, the lowest points in the city, where flooding starts first.',
+    demoScenario: 'flood', demoTitle: 'flash-flood response',
     path: SENSOR_PATH,
     m: [['Water level', () => wob(1.12, .04, .1).toFixed(2) + ' m'], ['Trend', () => 'Stable'], ['Flood risk', () => 'Low'], ['Battery', () => '91%']],
     payload: () => ({ devEUI: '24E1-xxxx-0500', model: 'EM500-UDL', distance_mm: Math.round(wob(880, 40, .1)), battery: 91 }),
@@ -1080,6 +1087,13 @@ const DEVICES = [
     why: 'Right above the packing line, so the reject happens before the product is boxed.',
     m: [['Inspected', () => fint(18400 + time * 2)], ['Defects', () => fint(212 + time / 9)], ['Inference', () => Math.round(wob(11, 1, .5)) + ' ms'], ['Model', () => 'Defect detection']],
     say: 'This IRIV Edge A I computer inspects every product on the packing line with two cameras. When its A I model spots a defect, a digital output fires the reject pusher, within milliseconds.' }),
+  fdev({ id: 'fac-ppe', cat: 'ai', brand: 'IRIV', model: 'IRIV EdgeAI CM5', name: 'PPE Safety Camera', icon: '📷', zone: 'factory', x: 31.6, y: 19.3, z: 1.8, qty: 1,
+    conn: 'IP camera (RTSP) · MQTT to IRIV Edge', power: 'DC 10–30 V (surge-protected)', path: ['Hall entrance CCTV', 'Ethernet', 'EdgeAI CM5', 'MQTT', 'IRIV Edge'],
+    loc: 'Factory hall entrance', short: 'Factory hall',
+    what: 'A camera over the hall entrance checks helmets and hi-vis vests with an AI model running on the EdgeAI CM5 itself — no video leaves the site.',
+    why: 'At the one door everyone walks through, so nobody enters the hall unprotected.',
+    m: [['People checked today', () => fint(310 + time / 4)], ['Missing PPE', () => '2'], ['Inference', () => Math.round(wob(14, 1, .5)) + ' ms'], ['Model', () => 'Helmet + vest']],
+    say: 'This A I camera checks helmets and safety vests at the factory entrance. The detection runs on the EdgeAI computer itself, so no video leaves the site.' }),
   fdev({ id: 'fac-ioc', cat: 'controller', brand: 'IRIV', model: 'IRIV IO Controller MQTT', name: 'Machine Monitor', icon: '🔀', zone: 'factory', x: 31.2, y: 21.15, z: .5, qty: 3,
     conn: 'Ethernet · MQTT to IRIV Edge', power: 'DC 10–30 V (surge-protected)', path: ['Machine signals', 'DI / AI', 'IO Controller', 'MQTT', 'IRIV Edge'],
     loc: 'Machine panel at the loading bay', short: 'Factory',
@@ -2864,6 +2878,7 @@ const CAN = {
   vs133: ['Live occupancy and queue forecasts', 'Visitor statistics per hour and day', 'Occupancy-based lighting and AC'],
   em300th: ['Server-room overheating alerts', 'Climate history for compliance', 'No wiring needed'],
   em500udl: ['Early flood warnings', 'Drain blockage detection', 'Water-level history for planning'],
+  'fac-ppe': ['Stop unprotected entry before it happens', 'PPE compliance reports per shift', 'All detection on site — no cloud video'],
   em500smtc: ['Irrigate only when soil is dry', 'Save up to 40% water', 'Plant-health trends'],
   wts506: ['Local weather for the energy forecast', 'Rain data for flood alerts', 'Pause irrigation when it rains'],
   ws101: ['One-press SOS with exact location', 'Alerts to police and the command center', 'Response time reports'],
@@ -5586,6 +5601,7 @@ function frame(now) {
   updateWalk(dt);
   updatePOS(dt);
   updateHighway(dt);
+  if (typeof City3D !== 'undefined' && City3D.frame()) { requestAnimationFrame(frame); return; }   // 3D view (city3d.js)
 
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   hits = [];
@@ -5903,7 +5919,11 @@ function updTicker() {
 <script src="airport.js"></script>
 <script src="power-grid.js"></script>
 <script src="ferry.js"></script>
+<script src="logistics.js"></script>
 <script src="device-insights.js"></script>
+<script src="city3d-details.js"></script>
+<script src="city3d-life.js"></script>
+<script src="city3d.js"></script>
 <script>
 // Include devices appended by every district and interior expansion.
 const TOTAL_DEVICES = DEVICES.reduce((a, d) => a + d.qty, 0);

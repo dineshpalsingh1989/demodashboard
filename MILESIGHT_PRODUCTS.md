@@ -1,6 +1,6 @@
 # Milesight additions
 
-Official product references reviewed on 27 October 2026. The eight models add 59 fictional units to the demo's bill of materials, bringing the total to 387. Quantities, locations, readings, alerts and automation are simulated. The sample JSON represents illustrative application fields, not a manufacturer packet decoder.
+Official product references reviewed on 27 October 2026 (GS301, VS121 and EM320-TH added 11 November 2026). Quantities, locations, readings, alerts and automation are simulated. The sample JSON represents illustrative application fields, not a manufacturer packet decoder.
 
 | Model and official reference | Installation in this demo | Quantity | Selected configuration |
 | --- | --- | ---: | --- |
@@ -12,6 +12,9 @@ Official product references reviewed on 27 October 2026. The eight models add 59
 | [WS302](https://www.milesight.com/iot/product/lorawan-sensor/ws302) | School classrooms | 6 | Indoor IP30 sound-level sensor; A-weighted values displayed. |
 | [UC511](https://www.milesight.com/iot/product/iot-controller/uc51x) | Remote irrigation zones | 4 | Solar variant controlling DC latching valves. PiControl remains the pump controller. |
 | [SG50](https://www.milesight.com/iot/product/lorawan-gateway/sg50) | Remote farmyard mast | 1 | Solar/battery gateway with 4G backhaul to a network server; MQTT carries application data to IRIV Edge. |
+| [GS301](https://www.milesight.com/iot/product/lorawan-sensor/gs301) | Airport terminal restrooms | 4 | Ammonia and H₂S odour monitoring for need-based cleaning. No local illustration; the generic device drawing is shown. |
+| [VS121](https://www.milesight.com/iot/product/lorawan-sensor/vs121) | Airport premium lounge | 2 | AI workplace occupancy sensor; anonymous zone counts, no identifying video. No local illustration. |
+| [EM320-TH](https://www.milesight.com/iot/product/lorawan-sensor/em320-th) | Refrigerated trailers at the logistics hub | 2 | IP67 magnet-mount temperature and humidity inside the reefer trailer. No local illustration. |
 
 The SG50 demo serves the existing 10 remote soil sensors, four paddy level sensors and four new valve controllers. Its animation represents the logical connection through the network server. Coverage and message timing are not radio-network predictions.
 

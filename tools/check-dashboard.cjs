@@ -63,6 +63,10 @@ async function layoutCheck(width, height) {
   await step('Search directory opens and lists results', async () => {
     await ev("document.getElementById('bSearch').click()"); await waitFor("document.getElementById('searchDialog').open", 'search to open');
     assert(await ev("document.getElementById('searchResults').children.length > 0"), 'no search results');
+    const type = text => ev(`(()=>{const i=document.getElementById('citySearch'); i.value='${text}'; i.dispatchEvent(new Event('input'))})()`);
+    await type('werehouse'); await sleep(200);
+    assert(await ev("document.querySelector('#searchResults .search-result b')?.textContent.includes('Logistics Hub')"), 'typo "werehouse" should find the Airport Logistics Hub first');
+    await type('');
     await ev("document.getElementById('searchClose').click()"); await waitFor("!document.getElementById('searchDialog').open", 'search to close');
   });
   await step('IRIV units button lists only IRIV devices, including the village', async () => {
@@ -114,8 +118,8 @@ async function layoutCheck(width, height) {
   });
   await step('IRIV films button lists both films', async () => {
     await ev("document.getElementById('bFilms').click()"); await sleep(500);
-    assert.equal(await ev("document.querySelectorAll('#panel .ins-film').length"), 4, 'four film cards');
-    assert.deepEqual(await ev("[...document.querySelectorAll('#panel .ins-film')].map(a => a.getAttribute('href'))"), ['short-video-of-iriv-edgeai/', 'short-video-of-iriv-pi/', 'short-video-of-iriv-hub/', 'iriv-controllers/']);
+    assert.equal(await ev("document.querySelectorAll('#panel .ins-film').length"), 5, 'three films, the compare page and Warehouse Command 3D');
+    assert.deepEqual(await ev("[...document.querySelectorAll('#panel .ins-film')].map(a => a.getAttribute('href'))"), ['short-video-of-iriv-edgeai/', 'short-video-of-iriv-pi/', 'short-video-of-iriv-hub/', 'iriv-controllers/', 'warehouse-3d/']);
     await shot('films'); await ev('closePanel()');
   });
   await step('Guided tour starts and stops', async () => {
@@ -140,6 +144,23 @@ async function layoutCheck(width, height) {
     const z = await ev('cam.tz'); await ev('zoomMap(1.2)'); assert(await ev('cam.tz') > z);
     await ev("document.getElementById('bNight').click()"); assert.equal(await ev('nightTarget'), 1);
     await ev("document.getElementById('bNight').click()");
+  });
+  await step('The map is 3D: opens by default, rooms are 3D, connections and traffic flow show (2D fallback offline)', async () => {
+    await waitFor('City3D.ready || City3D.failed', '3D map');
+    if (await ev('City3D.failed')) { console.log('SKIP 3D map: three.js could not load (offline?), 2D fallback in use'); assert.equal(await ev("document.body.classList.contains('boot3d')"), false); return; }
+    const shown = "document.getElementById('city3d').style.display";
+    await ev('resetCityView()'); await sleep(800); assert.equal(await ev(shown), 'block'); await shot('view3d');
+    assert.equal(await ev("getComputedStyle(document.getElementById('city')).visibility"), 'visible', '2D canvas must be usable for interiors');
+    assert(await ev("cars.length > 0 && City3D.view.dist > 0"), '3D camera not set');
+    await waitFor('City3D.detailStats?.street?.ready', 'street life (entrances, signs, people) to finish building');
+    assert(await ev('City3D.detailStats.street.entrances > 10 && City3D.detailStats.street.stops > 0'), 'street life built but found no entrances or bus stops');
+    await ev("show('warehouse')"); await waitFor("document.body.classList.contains('panel-open')", 'logistics panel');
+    assert(await ev("!!document.querySelector('#panel a[href=\"warehouse-3d/\"]')"), 'warehouse link in the panel');
+    await ev("closePanel(); enterInside('command')"); await waitFor("scene === 'inside'", 'interior'); await sleep(300);
+    assert.equal(await ev(shown), 'block', 'rooms are drawn in 3D'); await shot('room3d');
+    assert(await ev('City3D.view.dist < 40'), '3D camera should frame the room');
+    await ev('leaveNow()'); await sleep(300); assert.equal(await ev(shown), 'block');
+    await ev("document.getElementById('bFlow').click()"); await sleep(400); await shot('flow3d'); await ev("document.getElementById('bFlow').click()");
   });
   await step('Layout holds at desktop, laptop and phone widths', async () => {
     await ev('resetCityView()');
