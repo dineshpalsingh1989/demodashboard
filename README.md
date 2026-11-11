@@ -6,7 +6,7 @@ An interactive smart city simulation built with HTML, CSS, and JavaScript. One m
 
 ## Install the app
 
-Open the live demo on your phone or computer, then choose **Install app** on the welcome screen. Chrome and other supported browsers show an install prompt. On iPhone or iPad, open the site in Safari, tap **Share**, then **Add to Home Screen**. The installed app launches in its own window and keeps the main dashboard available offline after the first online visit. Tour films still need a connection.
+Open the live demo on your phone or computer, then choose **Install app** on the welcome screen. Chrome and other supported browsers show an install prompt. On iPhone or iPad, open the site in Safari, tap **Share**, choose **Add to Home Screen**, and turn on **Open as Web App** before tapping **Add**. The installed app launches in its own window and keeps the main dashboard available offline after the first online visit. Tour films still need a connection.
 
 ## Preview
 

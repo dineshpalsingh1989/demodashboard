@@ -35,7 +35,7 @@
     }
     const ios = /iPad|iPhone|iPod/.test(navigator.userAgent);
     help.textContent = ios
-      ? 'In Safari, tap Share, then Add to Home Screen.'
+      ? 'In Safari, tap Share, then Add to Home Screen. Turn on Open as Web App, then tap Add.'
       : 'Open your browser menu and choose Install app or Add to Home screen.';
     help.hidden = false;
   });
