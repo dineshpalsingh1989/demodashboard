@@ -7,7 +7,7 @@
     {"id":"inspection","minDuration":18,"segments":[
       {"at":0.7,"text":"Follow bottle forty two. The sensor triggers the camera and inspection light."},
       {"at":6.5,"text":"The camera captures a missing cap. The model flags this bottle for rejection."},
-      {"at":12.5,"text":"The output signals the reject mechanism. The bottle is removed and the result logged."}
+      {"at":12.3,"text":"The output fires the reject mechanism. Bottle removed, result logged."}
     ]},
     {"id":"front","minDuration":5.5,"display":"16 terminals. Two Gigabit ports. Clear status indicators.","text":"The front panel brings industrial wiring and network connections together."},
     {"id":"power","minDuration":8,"display":"11 W in the specified CPU stress test; USB load excluded. Budget connected loads separately.","text":"Power input is ten to thirty volts. Eleven watts was measured in a CPU stress test, excluding USB loads. Budget connected loads separately."},

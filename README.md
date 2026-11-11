@@ -90,11 +90,12 @@ The IRIV films include English narration, short captions, chapter navigation and
 To rebuild the films on Windows with Chrome installed:
 
 ```powershell
-powershell -NoProfile -File tools/build-iriv-narration.ps1
+python -m pip install edge-tts
+node tools/build-iriv-narration.cjs
 node tools/build-iriv-videos.cjs
 ```
 
-Edit each tour's `narration.json` for the spoken script and short on-screen descriptions. The narration build uses the installed Windows English voice, then creates matching scene timing, WAV audio and VTT captions. The video build embeds AAC narration in the 1080p MP4s and refreshes the posters. `node tools/build-iriv-videos.cjs --preview` checks the source scenes without encoding, and `--check` verifies the finished films; previews go in `.tmp/`.
+Edit each tour's `narration.json` for the spoken script and short on-screen descriptions. The narration build sends each line to Microsoft's neural voice service through `edge-tts` (en-US Aria by default; set `IRIV_VOICE` to another `edge-tts --list-voices` name), decodes the speech in Chrome, then creates matching scene timing, WAV audio and VTT captions. Both builders take `--only=pi|edge|hub`. The video build embeds AAC narration in the 1080p MP4s and refreshes the posters. `node tools/build-iriv-videos.cjs --preview` checks the source scenes without encoding, and `--check` verifies the finished films; previews go in `.tmp/`.
 
 ## Performance
 

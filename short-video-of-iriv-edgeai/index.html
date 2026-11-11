@@ -17,7 +17,7 @@
   a:hover { text-decoration: underline; }
   button { font: inherit; }
 
-  nav { position: sticky; top: 0; z-index: 10; background: rgba(255,255,255,.96); border-bottom: 1px solid rgba(0,0,0,.08); }
+  nav { position: sticky; top: 0; z-index: 10; background: rgba(255,255,255,.72); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-bottom: 1px solid rgba(0,0,0,.08); }
   nav .in { max-width: 1080px; margin: 0 auto; padding: 0 22px; height: 52px; display: flex; align-items: center; gap: 28px; }
   nav b { font-size: 19px; font-weight: 700; letter-spacing: -.3px; margin-right: auto; }
   nav a { color: var(--ink); font-size: 13px; }
@@ -36,8 +36,27 @@
   .center { text-align: center; }
   .center .lede { margin-left: auto; margin-right: auto; }
 
+  /* hero */
+  .hero { padding-top: 70px; padding-bottom: 0; overflow: hidden; }
+  .hero-links { display: flex; justify-content: center; gap: 28px; align-items: center; margin: 26px 0 0; font-size: 19px; }
+  .pill { background: var(--blue); color: #fff; padding: 11px 24px; border-radius: 99px; font-weight: 600; }
+  .pill:hover { text-decoration: none; background: #0077ed; }
+  .hero-img { display: block; width: min(640px, 88vw); height: auto; margin: 30px auto -40px; filter: drop-shadow(0 40px 50px rgba(0,0,0,.22)); }
+  .bento { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; margin-top: 50px; text-align: left; }
+  .tile { grid-column: span 2; background: #fff; border-radius: 26px; padding: 30px; min-height: 230px; display: flex; flex-direction: column; justify-content: flex-end; }
+  .tile.wide { grid-column: span 3; }
+  .tile .n { font-size: clamp(44px, 5vw, 72px); font-weight: 800; letter-spacing: -.045em; line-height: 1; color: var(--c, var(--ink)); }
+  .tile b { display: block; font-size: 21px; letter-spacing: -.015em; margin-top: 10px; }
+  .tile p { margin: 6px 0 0; color: var(--muted); font-size: 15px; }
+  .tile:nth-child(2) { transition-delay: .08s; } .tile:nth-child(3) { transition-delay: .16s; } .tile:nth-child(4) { transition-delay: .24s; } .tile:nth-child(5) { transition-delay: .32s; } .tile:nth-child(6) { transition-delay: .4s; }
+  @media (max-width: 880px) { .tile, .tile.wide { grid-column: span 3; } }
+  @media (max-width: 560px) { .tile, .tile.wide { grid-column: span 6; min-height: 0; } }
+  .dark { background: #000; color: #f5f5f7; }
+  .dark h2 { background: linear-gradient(90deg, #fff 30%, #ffb070); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .dark .lede { color: #a1a1a6; }
+  .dark .cmcard, .dark .kits div, .dark .feat div, .dark .sw span { color: var(--ink); }
+
   /* film */
-  .hero { padding-top: 70px; padding-bottom: 60px; }
   .player { margin: 48px auto 0; max-width: 1200px; }
   .screen { position: relative; border-radius: 26px; overflow: hidden; background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.06), 0 30px 80px -30px rgba(0,0,0,.25); cursor: pointer; }
   .screen canvas { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; }
@@ -262,7 +281,7 @@
   .kits p { margin: 0; color: var(--muted); font-size: 15px; }
   .blocks.one { grid-template-columns: minmax(0, 640px); justify-content: center; }
 
-  .reveal { opacity: 0; transform: translateY(30px); transition: opacity .9s ease, transform .9s cubic-bezier(.2,.7,.2,1); }
+  .reveal { opacity: 0; transform: translateY(14px); transition: opacity .7s ease, transform .7s cubic-bezier(.2,.7,.2,1); }
   .reveal.in { opacity: 1; transform: none; }
   @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } html { scroll-behavior: auto; } }
 </style>
@@ -275,11 +294,21 @@
   <a class="buy" href="https://my.cytron.io/c-industrial-edge-controller/p-iriv-edge-ai-cm5" target="_blank" rel="noopener">Buy from Cytron</a>
 </div></nav>
 
-<section class="hero center" id="film">
+<section class="hero center" id="top">
   <div class="wrap">
-    <p class="eyebrow">IRIV EdgeAI CM5 · the tour</p>
+    <p class="eyebrow">IRIV EdgeAI CM5</p>
     <h1>See. Think. Act.</h1>
-    <p class="lede">An industrial AI controller with camera ports, up to 26 TOPS of AI and isolated I/O to act on what it sees. Watch the film, try the live demo, then explore every port.</p>
+    <p class="lede">An industrial AI controller with camera ports, up to 26 TOPS of AI and isolated I/O to act on what it sees.</p>
+    <p class="hero-links"><a class="pill" href="#film">Watch the film</a><a href="https://my.cytron.io/c-industrial-edge-controller/p-iriv-edge-ai-cm5" target="_blank" rel="noopener">Buy ›</a></p>
+  </div>
+  <img class="hero-img" src="images/iso.png" width="800" height="800" alt="IRIV EdgeAI CM5 controller, three-quarter view" fetchpriority="high">
+</section>
+
+<section class="center" id="film">
+  <div class="wrap">
+    <p class="eyebrow reveal">The film</p>
+    <h2 class="reveal">Two minutes. Every port.</h2>
+    <p class="lede reveal">A narrated tour of the controller, a live inspection sequence and a car-park gate.</p>
   </div>
   <div class="player">
     <div class="screen" id="screen">
@@ -297,6 +326,21 @@
     <div class="film-next" id="film-next"><a href="#connect">Explore connections and compatible accessories →</a><a href="../iriv-controllers/">Compare both controllers</a></div>
     <details class="transcript"><summary>Read the narration transcript</summary><div id="tour-transcript"></div></details>
     <div class="chapters" id="chapters"></div>
+  </div>
+</section>
+
+<section class="grey center" id="highlights">
+  <div class="wrap">
+    <p class="eyebrow reveal">Get the highlights</p>
+    <h2 class="reveal">Built to see. Wired to act.</h2>
+    <div class="bento">
+      <div class="tile wide reveal" style="--c:var(--accent)"><span class="n">26 TOPS</span><b>AI acceleration</b><p>Raspberry Pi AI HAT+ on PCIe. Choose 13 or 26 TOPS for your model.</p></div>
+      <div class="tile wide reveal" style="--c:#0071e3"><span class="n">2 + 2</span><b>Camera ports</b><p>Two MIPI CSI cameras plus two USB 3.0 ports for industrial cameras, and HDMI for a display.</p></div>
+      <div class="tile reveal"><span class="n">10–30 V</span><b>Wide power input</b><p>11 W measured in a CPU stress test, USB loads excluded.</p></div>
+      <div class="tile reveal"><span class="n">2 × 2</span><b>Isolated I/O</b><p>Two isolated inputs and two dry-contact outputs.</p></div>
+      <div class="tile reveal"><span class="n">2 × GbE</span><b>Dual Gigabit</b><p>One port for cameras, one for the plant network.</p></div>
+      <div class="tile reveal"><span class="n">Fanless</span><b>DIN-rail metal case</b><p>Clips onto a standard 35 mm rail. No moving parts.</p></div>
+    </div>
   </div>
 </section>
 
@@ -367,7 +411,7 @@
   </div>
 </section>
 
-<section class="grey center" id="specs">
+<section class="dark center" id="specs">
   <div class="wrap">
     <p class="eyebrow reveal">The brains</p>
     <h2 class="reveal">Up to 26 TOPS of AI.</h2>
@@ -398,6 +442,8 @@
 <script>
 /* ---------- player ---------- */
 initTourPlayer();
+const tourVideo = document.getElementById('tour-video');
+new IntersectionObserver(es => { if (!es[0].isIntersecting && !tourVideo.paused) tourVideo.pause(); }, { threshold: .2 }).observe(tourVideo);
 
 /* ---------- interactive maps ---------- */
 function termList(g) {
