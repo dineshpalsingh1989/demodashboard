@@ -67,6 +67,10 @@ kbd { font: 10px/1.5 Inter, system-ui, sans-serif; padding: 1px 5px; border: 1px
 .explore-button { display: flex; justify-content: space-between; align-items: center; width: 100%; height: 42px; padding: 0 15px; border: 0; border-radius: 10px; background: #2469e8; color: #fff; font-size: 12px; font-weight: 600; cursor: pointer; }
 .about-button { display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%; margin-top: 13px; border: 0; padding: 4px 0; background: transparent; color: var(--muted); font-size: 10px; cursor: pointer; }
 .about-button .ui-icon { width: 14px; height: 14px; }
+.install-button { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 38px; margin-top: 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--text); font: 600 11px Inter, system-ui, sans-serif; cursor: pointer; }
+.install-button:hover { background: var(--chip); }
+#bInstall[hidden], #installHelp[hidden] { display: none !important; }
+.welcome #installHelp { margin-top: 8px; padding: 8px 10px; border-radius: 8px; background: var(--panel); color: var(--text); font-size: 11px; line-height: 1.5; }
 body.panel-open .welcome, body.inside .welcome, body.story .welcome, body.riding .welcome { display: none; }
 .view-tools, .map-tools { position: fixed; z-index: 5; display: flex; align-items: center; gap: 3px; padding: 5px; border: 1px solid var(--line); background: var(--panel); border-radius: 12px; box-shadow: var(--shadow); backdrop-filter: blur(12px); }
 .view-tools { top: 112px; right: 24px; }
@@ -211,6 +215,7 @@ body.panel-open #story { left: calc((100% - 448px) / 2); }
   .city-stats span { font-size: 8px; }
   .welcome .explore-button { height: 36px; width: 190px; font-size: 11px; }
   .welcome .about-button { display: none; }
+  .welcome .install-button { width: 190px; min-height: 36px; }
   .view-tools, body.panel-open .view-tools { top: auto; bottom: 64px; left: 12px; right: auto; gap: 0; }
   .map-tools, body.panel-open .map-tools { bottom: 12px; top: auto; left: 12px; right: 12px; flex-direction: row; gap: 0; justify-content: space-between; }
   .view-tools button, .map-tools button { width: 36px; min-width: 32px; height: 36px; padding: 0; }
@@ -238,6 +243,8 @@ body.panel-open #story { left: calc((100% - 448px) / 2); }
   .welcome { top: 159px; width: 215px; }
   .welcome h2 { font-size: 22px; }
   .welcome p { display: none; }
+  .welcome #installHelp { display: block; }
+  .welcome .install-button { width: 178px; }
   .city-stats { margin: 13px 0; }
   .welcome .explore-button { width: 178px; }
   .hint span:last-child, .hint i:last-of-type { display: none; }

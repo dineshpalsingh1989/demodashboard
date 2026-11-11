@@ -6,6 +6,9 @@
 <title>Smart City Explorer V2.0</title>
 <meta name="description" content="Explore an interactive smart city simulation. Discover connected districts, IoT devices, energy systems, and real-world scenarios.">
 <meta name="theme-color" content="#f4f7fb">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icons/smart-city-192.png">
+<link rel="apple-touch-icon" href="assets/icons/smart-city-192.png">
 <link rel="preload" href="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js" as="script">
 <link rel="preload" href="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js" as="script">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -225,6 +228,8 @@
   <p>A living city of connected places.<br>Pick a district and see how it all works.</p>
   <div class="city-stats"><div><b id="districtCount">25</b><span>districts</span></div><div><b id="deviceCount">—</b><span>IoT devices</span></div><div><b>5</b><span>device layers</span></div></div>
   <button class="explore-button" id="bExplore">Explore the city <span data-icon="arrow"></span></button>
+  <button class="install-button" id="bInstall" hidden>Install app</button>
+  <p id="installHelp" role="status" hidden></p>
   <button class="about-button" id="bHome"><span data-icon="info"></span>What makes a city smart?</button>
 </section>
 
@@ -262,6 +267,7 @@
 <div id="announcement" class="sr-only" role="status"></div>
 
 <script src="scripts/ui/ui.js"></script>
+<script src="scripts/ui/install-app.js"></script>
 <script>
 /* ================================================================
    CONTENT — what each part of the city "says"
