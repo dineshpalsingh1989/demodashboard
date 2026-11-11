@@ -235,7 +235,7 @@
 
 <div class="view-tools" role="group" aria-label="View preferences">
   <button id="bScenic" aria-label="Scenic view" title="Hide map overlays to explore the city" aria-pressed="false"><span data-icon="leaf"></span><span>Scenic</span></button>
-  <button id="bDev" aria-label="Show device markers" title="Show device markers" aria-pressed="true"><span data-icon="signal"></span><span>Devices</span></button>
+  <button id="bDev" aria-label="Show device markers" title="Zoom in or select a place to see individual devices" aria-pressed="true"><span data-icon="signal"></span><span>Devices</span></button>
   <button id="bFlow" aria-label="Show traffic flow" title="Traffic flow: lanes coloured green when moving freely, amber when slow, red when queued" aria-pressed="false"><span data-icon="car"></span><span>Traffic</span></button>
   <button id="bIriv" aria-label="Find IRIV units on the map" title="Find every IRIV PiControl, IO Controller and EdgeAI on the map" aria-haspopup="dialog"><span data-icon="signal"></span><span>IRIV units</span></button>
   <button id="bWx" aria-label="Weather: cycle auto, rain, storm, clear"></button>
@@ -1474,7 +1474,8 @@ function col(h, l = 1, a = 1) {
   return `rgba(${Math.min(255, r * f + 10 * night) | 0},${Math.min(255, g * f + 16 * night) | 0},${Math.min(255, b * f + 38 * night) | 0},${a})`;
 }
 function poly(pts, fill, stroke, path, lw = .7) {
-  if (pts.every(p => p.b)) return;   // fully behind the walking camera
+  if (WALK.on && scene === 'city' && pts[0]?.walk) pts = clipWalkPolygon(pts);
+  if (pts.length < 3 || pts.every(p => p.b)) return;
   ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
   for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
   ctx.closePath();
@@ -1500,11 +1501,14 @@ function drawBox(o, path) {
   const b = cs.map(c => P(c[0], c[1], z0)), t = cs.map(c => P(c[0], c[1], z1));
   for (let i = 0; i < 4; i++) {
     const j = (i + 1) % 4, q = [b[i], b[j], t[j], t[i]];
-    if (area(q) <= 0) continue;
+    const face = WALK.on && scene === 'city' ? clipWalkPolygon(q) : q;
+    if (face.length < 3 || area(face) <= 0) continue;
     const L = faceLight(...NRM[i]);
-    poly(q, col(o.color, L, o.alpha ?? 1), sc > 14 ? EDGE() : null, path, EDGE_W);   // wall outlines are invisible when zoomed out but cost the most GPU time
-    if (o.win) drawWindows(o, q, i, L);
-    if (o.stripe) poly([fp(q, 0, .35), fp(q, 1, .35), fp(q, 1, .6), fp(q, 0, .6)], col(o.stripe, L));
+    poly(face, col(o.color, L, o.alpha ?? 1), sc > 14 ? EDGE() : null, path, EDGE_W);   // wall outlines are invisible when zoomed out but cost the most GPU time
+    if (!q.some(p => p.b)) {
+      if (o.win) drawWindows(o, q, i, L);
+      if (o.stripe) poly([fp(q, 0, .35), fp(q, 1, .35), fp(q, 1, .6), fp(q, 0, .6)], col(o.stripe, L));
+    }
   }
   poly(t, col(o.roof || o.color, 1.04, o.alpha ?? 1), sc > 9 ? EDGE() : null, path, EDGE_W);
   if (o.deco) o.deco.forEach(d => DECO[d](o, z1, t));
@@ -1529,6 +1533,10 @@ function drawWindows(o, q, i, L) {
       const lit = hsh(o.id * 131 + i * 17 + r * 7.3 + c * 3.1 + Math.floor(time / 9 + o.id)) > .42;
       if (n > .5 && lit) fill = `rgba(255,${200 + (hsh(o.id + r + c) * 40 | 0)},120,${.55 + .4 * n})`;
       else fill = col(o.win === 'bands' ? '#7fa9c9' : '#8fb8d8', L * (o.win === 'bands' ? 1.02 : .95));
+    }
+    if (WALK.on && scene === 'city' && o.win !== 'server') {
+      poly([fp(q, u0 - .012, v0 - .02), fp(q, u1 + .012, v0 - .02), fp(q, u1 + .012, v1 + .02), fp(q, u0 - .012, v1 + .02)], col('#556b78', L * .7));
+      poly([fp(q, u0 - .018, v0 - .035), fp(q, u1 + .018, v0 - .035), fp(q, u1 + .018, v0 - .018), fp(q, u0 - .018, v0 - .018)], col('#e4e9e8', L));
     }
     poly([fp(q, u0, v0), fp(q, u1, v0), fp(q, u1, v1), fp(q, u0, v1)], fill);
   }
@@ -1725,7 +1733,7 @@ function drawObj(o, path) {
     case 'tlight': {
       const a = P(o.cx, o.cy, 0), b = P(o.cx, o.cy, 1.0), st = lightState(o.ax);
       line(a, b, col('#4a5560'), Math.max(1, sc * .045));
-      const r = Math.max(2, sc * .08);
+      const r = WALK.on ? Math.min(15, Math.max(2, sc * .08)) : Math.max(2, sc * .08);
       ctx.fillStyle = '#1b232c'; ctx.beginPath(); ctx.roundRect(b[0] - r * 1.3, b[1] - r * 3.6, r * 2.6, r * 3.9, r * .6); ctx.fill();
       [['r', '#ff3b30'], ['y', '#ffcc00'], ['g', '#34c759']].forEach(([k, c], i) => {
         const cy = b[1] - r * 2.9 + i * r * 1.15;
@@ -4945,13 +4953,33 @@ SCENES.minimart = makeShop('pos-mart', 'Mini-Market', 'Mini-Market', 3);
 /* ================================================================
    WALK AROUND — first-person view at eye level (like Street View)
    ================================================================ */
-const WALK = { on: false, x: 47.55, y: 3.0, yaw: Math.PI / 2, pitch: -.05, eye: 1.05, F: 800, far: 26, keys: {}, target: null, ground: 0 };
+const WALK = { on: false, x: 47.55, y: 6.35, yaw: Math.PI / 2, pitch: -.05, eye: 1.05, F: 800, far: 26, keys: {}, target: null, ground: 0 };
 function PW(x, y, z) {
   const dx = x - WALK.x, dy = y - WALK.y, dz = z - WALK.eye, cy = Math.cos(WALK.yaw), sy = Math.sin(WALK.yaw), cp = Math.cos(WALK.pitch), sp = Math.sin(WALK.pitch);
   const f = dx * cy + dy * sy, r = -dx * sy + dy * cy;
-  let zc = f * cp + dz * sp; const yc = dz * cp - f * sp, b = zc < .12;
-  if (b) zc = .12;
-  const p = [W / 2 + r / zc * WALK.F, H / 2 - yc / zc * WALK.F]; if (b) p.b = true; return p;
+  const zc = f * cp + dz * sp, yc = dz * cp - f * sp;
+  const p = [W / 2 + r / Math.max(zc, .45) * WALK.F, H / 2 - yc / Math.max(zc, .45) * WALK.F];
+  p.walk = [r, yc, zc]; if (zc < .45) p.b = true; return p;
+}
+function clipWalkPolygon(points) {
+  const near = .45, out = [];
+  const project = w => {
+    const p = [W / 2 + w[0] / w[2] * WALK.F, H / 2 - w[1] / w[2] * WALK.F];
+    return p;
+  };
+  let prev = points[points.length - 1].walk;
+  for (const point of points) {
+    const curr = point.walk;
+    if (!curr) return points;
+    const a = prev[2] >= near, b = curr[2] >= near;
+    if (a !== b) {
+      const t = (near - prev[2]) / (curr[2] - prev[2]);
+      out.push(project([prev[0] + (curr[0] - prev[0]) * t, prev[1] + (curr[1] - prev[1]) * t, near]));
+    }
+    if (b) out.push(project(curr));
+    prev = curr;
+  }
+  return out;
 }
 function walkDepth(x, y) {
   const dx = x - WALK.x, dy = y - WALK.y;
@@ -5026,7 +5054,7 @@ walkHud.id = 'walkHud'; walkHud.hidden = true;
 walkHud.innerHTML = `<div class="wh-top"><b>🧍 Walk mode</b><span>Drag to look around · click the ground to walk · W A S D / arrow keys · Shift to run · click a building to go inside</span><button id="walkExit">✕ Exit walk</button></div>
   <div class="wh-pad"><button data-k="fwd">▲</button><button data-k="left">⟲</button><button data-k="back">▼</button><button data-k="right">⟳</button></div>`;
 document.body.appendChild(walkHud);
-function startWalk(x = 45.5, y = 1.2, yaw = Math.PI / 2) {   // sidewalk between the car park and the township shophouses
+function startWalk(x = 47.55, y = 6.35, yaw = Math.PI / 2) {   // clear sidewalk beside the township shophouses
   stopTour(); if (SC) stopScenario(true); if (scene === 'inside') leaveNow();
   closePanel();
   Object.assign(WALK, { on: true, x, y, yaw, pitch: -.05, target: null, keys: {} });

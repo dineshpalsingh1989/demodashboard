@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Map exploration polish
+
+- Moved the default Walk mode starting point to a clear street view, clipped geometry behind the camera, and kept nearby traffic signals at a readable size.
+- Reduced city overview clutter by showing major place pins first and revealing individual device markers and connection lines when zoomed in or focused on a place.
+- Kept interior device labels to the selected device and framed the airport terminal around the open canvas beside its information panel.
+- Added window frames and sills to street-level building facades.
+
 ### IRIV product tours
 
 - Added an IRIV SmartHub CM5 tour: a pinned scroll-through look around the unit, live demos of a shop checkout, two-screen signage and a production tracker, port maps, 19 compatible parts with a system builder, and a narrated film.

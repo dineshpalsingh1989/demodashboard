@@ -573,7 +573,7 @@ window.City3D = (() => {
         const it = new THREE.CanvasTexture(c); it.encoding = THREE.sRGBEncoding;
         cache[key] = new THREE.SpriteMaterial({ map: it, sizeAttenuation: false, depthTest: false, transparent: true });
       }
-      const s = new THREE.Sprite(cache[key]); s.scale.set(.02, .02, 1); s.position.set(d.x, (d.z || 0) + .7, d.y); s.renderOrder = 11; s.userData.dev = d.id;
+      const s = new THREE.Sprite(cache[key]); s.scale.set(.02, .02, 1); s.position.set(d.x, (d.z || 0) + .7, d.y); s.renderOrder = 11; s.userData.dev = d.id; s.userData.zone = d.zone;
       scn.add(s); devSprites.push(s);
       const tag = devTag(d); tag.position.copy(s.position); tag.position.y -= .05; tag.visible = false; tag.userData.zone = d.zone; scn.add(tag); devTags.push(tag);
     });
@@ -714,7 +714,9 @@ window.City3D = (() => {
   }
   function updateConnections() {
     const focus = selDev || hoverDev || '';
-    linkSet.tube.visible = linkSet.dots.visible = showDev;
+    const detail = camera.position.distanceTo(ctl.target) < 78;
+    const showLinks = showDev && (detail || !!focus);
+    linkSet.tube.visible = linkSet.dots.visible = showLinks;
     if (showDev) {
       linkSet.tube.material.opacity = focus ? .12 : .5;
       if (focus !== focusKey) {   // the focused device's links, drawn bright
@@ -722,7 +724,7 @@ window.City3D = (() => {
         const mine = linkSet.paths.filter(p => p.keys.includes(focus));
         if (focus && mine.length) linkHi = pathSet(mine.map(p => ({ ...p })), .07, .95);
       }
-      moveDots(linkSet, focus ? p => p.keys.includes(focus) : null);
+      if (showLinks) moveDots(linkSet, focus ? p => p.keys.includes(focus) : null);
       if (linkHi) moveDots(linkHi);
     }
     moveDots(routeSet);
@@ -777,6 +779,7 @@ window.City3D = (() => {
 
   // ---------- district pins, like the 2D map: click one for its details ----------
   let pinSprites = [];
+  const overviewPins = new Set(['gov', 'airport', 'warehouse', 'energy', 'water', 'ferry', 'satcentre', 'green']);
   async function buildPins() {   // drawing emoji is slow: a few pins at a time, so opening stays smooth
     let k = 0;
     for (const z of Object.keys(ZINFO)) {
@@ -840,15 +843,16 @@ window.City3D = (() => {
     // fit the whole room and every device into the part of the screen the details panel does not cover
     const pts = []; for (const x of [0, IW]) for (const y of [0, WH]) for (const z of [0, ID]) pts.push(new THREE.Vector3(x, y, z));
     S.devs.forEach(p => pts.push(new THREE.Vector3(p.x, p.z + .7, p.y)));   // the room and its own devices (badges outside may fall off the edge)
-    fitView(pts, { x0: 30, x1: innerWidth - (innerWidth > 820 ? 480 : 30), y0: 170, y1: innerHeight - (innerWidth > 820 ? 140 : 260) });
+    const terminal = curZone === 'airterminal' && innerWidth > 820;
+    fitView(pts, { x0: 30, x1: innerWidth - (innerWidth > 820 ? (terminal ? 640 : 480) : 30), y0: 170, y1: innerHeight - (innerWidth > 820 ? 140 : 260) }, terminal ? .72 : .8);
   }
   // keep the viewing angle, but move and zoom the camera so all the points fit inside a screen rectangle
   // (the part of the screen the panels leave free): fit their bounding sphere, then offset it once
-  function fitView(pts, vis) {
+  function fitView(pts, vis, scale = .8) {
     const sph = new THREE.Box3().setFromPoints(pts).getBoundingSphere(new THREE.Sphere());
     const dir = camera.position.clone().sub(ctl.target).normalize(), vh = camera.fov * Math.PI / 360, hh = Math.atan(Math.tan(vh) * camera.aspect);
     const ang = Math.min(Math.atan(Math.tan(vh) * (vis.y1 - vis.y0) / innerHeight), Math.atan(Math.tan(hh) * (vis.x1 - vis.x0) / innerWidth));
-    const dist = sph.radius / Math.sin(ang) * .8;
+    const dist = sph.radius / Math.sin(ang) * scale;
     ctl.target.copy(sph.center); camera.position.copy(sph.center).addScaledVector(dir, dist); camera.updateMatrixWorld();
     const wpp = 2 * dist * Math.tan(vh) / innerHeight, dx = (vis.x0 + vis.x1 - innerWidth) / 2, dy = (vis.y0 + vis.y1 - innerHeight) / 2;
     const shift = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0).multiplyScalar(-dx * wpp).add(new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1).multiplyScalar(dy * wpp));
@@ -885,7 +889,7 @@ window.City3D = (() => {
     fillBoxes(IN.boxes, r.b); fillCyl(IN.cyl, r.c, r.l); fillSph(IN.sph, r.s);
     IN.sprites.forEach(s => {
       if (!s.userData.tag) { s.visible = showDev; s.scale.setScalar(selDev === s.userData.dev ? .036 : .026); }
-      else s.visible = showDev && (!IN.big || s.userData.dev === selDev || s.userData.dev === hoverDev);   // big rooms: a name only for the device you point at, so tags never pile up
+      else s.visible = showDev && (s.userData.dev === selDev || s.userData.dev === hoverDev);   // show the focused name; the panel lists every device
     });
     if (IN.links) { IN.links.tube.visible = IN.links.dots.visible = showDev; moveDots(IN.links); }
     ctl.autoRotate = false; ctl.update();
@@ -954,9 +958,10 @@ window.City3D = (() => {
     tlLights.list.forEach((o, i) => { const c = LC[lightState(o.ax)] || LC.r; tc[i * 3] = c[0]; tc[i * 3 + 1] = c[1]; tc[i * 3 + 2] = c[2]; });
     tlLights.mesh.instanceColor.needsUpdate = true;
     blades.forEach(b => { b.rotation.z = -(time * 1.8 + b.userData.id); });
-    devSprites.forEach(s => { s.visible = showDev; const a = selDev === s.userData.dev; s.scale.setScalar(a ? .03 : .02); });
+    const closeEnough = camera.position.distanceTo(ctl.target) < 78;
+    devSprites.forEach(s => { s.visible = showDev && (closeEnough || s.userData.zone === sel || s.userData.dev === selDev || s.userData.dev === hoverDev); const a = selDev === s.userData.dev; s.scale.setScalar(a ? .03 : .02); });
     devTags.forEach(t => { t.visible = showDev && (t.userData.zone === sel || t.userData.dev === selDev || t.userData.dev === hoverDev); });   // names for the place you opened
-    pinSprites.forEach(s => { s.visible = !scenic; });
+    pinSprites.forEach(s => { s.visible = !scenic && (closeEnough || s.userData.zone === sel || overviewPins.has(s.userData.zone)); });
     if (scenic) {
       devSprites.forEach(s => { s.visible = false; }); devTags.forEach(s => { s.visible = false; });
       for (const set of [linkSet, linkHi, routeSet, wireSet]) if (set) set.tube.visible = set.dots.visible = false;
