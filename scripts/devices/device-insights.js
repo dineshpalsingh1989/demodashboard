@@ -36,13 +36,13 @@ const INS_KIND = { 'IRIV PiControl': 'pic', 'IRIV IO Controller MQTT': 'ioc', 'I
 const insKind = d => d && d.io ? INS_KIND[d.model] : null;
 const INS_LINKS = {
   pic: 'https://www.cytron.io/p-iriv-picontrol-cm4-industrial-controller',
-  ioc: 'https://www.cytron.io/p-iriv-io-controller',
+  ioc: 'https://my.cytron.io/p-iriv-io-controller-mqtt-ir4.0-industrial-i-o-controller-with-mqtt-ready',
   ai: 'https://www.cytron.io/c-industry/c-industrial-edge-controller'
 };
 const INS_FILMS = {   // [page, poster, title]
   ai: ['short-video-of-iriv-edgeai/', 'short-video-of-iriv-edgeai/images/tour-poster.jpg', 'IRIV EdgeAI CM5 tour'],
   pic: ['short-video-of-iriv-pi/', 'short-video-of-iriv-pi/images/tour-poster.jpg', 'IRIV PiControl tour'],
-  ioc: ['iriv-controllers/', '', 'IRIV controllers: compare all three']
+  ioc: ['short-video-of-iriv-ioc/', 'short-video-of-iriv-ioc/images/tour-poster.jpg', 'IRIV IO Controller MQTT tour']
 };
 const INS = { ovr: {}, down: new Set(), feeds: {}, prev: {}, queue: {}, missed: {}, beat: {}, event: {}, last: {}, cur: null };
 const pinGroup = pin => pin.replace(/\d+$/, '');

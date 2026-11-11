@@ -24,7 +24,7 @@ function wave(pcm) {
 }
 const clean = text => text.replaceAll('Edge A I', 'EdgeAI').replaceAll('Pi Control', 'PiControl').replaceAll('A I', 'AI').replaceAll('CPU', 'CPU').replaceAll('U S B', 'USB').replaceAll('H D M I', 'HDMI').replaceAll('P W M', 'PWM').replaceAll('N V M E', 'NVMe').replaceAll('Wi Fi', 'Wi-Fi').replaceAll('R S four eighty five', 'RS485').replaceAll('R S two thirty two', 'RS232');
 const stamp = seconds => { const ms = Math.round(seconds * 1000); return `${String(Math.floor(ms / 3600000)).padStart(2, '0')}:${String(Math.floor(ms / 60000) % 60).padStart(2, '0')}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}.${String(ms % 1000).padStart(3, '0')}`; };
-for (const folder of process.argv.length > 2 ? process.argv.slice(2) : ['short-video-of-iriv-pi', 'short-video-of-iriv-edgeai', 'short-video-of-iriv-hub']) {
+for (const folder of process.argv.length > 2 ? process.argv.slice(2) : ['short-video-of-iriv-pi', 'short-video-of-iriv-edgeai', 'short-video-of-iriv-hub', 'short-video-of-iriv-smarthub', 'short-video-of-iriv-ioc']) {
   const dir = path.join(root, folder), config = JSON.parse(fs.readFileSync(path.join(dir, 'narration.json'), 'utf8'));
   let start = 0, cueIndex = 0, vtt = 'WEBVTT\n\n'; const buffers = [];
   const scenes = config.scenes.map((s, i) => {

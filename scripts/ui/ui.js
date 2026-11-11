@@ -206,18 +206,20 @@ function initDirectory() {
   });
 }
 
-// the two IRIV tour films, from the toolbar
+// the IRIV tour films, from the toolbar
 function showFilms() {
   const film = (href, poster, title, line) => '<a class="ins-film" href="' + href + '" target="_blank" rel="noopener noreferrer">' + (poster ? '<img src="' + poster + '" alt="" loading="lazy">' : '') + '<span><b>' + title + '</b><small>' + line + ' ↗</small></span></a>';
-  openPanel('#0277bd', headHTML('🎬', 'IRIV', 'IRIV EdgeAI & PiControl films') +
-    '<p class="p-sum">Two short narrated films with captions and a transcript. Each page also lets you explore every port and the compatible Cytron parts.</p>' +
+  openPanel('#0277bd', headHTML('🎬', 'IRIV', 'IRIV films and tours') +
+    '<p class="p-sum">Short narrated films with captions and a transcript. Each product page also lets you explore every port and the compatible Cytron parts.</p>' +
     '<h3>Watch</h3>' +
     film('short-video-of-iriv-edgeai/', 'short-video-of-iriv-edgeai/images/tour-poster.jpg', 'IRIV EdgeAI CM5 · 2 min 9 s', 'Cameras first, a live AI demo, every port, compatible parts') +
     film('short-video-of-iriv-pi/', 'short-video-of-iriv-pi/images/tour-poster.jpg', 'IRIV PiControl · 1 min 45 s', 'Pin map, 49 compatible parts, a system builder') +
+    film('short-video-of-iriv-smarthub/', 'short-video-of-iriv-smarthub/images/tour-poster.jpg', 'IRIV SmartHub CM5 · 2 min 14 s', 'A scroll-through look around, three live demos, every port, 19 parts') +
+    film('short-video-of-iriv-ioc/', 'short-video-of-iriv-ioc/images/tour-poster.jpg', 'IRIV IO Controller MQTT · 2 min 17 s', 'Flip an input and watch the MQTT message, all 32 terminals, browser setup') +
     film('short-video-of-iriv-hub/', 'short-video-of-iriv-hub/images/tour-poster.jpg', 'IRIV Edge dashboard · 1 min 10 s', 'The map, wiring, live rules, MQTT, offline mode, control centre') +
     film('iriv-controllers/', 'iriv-controllers/images/poster-edgeai.jpg', 'Compare all IRIV controllers', 'Which one do I need, and how they work together') +
     film('warehouse-3d/', 'warehouse-3d/poster.jpg', 'Warehouse Command 3D', 'Forklifts, trucks and EdgeAI safety cameras in a 3D game view') +
-    '<h3>Download</h3><a class="ins-prod" href="short-video-of-iriv-edgeai/IRIV-EdgeAI-CM5-tour.mp4" download>⬇ EdgeAI CM5 tour (MP4)</a><a class="ins-prod" style="margin-top:8px" href="short-video-of-iriv-pi/IRIV-PiControl-tour.mp4" download>⬇ PiControl tour (MP4)</a><a class="ins-prod" style="margin-top:8px" href="short-video-of-iriv-hub/IRIV-Edge-dashboard-tour.mp4" download>⬇ IRIV Edge dashboard (MP4)</a>' +
+    '<h3>Download</h3><a class="ins-prod" href="short-video-of-iriv-edgeai/IRIV-EdgeAI-CM5-tour.mp4" download>⬇ EdgeAI CM5 tour (MP4)</a><a class="ins-prod" style="margin-top:8px" href="short-video-of-iriv-pi/IRIV-PiControl-tour.mp4" download>⬇ PiControl tour (MP4)</a><a class="ins-prod" style="margin-top:8px" href="short-video-of-iriv-smarthub/IRIV-SmartHub-CM5-tour.mp4" download>⬇ SmartHub CM5 tour (MP4)</a><a class="ins-prod" style="margin-top:8px" href="short-video-of-iriv-ioc/IRIV-IO-Controller-MQTT-tour.mp4" download>⬇ IO Controller MQTT tour (MP4)</a><a class="ins-prod" style="margin-top:8px" href="short-video-of-iriv-hub/IRIV-Edge-dashboard-tour.mp4" download>⬇ IRIV Edge dashboard (MP4)</a>' +
     '<h3>See them in the city</h3><button class="tourbtn" id="filmsUnits">Find every IRIV unit on the map →</button>', []);
 }
 function initUI() {

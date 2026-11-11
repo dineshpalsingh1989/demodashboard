@@ -187,22 +187,23 @@ window.City3D = (() => {
   }
 
   function waterMaterial() {
-    const mat = new THREE.MeshPhongMaterial({ color: C3('#477b8e'), specular: C3('#b4d6db'), shininess: 85 });
+    const mat = new THREE.MeshPhongMaterial({ color: C3('#247f91'), specular: C3('#d8f4ef'), shininess: 110 });
     mat.onBeforeCompile = sh => {
       sh.uniforms.uWaterTime = surfaceTime; sh.uniforms.uRain = surfaceRain; sh.uniforms.uNight = night3;
       sh.vertexShader = 'varying vec3 vWater;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvWater = (modelMatrix * vec4(position, 1.0)).xyz;');
       sh.fragmentShader = 'varying vec3 vWater; uniform float uWaterTime; uniform float uRain; uniform float uNight;\n' + sh.fragmentShader
         .replace('#include <color_fragment>', `#include <color_fragment>
-          float waterDetail = 1.0 - smoothstep(35.0, 200.0, distance(cameraPosition, vWater));
+          float waterDetail = 1.0 - smoothstep(60.0, 260.0, distance(cameraPosition, vWater));
           float waves = sin(vWater.x * 2.8 + vWater.z * 1.6 + uWaterTime * 0.9 + sin(vWater.z * 0.43)) * sin(vWater.z * 3.7 - uWaterTime * 0.6);
+          float swell = sin(vWater.z * 1.35 + vWater.x * .28 + uWaterTime * 1.3 + sin(vWater.x * .32) * .45);
           vec3 eye = normalize(cameraPosition - vWater);
           float fresnel = pow(1.0 - max(eye.y, 0.0), 3.0);
-          diffuseColor.rgb = mix(diffuseColor.rgb * (0.92 + waves * 0.035 * waterDetail), vec3(0.30, 0.46, 0.52), fresnel * 0.65);
+          diffuseColor.rgb = mix(diffuseColor.rgb * (0.96 + (waves * .07 + swell * .16) * waterDetail), vec3(0.30, 0.46, 0.52), fresnel * 0.65);
           diffuseColor.rgb *= (1.0 - uRain * 0.22);
         `)
         .replace('#include <normal_fragment_begin>', `#include <normal_fragment_begin>
-          float ripple = (0.018 + uRain * 0.025) * waterDetail;
-          vec3 waveNormal = normalize(vec3(cos(vWater.x * 2.8 + vWater.z * 1.6 + uWaterTime * 0.9 + sin(vWater.z * 0.43)) * ripple, 1.0, sin(vWater.z * 3.7 - uWaterTime * 0.6) * ripple));
+          float ripple = (0.045 + uRain * 0.04) * waterDetail;
+          vec3 waveNormal = normalize(vec3(cos(vWater.x * 2.8 + vWater.z * 1.6 + uWaterTime * 0.9 + sin(vWater.z * 0.43)) * ripple, 1.0, (sin(vWater.z * 3.7 - uWaterTime * 0.6) + cos(vWater.z * 1.35 + vWater.x * .28 + uWaterTime * 1.3) * 1.8) * ripple));
           normal = normalize(mat3(viewMatrix) * waveNormal);
         `);
     };

@@ -4,6 +4,16 @@ An interactive smart city simulation built with HTML, CSS, and JavaScript. One m
 
 **[Open the live demo](https://dineshpalsingh1989.github.io/demodashboard/)**
 
+## Preview
+
+[![Smart City dashboard overview](short-video-of-iriv-hub/images/city.jpg)](https://dineshpalsingh1989.github.io/demodashboard/)
+
+| Warehouse Command 3D | IRIV controller tours |
+|---|---|
+| [![Warehouse Command 3D](warehouse-3d/poster.jpg)](https://dineshpalsingh1989.github.io/demodashboard/warehouse-3d/) | [![IRIV SmartHub CM5 tour](short-video-of-iriv-smarthub/images/tour-poster.jpg)](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-smarthub/) |
+
+The images above are stored in this repository, so they render on GitHub without an external image host.
+
 ## What's new in V2.0
 
 Released 11 November 2026. This update brings the map into 3D and adds more believable transport, waterfronts and street activity.
@@ -26,11 +36,13 @@ Click **IRIV films** in the top bar of the dashboard to open all of these, or us
 |---|---|---|
 | **IRIV EdgeAI CM5** | [Tour](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-edgeai/): a camera-first film, a live AI demo of a bottle inspection line and an ANPR gate, every port, compatible Cytron cameras, lights and parts | [MP4 · 2 min 9 s](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-edgeai/IRIV-EdgeAI-CM5-tour.mp4) |
 | **IRIV PiControl** | [Tour](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-pi/): an interactive map of every pin and port, 49 compatible Cytron parts by port, a system builder that checks port limits, and ready-made parts lists | [MP4 · 1 min 45 s](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-pi/IRIV-PiControl-tour.mp4) |
+| **IRIV SmartHub CM5** | [Tour](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-smarthub/): a scroll-through look around the unit, live demos of a shop checkout, two-screen signage and a production tracker, every port, 19 compatible Cytron parts and a system builder | [MP4 · 2 min 14 s](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-smarthub/IRIV-SmartHub-CM5-tour.mp4) |
+| **IRIV IO Controller MQTT** | [Tour](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-ioc/): a hands-on panel that shows the MQTT message for every input you flip, pump-station and machine-monitor demos, all 32 terminals, the browser setup screens and compatible Cytron parts | [MP4 · 2 min 17 s](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-ioc/IRIV-IO-Controller-MQTT-tour.mp4) |
 | **IRIV Edge dashboard** | [Tour](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-hub/): the dashboard itself, recorded from this demo: the map of every unit, wiring, live rules, MQTT messages, offline behaviour and the airport control centre. All readings are simulated. | [MP4 · 1 min 10 s](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-hub/IRIV-Edge-dashboard-tour.mp4) |
 | **All IRIV controllers** | [Compare page](https://dineshpalsingh1989.github.io/demodashboard/iriv-controllers/): PiControl, IO Controller and EdgeAI CM5 side by side, a "Which IRIV do I need?" picker and how they work together | both films |
 | **Warehouse Command 3D** | [Open](https://dineshpalsingh1989.github.io/demodashboard/warehouse-3d/): a 3D view of three warehouses. Forklifts accelerate, brake, wait for free aisles, give way at aisle mouths and recharge on their bays. Turn **anti-collision off** to see them collide. All 30 sensors and cameras are installed and clickable (UG65, EM300-TH, TS302 cold room, EM300-SLD, AM319, VS133, WS101, WS558, CT101/CT105, EM400-TLD at each dock, IRIV EdgeAI CM5, PiControl and IO Controller MQTT). Night mode, heatmap, follow and 1–4× speed. All simulated. | none |
 
-All three films have English narration, short captions, chapter buttons and a transcript. Every IRIV device panel in the dashboard also has a **Watch the tour film** card.
+All five films have English narration, short captions, chapter buttons and a transcript. Every IRIV device panel in the dashboard also has a **Watch the tour film** card.
 
 ## What is on the map
 
@@ -95,7 +107,7 @@ node tools/build-iriv-narration.cjs
 node tools/build-iriv-videos.cjs
 ```
 
-Edit each tour's `narration.json` for the spoken script and short on-screen descriptions. The narration build sends each line to Microsoft's neural voice service through `edge-tts` (en-US Aria by default; set `IRIV_VOICE` to another `edge-tts --list-voices` name), decodes the speech in Chrome, then creates matching scene timing, WAV audio and VTT captions. Both builders take `--only=pi|edge|hub`. The video build embeds AAC narration in the 1080p MP4s and refreshes the posters. `node tools/build-iriv-videos.cjs --preview` checks the source scenes without encoding, and `--check` verifies the finished films; previews go in `.tmp/`.
+Edit each tour's `narration.json` for the spoken script and short on-screen descriptions. The narration build sends each line to Microsoft's neural voice service through `edge-tts` (en-US Aria by default; set `IRIV_VOICE` to another `edge-tts --list-voices` name), decodes the speech in Chrome, then creates matching scene timing, WAV audio and VTT captions. Both builders take `--only=pi|edge|hub|smarthub|ioc`. The video build embeds AAC narration in the 1080p MP4s and refreshes the posters. `node tools/build-iriv-videos.cjs --preview` checks the source scenes without encoding, and `--check` verifies the finished films; previews go in `.tmp/`.
 
 ## Performance
 
@@ -108,32 +120,26 @@ The map is drawn on a canvas that is fully redrawn every frame, so most of the w
 - Hover checks run at most once per frame.
 - The top bar, side panel, and other overlays are solid rather than frosted glass, because a blur over the moving map has to be recalculated every frame.
 
-## Files
+## Project layout
 
-- `index.html` — city simulation, device content, and interface markup
-- `city3d-details.js` — shared 3D vehicle models, aircraft, ferry effects, raised bridge, shoreline and airport scenery
-- `city3d-life.js` — street life in 3D: shop doorways with signs, paved blocks, and people who visit shops, board the bus and walk the ferry gangway
-- `ui.css` — responsive interface styles
-- `ui.js` — search, IRIV films panel, keyboard access, camera controls, and preferences
-- `milesight-devices.js` — additional products, room placements, and leak/cold-storage scenarios
-- `utilities.js` — remote power and water facilities, supply routes, and simulated capacity readings
-- `weather.js` — rain, storm and clear weather and the toolbar button
-- `airport.js` — Mega Airport, the live flight schedule, the full-size terminal, the car park and the Metro Loop
-- `power-grid.js` — regional 132 kV lines, substations and live loads
-- `ferry.js` — the river ferry, its quays and devices
-- `logistics.js` — the Airport Logistics Hub: buildings, moving truck, devices and its panel
-- `city3d.js` — the 3D map (the default view): captures the 2D draw calls (boxes, tanks, poles) into three.js and bakes the 2D ground into a texture, so both views always show the same city
-- `device-insights.js` — IRIV device panels: connection map, live rules, MQTT feed, health, output tests, network failover, camera view, and model comparison
-- `images/` — device illustrations and product photos
-- `serve.js` — optional local preview server with range requests for video
-- `iriv-controllers/` — one page for all IRIV controllers: films, comparison, picker and "better together" examples
-- `short-video-of-iriv-edgeai/` — IRIV EdgeAI CM5 tour: film, live AI demo (`demo.js`), port data, compatible Cytron cameras and parts, and the rendered MP4
-- `short-video-of-iriv-pi/` — IRIV PiControl tour page, film renderer (`film.js`), pin data (`data.js`), compatible Cytron parts and system recipes (`connect.js`), and the rendered MP4
-- `short-video-of-iriv-hub/` — IRIV Edge dashboard film: page, film renderer (`film.js`) and the recorded screens (`images/`, made by `tools/capture-iriv-hub-shots.cjs`)
-- `warehouse-3d/` — Warehouse Command 3D: one self-contained page (three.js from a CDN)
-- `iriv-tour-media.js` / `.css` — shared player, footer, end card and MP4 export for both tours
-- `tools/` — smoke test (`check-dashboard.cjs`), place check (`check-places.cjs`), lag check (`check-performance.cjs`), film and narration builders, and the vendored MP4 muxer
+```text
+index.html                 Main dashboard and GitHub Pages entry point
+serve.js                   Local HTTP server
+scripts/
+  city/                    3D map, scenery, vehicles, and street life
+  devices/                 Milesight catalogue and IRIV device panels
+  systems/                 Airport, transport, weather, energy, and water
+  ui/                      Dashboard controls and search
+  shared/                  Player shared by the IRIV tours
+styles/                    Dashboard and shared tour styles
+images/                    Device illustrations and product photos
+iriv-controllers/          Controller comparison page
+short-video-of-iriv-*/    Individual tour pages, media, and narration
+warehouse-3d/             Standalone 3D warehouse page
+tools/                    Checks, film builders, and vendored muxer
+```
 
+Each tour keeps its HTML, scripts, narration, film, and images together. Asset paths in `index.html` and the tour pages are relative, so local preview and GitHub Pages use the same structure.
 ## GitHub Pages
 
 GitHub Pages publishes branch `main` from `/ (root)`. Pushing changes to `main` updates the live demo automatically. The `.nojekyll` file lets GitHub serve the static files directly.

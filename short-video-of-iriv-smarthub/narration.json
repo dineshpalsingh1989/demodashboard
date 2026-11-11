@@ -1,0 +1,30 @@
+{
+  "product": "IRIV SmartHub CM5",
+  "base": "IRIV-SmartHub-CM5-tour",
+  "scenes": [
+    {"id":"intro","minDuration":6,"display":"A fanless industrial computer, built on Raspberry Pi CM5.","text":"Meet the IRIV SmartHub. A fanless industrial computer, built on the Raspberry Pi Compute Module five."},
+    {"id":"overview","minDuration":6,"text":"It computes, connects and displays, all from one compact metal box."},
+    {"id":"pos","minDuration":15,"segments":[
+      {"at":0.6,"text":"At the shop counter, every barcode scan lands on the cashier screen."},
+      {"at":5.6,"text":"The customer display shows the total, and the receipt prints."},
+      {"at":10.4,"text":"Each sale updates the stock, and low items are reordered."}
+    ]},
+    {"id":"rear","minDuration":6,"display":"Gigabit Ethernet, USB 2.0, two HDMI ports and two ways to power it.","text":"Around the back: network, USB, two displays and power."},
+    {"id":"lan","minDuration":4.5,"display":"One RJ45 port, 10/100/1000M.","text":"Gigabit Ethernet connects the shop or plant network."},
+    {"id":"usb2","minDuration":5,"display":"For devices that stay plugged in.","text":"Two USB 2.0 ports take a scanner, a printer or a keyboard."},
+    {"id":"hdmi","minDuration":6,"display":"Two full-size HDMI 2.0 ports, each up to 4K at 60 Hz.","text":"Two full size HDMI ports drive two screens, each up to 4K at sixty hertz."},
+    {"id":"usbc","minDuration":5,"display":"One USB-C port for power and for reflashing.","text":"USB C powers the unit, and reflashes the operating system."},
+    {"id":"power","minDuration":5,"display":"DC barrel jack, 10 to 30 V, surge protected.","text":"Or power it from ten to thirty volts, with surge protection."},
+    {"id":"usb3","minDuration":5,"display":"Fast ports for cameras and storage.","text":"On the front, two USB 3 ports for cameras and fast storage."},
+    {"id":"buttons","minDuration":5,"display":"A power button and a programmable USER button.","text":"A power button, and a user button you can program."},
+    {"id":"leds","minDuration":5.5,"display":"Power, activity and M.2 lights, plus two programmable LEDs.","text":"Status lights show power, activity and storage, plus two that you control."},
+    {"id":"wifi","minDuration":5.5,"display":"Dual-band Wi-Fi and Bluetooth 5.0. Antenna included.","text":"Dual band Wi Fi and Bluetooth are built in. The antenna is included."},
+    {"id":"cell","minDuration":5,"display":"A mini PCIe socket (USB 2.0 only) with a SIM slot.","text":"An expansion socket and a SIM slot add a 4G modem."},
+    {"id":"signage","minDuration":9,"text":"For digital signage, one SmartHub drives two screens, around the clock."},
+    {"id":"mes","minDuration":9,"text":"On the factory floor, it tracks every job, live from the machines."},
+    {"id":"specs","minDuration":7.5,"text":"Inside: a quad core processor, up to sixteen gigabytes of memory, and room for an N V M E drive."},
+    {"id":"mount","minDuration":5.5,"display":"147 × 94 × 35.7 mm. No fan, no moving parts.","text":"The fanless metal case screws flat to a wall or a panel."},
+    {"id":"proof","minDuration":7,"display":"Uptime recorded in Cytron’s own long-run test.","text":"In Cytron's own test, a SmartHub ran for eighty four days without a restart."},
+    {"id":"outro","minDuration":8,"text":"Explore the ports and compatible parts in the interactive demo, and build your own system."}
+  ]
+}

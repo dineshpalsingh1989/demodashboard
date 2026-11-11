@@ -2,7 +2,8 @@
    Simulation clocks and device data remain owned by the dashboard. */
 window.CityDetails = function (T, scene3, color) {
   const matrix = new T.Matrix4(), pos = new T.Vector3(), scale = new T.Vector3(), quat = new T.Quaternion();
-  const clock = { value: 0 }, darkness = { value: 0 }, models = {}, pickables = [];
+  const clock = { value: 0 }, darkness = { value: 0 }, seaWeather = { value: 0 }, models = {}, pickables = [];
+  let shoreline;
   const box = (w, h, d, x, y, z) => new T.BoxGeometry(w, h, d).translate(x, y, z);
   const ball = (r, x, y, z, sx = 1, sy = 1, sz = 1) => new T.SphereGeometry(r, 10, 6).scale(sx, sy, sz).translate(x, y, z);
   const wheel = (x, z, r = .06, w = .045) => new T.CylinderGeometry(r, r, w, 8).rotateX(Math.PI / 2).translate(x, r, z);
@@ -228,7 +229,14 @@ window.CityDetails = function (T, scene3, color) {
         const seed=Math.abs(Math.sin(x*32.1+z*17.7));
         const rx=x+(ax==='z'?sign*(.22+seed*.32):(seed-.5)*.8),rz=z+(ax==='x'?sign*(.22+seed*.32):(seed-.5)*.8);
         p.push([new T.IcosahedronGeometry(.22+seed*.17,0).rotateY(seed*3).scale(1+seed*.3,.65,1).translate(rx,-.57,rz),'#768b86',.04]);
-        shallows.push({x,z,ax,sign,len});
+        const south = typeof LAND_Y === 'number' ? LAND_Y : WORLD;
+        const beach = ax === 'x' && sign === 1 && fixed === south && x > 0;
+        shallows.push({x,z,ax,sign,len,beach});
+        // Boulders sit in the swash, with their lower faces below the water.
+        if (beach && seed > .70) {
+          const scatter=Math.abs(Math.sin(x*13.73+z*5.37)), radius=.24+scatter*.34;
+          p.push([new T.IcosahedronGeometry(radius,1).rotateY(seed*7).rotateZ(scatter*.4).scale(1.3,.65+scatter*.35,1).translate(x,-.58,z+1.9+scatter*.7),'#82938b',.06]);
+        }
       }
     }
     // River retaining walls and a narrow path; leave quay entrances unobstructed.
@@ -240,19 +248,97 @@ window.CityDetails = function (T, scene3, color) {
       }
     }
     const coast=model(p,1);put(coast,0,0,0);flush(coast);
-    const positions=[],opacity=[];
-    for(const {x,z,ax,sign,len} of shallows) {
-      const dx=ax==='x'?len/2:0,dz=ax==='z'?len/2:0,ox=x+(ax==='z'?sign*1.7:0),oz=z+(ax==='x'?sign*1.7:0);
-      const a=[x-dx,-.705,z-dz],b=[x+dx,-.705,z+dz],c=[ox+dx,-.705,oz+dz],d=[ox-dx,-.705,oz-dz];
-      positions.push(...a,...c,...b,...a,...d,...c);opacity.push(1,0,1,1,0,0);
+    // One coastal mesh: sloping sand, visible seabed, shoreward swells and receding foam.
+    // Cross-shore distance is carried into the shader, so the waves follow every bank.
+    const positions=[],coastData=[];
+    for(const {x,z,ax,sign,len,beach} of shallows) {
+      const width=beach?15:6, steps=beach?64:24;
+      const vertex=(along,d)=>{
+        const px=x+(ax==='x'?along:sign*d), pz=z+(ax==='z'?along:sign*d);
+        const y=beach?Math.max(-.675,-.11-d*.265):-.675;
+        positions.push(px,y,pz); coastData.push(d,beach?1:0,ax==='x'?1:0,sign);
+      };
+      for(let i=0;i<steps;i++) {
+        const d0=width*i/steps,d1=width*(i+1)/steps;
+        const ox=x+(ax==='z'?sign*d1:0), oz=z+(ax==='x'?sign*d1:0);
+        if(land(ox,oz)||river(ox,oz)) break;
+        vertex(-len/2,d0);vertex(len/2,d1);vertex(len/2,d0);
+        vertex(-len/2,d0);vertex(-len/2,d1);vertex(len/2,d1);
+      }
     }
-    const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(positions,3));g.setAttribute('aCoast',new T.Float32BufferAttribute(opacity,1));g.computeVertexNormals();
-    const mat=new T.MeshLambertMaterial({color:color('#7db4b1'),transparent:true,opacity:.32,depthWrite:false,side:T.DoubleSide});
+    const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(positions,3));g.setAttribute('aCoast',new T.Float32BufferAttribute(coastData,4));g.computeVertexNormals();
+    const mat=new T.MeshPhongMaterial({color:0xffffff,specular:color('#c1e7df'),shininess:100,transparent:true,depthWrite:false,side:T.DoubleSide});
     mat.onBeforeCompile=sh=>{
-      sh.vertexShader='attribute float aCoast; varying float coastFade;\n'+sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\ncoastFade=aCoast;');
-      sh.fragmentShader='varying float coastFade;\n'+sh.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\ndiffuseColor.a *= smoothstep(0.0,1.0,coastFade);');
+      sh.uniforms.coastTime=clock;sh.uniforms.coastStorm=seaWeather;
+      sh.vertexShader=`attribute vec4 aCoast; varying vec4 vCoast; varying vec3 vCoastWorld;
+        uniform float coastTime; uniform float coastStorm;\n`+sh.vertexShader.replace('#include <begin_vertex>',`#include <begin_vertex>
+        vCoast=aCoast; vCoastWorld=position;
+        float offshore=max(0.0,aCoast.x-mix(0.0,2.2,aCoast.y));
+        float along=mix(position.z,position.x,aCoast.z);
+        float phase=offshore*1.65+coastTime*1.45+sin(along*.38)*.35+sin(along*.91)*.12;
+        float swell=pow(.5+.5*sin(phase),3.0);
+        float envelope=smoothstep(0.0,.8,offshore)*(1.0-smoothstep(mix(3.0,10.0,aCoast.y),mix(6.0,15.0,aCoast.y),aCoast.x));
+        transformed.y+=(.22+coastStorm*.18)*swell*envelope;
+      `);
+      sh.fragmentShader=`varying vec4 vCoast; varying vec3 vCoastWorld;
+        uniform float coastTime; uniform float coastStorm;
+        float coastNoise(vec2 p) {
+          vec2 cell=floor(p), f=fract(p); f=f*f*(3.0-2.0*f);
+          vec4 h=fract(sin(vec4(dot(cell,vec2(127.1,311.7)),dot(cell+vec2(1,0),vec2(127.1,311.7)),dot(cell+vec2(0,1),vec2(127.1,311.7)),dot(cell+vec2(1,1),vec2(127.1,311.7))))*43758.5453);
+          return mix(mix(h.x,h.y,f.x),mix(h.z,h.w,f.x),f.y);
+        }\n`+sh.fragmentShader
+      .replace('#include <color_fragment>',`#include <color_fragment>
+        float d=vCoast.x, beach=vCoast.y;
+        float along=mix(vCoastWorld.z,vCoastWorld.x,vCoast.z);
+        float bend=sin(along*.38)*.35+sin(along*.91)*.12;
+        float swash=sin(coastTime*1.45+bend);
+        float waterline=mix(.12,2.15,beach)-swash*mix(.10,.55,beach)+sin(along*1.1)*.09;
+        float depth=max(0.0,d-waterline);
+        float wet=smoothstep(waterline-.16,waterline+.12,d);
+        float grain=fract(sin(dot(floor(vCoastWorld.xz*85.0),vec2(12.9898,78.233)))*43758.5453);
+        vec3 sand=mix(vec3(.63,.49,.29),vec3(.83,.72,.49),1.0-smoothstep(waterline-1.6,waterline-.7,d));
+        sand*=.95+grain*.10;
+        // Refracted sand ridges and a moving caustic network stay visible in the shallows.
+        vec2 bed=vec2(along,d)+vec2(sin(d*2.3+coastTime*.8),cos(along*1.7-coastTime*.7))*.09;
+        float ridges=sin(bed.y*13.0+sin(bed.x*1.8)*1.3)*.035;
+        float cells=abs(sin(bed.x*4.8+sin(bed.y*3.1+coastTime*.5))*cos(bed.y*4.3+sin(bed.x*2.9-coastTime*.6)));
+        float caustic=pow(1.0-cells,14.0);
+        vec3 bottom=vec3(.65,.64,.40)*(1.0+ridges)+(grain-.5)*.035;
+        bottom+=vec3(.16,.20,.12)*caustic;
+        float transmission=exp(-depth*.27);
+        vec3 seabed=mix(vec3(.018,.25,.29),bottom*vec3(.62,.97,.88),transmission*.85);
+        // Long coherent wave fronts travel shoreward; a broad white lip breaks in shallow water.
+        float offshore=max(0.0,d-mix(0.0,2.2,beach));
+        float phase=offshore*1.65+coastTime*1.45+bend;
+        float cycle=fract((phase-1.5708)/6.28318);
+        float foamNoise=coastNoise(vec2(along*9.0,d*14.0+coastTime*.4));
+        float edgeNoise=(foamNoise-.5)*.065+sin(along*5.0+sin(d*9.0))*.018;
+        float lip=1.0-smoothstep(.025,.085,min(cycle,1.0-cycle)+edgeNoise);
+        // The back of each breaking wave leaves a thinning, perforated foam sheet.
+        float trail=smoothstep(.69,.79,cycle)*(1.0-smoothstep(.90,.98,cycle));
+        float bubbles=smoothstep(.35,.75,foamNoise);
+        float breaking=smoothstep(.2,.9,depth)*(1.0-smoothstep(mix(2.0,6.0,beach),mix(4.0,11.0,beach),depth));
+        float lace=exp(-abs(d-waterline)*8.0)*(.75+.25*sin(along*15.0+d*23.0));
+        float foam=clamp((lip*.92+trail*bubbles*.42)*breaking+lace*.95,0.0,.97)*wet;
+        float face=sin(phase)*.08+cos(phase)*.035;
+        vec3 water=seabed*(1.0+face);
+        float fresnel=pow(1.0-max(normalize(cameraPosition-vCoastWorld).y,0.0),4.0);
+        water=mix(water,vec3(.38,.57,.64),fresnel*.38);
+        water=mix(water,vec3(.92,.98,.96),foam);
+        diffuseColor.rgb=mix(sand,water,wet)*(1.0-coastStorm*.22);
+        diffuseColor.a=1.0-smoothstep(mix(3.0,10.0,beach),mix(6.0,15.0,beach),d);
+      `)
+      .replace('#include <normal_fragment_begin>',`#include <normal_fragment_begin>
+        float slope=(cos(phase)*.30+sin(along*4.0+d*5.0-coastTime)*.025)*wet;
+        vec3 waveNormal=normalize(vec3(mix(slope*vCoast.w,0.0,vCoast.z),1.0,mix(0.0,slope*vCoast.w,vCoast.z)));
+        normal=normalize(mat3(viewMatrix)*waveNormal);
+      `)
+      .replace('#include <specularmap_fragment>',`#include <specularmap_fragment>
+        specularStrength*=wet*(1.0-foam)*.65;
+      `);
     };
-    scene3.add(new T.Mesh(g,mat));
+    shoreline=new T.Mesh(g,mat);shoreline.name='Living shoreline';shoreline.renderOrder=1;
+    shoreline.userData.beachSegments=shallows.filter(s=>s.beach).length;scene3.add(shoreline);
   }
   let airLights;
   function buildAirportDetails() {
@@ -338,6 +424,7 @@ window.CityDetails = function (T, scene3, color) {
   }
   let trailerHeading=Math.PI, lastDockTime=-1;
   function update(t,n,dt) {
+    seaWeather.value = typeof WX === 'undefined' ? 0 : WX.k;
     clock.value=t;darkness.value=n;
     for(const m of Object.values(models))m.n=0;
     cars.forEach((c,i)=>{
@@ -380,5 +467,5 @@ window.CityDetails = function (T, scene3, color) {
   }
   const life = typeof CityStreetLife === 'function' ? CityStreetLife({ T, scene: scene3, color, model, put, flush, box, ball }) : null;
   return { buildModels, environment, finishEnvironment, update, roadHeight, roadPitch, pickables, dockPose,
-    get stats(){return {models:Object.fromEntries(Object.entries(models).map(([k,m])=>[k,m.mesh.count])),bridgeClearance:bridge.top-.19-1.03,wakeVisible:!!wake?.visible,street:life&&life.stats};} };
+    get stats(){return {models:Object.fromEntries(Object.entries(models).map(([k,m])=>[k,m.mesh.count])),bridgeClearance:bridge.top-.19-1.03,wakeVisible:!!wake?.visible,street:life&&life.stats,shoreline:shoreline&&{vertices:shoreline.geometry.attributes.position.count,beachSegments:shoreline.userData.beachSegments,time:clock.value,storm:seaWeather.value}};} };
 };

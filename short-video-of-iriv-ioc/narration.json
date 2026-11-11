@@ -1,0 +1,30 @@
+{
+  "product": "IRIV IO Controller MQTT",
+  "base": "IRIV-IO-Controller-MQTT-tour",
+  "scenes": [
+    {"id":"intro","minDuration":7,"display":"An industrial I/O gateway that speaks MQTT out of the box.","text":"Meet the IRIV IO Controller MQTT. Wire in your signals, and it publishes them. No code needed."},
+    {"id":"overview","minDuration":7,"text":"It reads switches, sensors and meters, and sends each one to your broker as a clean message."},
+    {"id":"pump","minDuration":15,"segments":[
+      {"at":0.6,"text":"At a pump station, a float switch on input zero reports low water."},
+      {"at":5.4,"text":"The dashboard answers over MQTT, and output zero starts the pump."},
+      {"at":10.3,"text":"Pressure rises on the analog input, and each change is published."}
+    ]},
+    {"id":"front","minDuration":6.5,"display":"32 push-in terminals, Ethernet and a USB-C setup port.","text":"Everything wires in at the front: two terminal blocks, Ethernet and a setup port."},
+    {"id":"power","minDuration":4.8,"display":"V+ and V−. Surge protected.","text":"Power is ten to thirty volts, with surge protection."},
+    {"id":"rs485","minDuration":6,"display":"Polls Modbus RTU devices and publishes their values.","text":"Isolated RS485 reads Modbus meters and sensors, and passes their values on."},
+    {"id":"ai","minDuration":6,"display":"12-bit. 0–10.56 V or 0–42.58 mA each.","text":"Two analog inputs take zero to ten volts, or four to twenty milliamps."},
+    {"id":"di","minDuration":6,"display":"DI0 to DI4 share the S/S0..4 common.","text":"Eleven isolated inputs come in two groups. The first five share one common."},
+    {"id":"di2","minDuration":6,"display":"DI5 to DI10 share the S/S5..10 common.","text":"The other six share a second, so sinking and sourcing sensors can mix."},
+    {"id":"do","minDuration":5,"display":"DO0 to DO3, each on its own pair of terminals.","text":"Four isolated outputs switch relays, lamps and valves."},
+    {"id":"lan","minDuration":5,"display":"RJ45 Ethernet. Outbound connection only.","text":"One Ethernet cable carries every message to your broker."},
+    {"id":"usb","minDuration":4.5,"display":"The PROG port: local setup and firmware.","text":"USB C is for setup and firmware updates."},
+    {"id":"status","minDuration":5.5,"display":"An LED for each of the 11 inputs and 4 outputs.","text":"A light for every input and output shows its state at a glance."},
+    {"id":"switches","minDuration":6.5,"display":"RS485 terminator, and voltage or current for each analog input.","text":"Side switches set the RS485 terminator, and voltage or current for each analog input."},
+    {"id":"machine","minDuration":9,"text":"On a machine, it reports every cycle, and a stop the moment it happens."},
+    {"id":"setup","minDuration":8,"text":"Setup is a web page. Enter your broker, tick the channels, name the topics, and save."},
+    {"id":"specs","minDuration":6.5,"text":"Inside is a dual core Raspberry Pi microcontroller, in a fanless metal case."},
+    {"id":"din","minDuration":5,"display":"Fits a standard DIN rail.","text":"It clips onto a standard DIN rail, next to the supply."},
+    {"id":"zero","minDuration":6.5,"display":"Cytron calls it zero-code deployment.","text":"No scripts. No syntax errors. Just your signals, on MQTT."},
+    {"id":"outro","minDuration":8,"text":"Explore the terminals and compatible parts in the interactive demo, and build your own system."}
+  ]
+}

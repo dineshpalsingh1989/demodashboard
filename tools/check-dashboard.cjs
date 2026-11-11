@@ -118,8 +118,8 @@ async function layoutCheck(width, height) {
   });
   await step('IRIV films button lists both films', async () => {
     await ev("document.getElementById('bFilms').click()"); await sleep(500);
-    assert.equal(await ev("document.querySelectorAll('#panel .ins-film').length"), 5, 'three films, the compare page and Warehouse Command 3D');
-    assert.deepEqual(await ev("[...document.querySelectorAll('#panel .ins-film')].map(a => a.getAttribute('href'))"), ['short-video-of-iriv-edgeai/', 'short-video-of-iriv-pi/', 'short-video-of-iriv-hub/', 'iriv-controllers/', 'warehouse-3d/']);
+    assert.equal(await ev("document.querySelectorAll('#panel .ins-film').length"), 7, 'five films, the compare page and Warehouse Command 3D');
+    assert.deepEqual(await ev("[...document.querySelectorAll('#panel .ins-film')].map(a => a.getAttribute('href'))"), ['short-video-of-iriv-edgeai/', 'short-video-of-iriv-pi/', 'short-video-of-iriv-smarthub/', 'short-video-of-iriv-ioc/', 'short-video-of-iriv-hub/', 'iriv-controllers/', 'warehouse-3d/']);
     await shot('films'); await ev('closePanel()');
   });
   await step('Guided tour starts and stops', async () => {

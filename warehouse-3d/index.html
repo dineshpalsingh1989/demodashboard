@@ -22,6 +22,9 @@
   button.danger { background: rgba(255, 84, 104, .2); border-color: var(--bad); color: #ffd0d6; }
   button.safe { background: rgba(61, 220, 132, .14); border-color: var(--ok); color: #c9f7dc; }
   button:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+  select { font: inherit; color: var(--ink); background: #17283c; border: 1px solid var(--line); border-radius: 8px; padding: 7px; min-height: 34px; }
+  select:focus-visible { outline: 2px solid var(--cy); outline-offset: 2px; }
+  body.clean-view #side, body.clean-view #insp, body.clean-view #feed { display: none; }
   #top { top: 12px; left: 12px; right: 12px; display: flex; align-items: center; gap: 18px; padding: 8px 14px; flex-wrap: wrap; }
   #top .brand { display: flex; flex-direction: column; margin-right: auto; }
   #top .brand b { font: 700 17px "Chakra Petch", sans-serif; letter-spacing: .04em; }
@@ -69,6 +72,8 @@
   #toast.show { opacity: 1; }
   #err { position: fixed; inset: 0; display: none; place-items: center; text-align: center; padding: 16px; }
   .hint { color: var(--mut); font-size: 12px; margin: 0; }
+  #side, #insp { top: var(--panel-top, 100px); }
+  #side { bottom: var(--panel-bottom, 76px); }
   @media (max-width: 1100px) { #feed { display: none; } }
   @media (max-width: 900px) { #side { display: none; } }
   @media (max-width: 640px) {
@@ -108,6 +113,11 @@
 <section id="feed" class="hud"><h2>Live events</h2><ul id="feedList"></ul></section>
 
 <nav id="cmd" class="hud" aria-label="Commands">
+  <select id="cameraView" aria-label="Warehouse camera view">
+    <option value="overview">Overview</option><option value="aisles">Storage aisles</option><option value="docks">Loading docks</option><option value="cold">Cold room</option>
+  </select>
+  <button id="bClean" aria-pressed="false">Scenic view</button>
+  <button id="bStructure" aria-pressed="false">Roof frame</button>
   <button id="bAnti" class="safe" title="Anti-collision (key C)">🛡 Anti-collision ON</button>
   <button id="bIn">＋ Inbound truck</button>
   <button id="bOut">＋ Outbound order</button>
@@ -157,7 +167,7 @@ const camera = new THREE.PerspectiveCamera(40, 1, .3, 600);
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true; controls.maxPolarAngle = 1.4; controls.minDistance = 6; controls.maxDistance = 180;
 controls.addEventListener('start', () => { fly = null; follow = null; });
-function resetView() { fly = null; follow = null; camera.position.set(-54, 56, 82); controls.target.set(-6, 0, 8); }
+function resetView() { fly = null; follow = null; camera.position.set(-54, 56, 82); controls.target.set(-6, 0, 8); $('#cameraView').value = 'overview'; }
 const hemi = new THREE.HemisphereLight(0xdfeaff, 0x4a4438, .6); scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xfff0d8, 2.1); sun.position.set(-45, 85, 40); sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -.0005; sun.shadow.normalBias = .03;
@@ -210,6 +220,17 @@ function floorTexture(site, docks, rackXs) {
   for (let v = -42; v <= 42; v += 6) { x.beginPath(); x.moveTo(X(v), 0); x.lineTo(X(v), c.height); x.stroke(); }
   for (let v = -28; v <= 28; v += 6) { x.beginPath(); x.moveTo(0, Z(v)); x.lineTo(c.width, Z(v)); x.stroke(); }
   rackXs.forEach(r => { x.fillStyle = 'rgba(30,40,55,.25)'; x.fillRect(X(r - 1.5), Z(-19.4), 3 * P, 32.8 * P); x.fillStyle = '#ffc400'; x.fillRect(X(r - 1.6), Z(13.1), 3.2 * P, .25 * P); });
+  // Soft contact shadows and tyre wear make the polished slab read as concrete.
+  rackXs.forEach(r => {
+    const shade = x.createLinearGradient(X(r-2.3),0,X(r+2.3),0);
+    shade.addColorStop(0,'rgba(15,24,35,0)'); shade.addColorStop(.5,'rgba(15,24,35,.34)'); shade.addColorStop(1,'rgba(15,24,35,0)');
+    x.fillStyle=shade; x.fillRect(X(r-2.3),Z(-19.5),4.6*P,33*P);
+  });
+  x.strokeStyle='rgba(24,30,36,.09)'; x.lineWidth=P*.09;
+  for (let i=0;i<60;i++) {
+    const a=-36+(i*7.31)%72, z=-17+(i*4.71)%40;
+    x.beginPath(); x.ellipse(X(a),Z(z),P*(.6+i%3),P*1.7,.3,0,Math.PI*.7); x.stroke();
+  }
   // corridor: solid yellow edges, dashed white centre, arrows on each lane
   x.fillStyle = 'rgba(40,46,56,.35)'; x.fillRect(0, Z(CZ - 2.5), c.width, 5 * P);
   x.fillStyle = '#ffc400'; x.fillRect(0, Z(CZ - 2.55), c.width, .14 * P); x.fillRect(0, Z(CZ + 2.45), c.width, .14 * P);
@@ -237,9 +258,27 @@ function floorTexture(site, docks, rackXs) {
   return canvasTex(c);
 }
 
+function yardTexture(docks) {
+  const c=document.createElement('canvas');c.width=1536;c.height=1120;
+  const x=c.getContext('2d'), P=16, X=v=>(v+48)*P, Z=v=>(v-28)*P;
+  x.fillStyle='#414b54';x.fillRect(0,0,c.width,c.height);
+  for(let i=0;i<16000;i++){x.fillStyle=i%2?'#46505a':'#3c464f';x.fillRect((i*73.17)%c.width,(i*37.71)%c.height,2,2);}
+  x.strokeStyle='#cbd4d6';x.lineWidth=2;x.setLineDash([20,22]);
+  for(const z of [53,69]){x.beginPath();x.moveTo(0,Z(z));x.lineTo(c.width,Z(z));x.stroke();}x.setLineDash([]);
+  x.textAlign='center';x.textBaseline='middle';x.font='bold 20px Inter, sans-serif';
+  docks.forEach(d=>{x.fillStyle=d.kind==='in'?'#62cbd8':'#e7b85a';x.fillText(d.name.replace('Inbound ','IN ').replace('Outbound ','OUT '),X(d.x),Z(44));});
+  for(const z of [57,65]) for(let a=-36;a<42;a+=18){
+    x.save();x.translate(X(a),Z(z));if(z===65)x.rotate(Math.PI);
+    x.fillStyle='#cbd4d6';x.beginPath();x.moveTo(25,0);x.lineTo(5,-12);x.lineTo(5,-4);x.lineTo(-22,-4);x.lineTo(-22,4);x.lineTo(5,4);x.lineTo(5,12);x.fill();x.restore();
+  }
+  x.fillStyle='#e1c269';x.font='bold 30px Inter, sans-serif';x.fillText('KEEP CLEAR',X(0),Z(49));
+  return canvasTex(c);
+}
+
 // ---------- world ----------
 let world, S, follow = null, fly = null, selected = null, speed = 1, paused = false, night = false, nightK = 0, antiCol = true;
 let showSensors = true, showCones = true, showHeat = false;
+let showStructure = false, cleanView = false;
 const ring = new THREE.Mesh(new THREE.RingGeometry(1.6, 1.9, 48), new THREE.MeshBasicMaterial({ color: 0x3fd0ff, transparent: true, opacity: .9, side: THREE.DoubleSide }));
 ring.rotation.x = -Math.PI / 2; ring.visible = false; scene.add(ring);
 const SPARK_N = 80, sparkPos = new Float32Array(SPARK_N * 3), sparkVel = new Float32Array(SPARK_N * 3);
@@ -280,10 +319,19 @@ async function build(site) {
 
   // ground, yard and floor
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), M('#2a3340', { roughness: 1 })); ground.rotation.x = -Math.PI / 2; ground.position.y = -.03; ground.receiveShadow = true; world.add(ground);
-  const yard = new THREE.Mesh(new THREE.PlaneGeometry(96, 70), M('#3a4048', { roughness: .95 })); yard.rotation.x = -Math.PI / 2; yard.position.set(0, -.02, 63); yard.receiveShadow = true; world.add(yard);
+  const yard = new THREE.Mesh(new THREE.PlaneGeometry(96, 70), PBR({ map: yardTexture(docks), roughness: .95 })); yard.rotation.x = -Math.PI / 2; yard.position.set(0, -.02, 63); yard.receiveShadow = true; world.add(yard);
   docks.forEach(d => { for (const sx of [-1.9, 1.9]) box(.18, .02, 13, M('#e6ebf0'), d.x + sx, .002, 35, world, false); });
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(84, 56), PBR({ map: floorTexture(site, docks, rackXs), roughness: .55, metalness: .05 }));
   floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; world.add(floor);
+  // Curbs and planted verges sit beyond the truck turning area.
+  for(const sx of [-49,49]) {
+    box(1.6,.18,64,M('#a4afb5'),sx,.04,60,world);
+    box(1.3,.18,62,M('#526954'),sx,.15,60,world);
+    for(let z=32;z<91;z+=4) {
+      const shrub=new THREE.Mesh(new THREE.IcosahedronGeometry(.7,1),M('#547d60'));
+      shrub.position.set(sx,.55,z);shrub.scale.set(.8,.65,1.5);shrub.castShadow=true;world.add(shrub);
+    }
+  }
 
   // building: insulated panel walls (tall at the back, glazing band on the sides), steel frame, roof trusses, high-bay lights
   const panel = M('#c9d1db', { roughness: .6, metalness: .3 }), steel = M('#56657a', { metalness: .6, roughness: .4 }), glass = PBR({ color: lin('#9ec9ef'), transparent: true, opacity: .22, roughness: .1, metalness: .2, depthWrite: false });
@@ -291,19 +339,21 @@ async function build(site) {
   for (let x = -42; x < 42; x += 2) box(.06, 8, .05, M('#b5bfcb'), x, 4, -27.9, world, false);
   for (const sx of [-42.1, 42.1]) { box(.3, 3, 56, panel, sx, 1.5, 0, world); box(.12, 5, 56, glass, sx, 5.5, 0, world, false); }
   box(84, .3, .4, M('#3a4658'), 0, 8.1, -28, world);
+  const overhead=new THREE.Group();overhead.userData.keep=true;world.add(overhead);S.overhead=overhead;
   for (let x = -42; x <= 42; x += 12) {
     box(.45, 9, .45, steel, x, 4.5, -28, world); box(.45, 9, .45, steel, x, 4.5, 28, world);
-    box(.25, .55, 56, steel, x, 9, 0, world);   // truss top chord
-    for (let z = -26; z <= 26; z += 4) { const d = box(.08, .9, .08, steel, x, 8.55, z, world, false); d.rotation.x = (z / 4) % 2 ? .6 : -.6; }
+    box(.25, .55, 56, steel, x, 9, 0, overhead);   // truss top chord
+    for (let z = -26; z <= 26; z += 4) { const d = box(.08, .9, .08, steel, x, 8.55, z, overhead, false); d.rotation.x = (z / 4) % 2 ? .6 : -.6; }
   }
-  for (let z = -28; z <= 28; z += 7) box(84, .14, .14, steel, 0, 9.3, z, world, false);
+  for (let z = -28; z <= 28; z += 7) box(84, .14, .14, steel, 0, 9.3, z, overhead, false);
   const fixtureMat = M('#2b3442', { metalness: .5 }), lampMat = PBR({ color: lin('#fff6dc'), emissive: lin('#fff1c8'), emissiveIntensity: .25 });
   S.lampMat = lampMat; S.poolMat = new THREE.MeshBasicMaterial({ map: WARM, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending });
   for (let x = -36; x <= 36; x += 12) for (let z = -20; z <= 20; z += 10) {
-    cyl(.02, 1.2, steel, x, 8.4, z, world); const f = new THREE.Mesh(new THREE.CylinderGeometry(.25, .5, .35, 18), fixtureMat); f.position.set(x, 7.6, z); world.add(f);
-    const lens = new THREE.Mesh(new THREE.CircleGeometry(.45, 18), lampMat); lens.rotation.x = Math.PI / 2; lens.position.set(x, 7.42, z); world.add(lens);
+    cyl(.02, 1.2, steel, x, 8.4, z, overhead); const f = new THREE.Mesh(new THREE.CylinderGeometry(.25, .5, .35, 18), fixtureMat); f.position.set(x, 7.6, z); overhead.add(f);
+    const lens = new THREE.Mesh(new THREE.CircleGeometry(.45, 18), lampMat); lens.rotation.x = Math.PI / 2; lens.position.set(x, 7.42, z); overhead.add(lens);
     const pool = new THREE.Mesh(new THREE.PlaneGeometry(9, 9), S.poolMat); pool.rotation.x = -Math.PI / 2; pool.position.set(x, .03, z); world.add(pool);
   }
+  mergeMeshes(overhead, overhead.children.filter(o=>o.isMesh));
 
   // front wall with roll-up dock doors, levellers, bumpers and dock lights
   const gaps = docks.map(d => d.x).sort((a, b) => a - b); let from = -42;
@@ -311,6 +361,7 @@ async function build(site) {
   for (const d of docks) {
     const g = new THREE.Group(); g.position.set(d.x, 0, 28); world.add(g);
     box(.35, 4.4, .45, M('#ffc400'), -2.1, 2.2, 0, g); box(.35, 4.4, .45, M('#ffc400'), 2.1, 2.2, 0, g); box(4.6, .5, .5, steel, 0, 4.6, 0, g);
+    for(const sx of [-2.1,2.1]) for(let k=0;k<5;k++) box(.36,.18,.46,M('#303b42'),sx,.3+k*.42,0,g,false);
     box(.4, .6, .3, M('#1c1f24'), -1.5, .7, .3, g); box(.4, .6, .3, M('#1c1f24'), 1.5, .7, .3, g);   // bumpers
     box(3.6, .06, 1.4, M('#7d8794', { metalness: .6 }), 0, .03, -.6, g);   // leveller
     const door = box(4, 4, .1, M('#dfe5ec', { metalness: .4 }), 0, 2.2, -.2, g);
@@ -936,7 +987,10 @@ $('#sensorList').addEventListener('click', e => {
 function switchSite(i) { if (building || SITES[i] === S.site) return Promise.resolve(); S.site.occ = occupancy(); resetView(); return build(SITES[i]); }
 
 function applyToggles() {
-  world.traverse(o => { if (o.userData.cone) o.visible = showCones; if (o.userData.sensorIcon) o.visible = showSensors; });
+  world.traverse(o => { if (o.userData.cone) o.visible = showCones && !cleanView; if (o.userData.sensorIcon) o.visible = showSensors && !cleanView; });
+  S.overhead.visible=showStructure;
+  document.body.classList.toggle('clean-view',cleanView);
+  for(const [id,on] of [['bClean',cleanView],['bStructure',showStructure]]) { $('#'+id).classList.toggle('on',on);$('#'+id).setAttribute('aria-pressed',String(on)); }
   S.heatMesh.visible = showHeat; if (showHeat) drawHeat();
   $('#bHeat').classList.toggle('on', showHeat); $('#bCones').classList.toggle('on', showCones); $('#bSensors').classList.toggle('on', showSensors); $('#bNight').classList.toggle('on', night);
   const b = $('#bAnti'); b.textContent = antiCol ? '🛡 Anti-collision ON' : '⚠ Anti-collision OFF'; b.className = antiCol ? 'safe' : 'danger';
@@ -952,6 +1006,14 @@ $('#bNight').onclick = () => { night = !night; applyToggles(); };
 $('#bSpeed').onclick = () => { speed = speed === 4 ? 1 : speed * 2; $('#bSpeed').textContent = 'Speed ' + speed + '×'; };
 $('#bPause').onclick = () => { paused = !paused; $('#bPause').textContent = paused ? 'Resume' : 'Pause'; $('#bPause').classList.toggle('on', paused); };
 $('#bView').onclick = resetView;
+$('#bClean').onclick=()=>{cleanView=!cleanView;applyToggles();};
+$('#bStructure').onclick=()=>{showStructure=!showStructure;applyToggles();};
+$('#cameraView').onchange=e=>{
+  follow=null;
+  const views={aisles:[-12,1,-3,30,-.35,.65,1],docks:[0,1,27,60,-.25,.65,1],cold:[39,1,-17,19,-1,.7,.6]};
+  const v=views[e.target.value];if(!v){resetView();return;}
+  fly={to:new THREE.Vector3(v[0],v[1],v[2]),dist:v[3],t:0,dir:new THREE.Vector3(v[4],v[5],v[6]).normalize()};
+};
 addEventListener('keydown', e => {
   if (e.target.closest('input, textarea')) return;
   const k = e.key.toLowerCase();
@@ -963,13 +1025,18 @@ addEventListener('keydown', e => {
 
 function resize() { renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
 addEventListener('resize', resize);
+const panelLayout=new ResizeObserver(()=>{
+  document.documentElement.style.setProperty('--panel-top',($('#top').getBoundingClientRect().bottom+10)+'px');
+  document.documentElement.style.setProperty('--panel-bottom',(innerHeight-$('#cmd').getBoundingClientRect().top+10)+'px');
+});
+panelLayout.observe($('#top'));panelLayout.observe($('#cmd'));
 
 // day and night: sky, sun, high-bay lamps and their pools of light
 const DAY_BG = lin('#1b2738'), NIGHT_BG = lin('#05080f'), bgc = new THREE.Color();
 function lighting(dt) {
   nightK += ((night ? 1 : 0) - nightK) * Math.min(1, dt * 2);
   bgc.copy(DAY_BG).lerp(NIGHT_BG, nightK); scene.background = bgc;
-  hemi.intensity = .6 - .45 * nightK; sun.intensity = 2.1 - 1.95 * nightK;
+  hemi.intensity = .82 - .67 * nightK; sun.intensity = 1.75 - 1.60 * nightK;
   S.lampMat.emissiveIntensity = .25 + 2.2 * nightK; S.poolMat.opacity = .55 * nightK;
   bayLights.forEach(l => { l.intensity = 1.3 * nightK; });
 }

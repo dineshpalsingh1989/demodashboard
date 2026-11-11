@@ -1,11 +1,11 @@
 // Generate narration with a Microsoft neural voice (edge-tts), decode it in Chrome, then build timing and captions.
-// node tools/build-iriv-narration.cjs [--only=pi|edge|hub]   Needs `python -m pip install edge-tts` and internet. Output stays in this checkout.
+// node tools/build-iriv-narration.cjs [--only=pi|edge|hub|smarthub|ioc]   Needs `python -m pip install edge-tts` and internet. Output stays in this checkout.
 const fs = require('node:fs'), path = require('node:path'), assert = require('node:assert/strict');
 const { spawn, spawnSync } = require('node:child_process');
 const root = path.resolve(__dirname, '..'), out = path.join(root, '.tmp/video-build'), rate = 22050, port = 9259;
 const VOICE = process.env.IRIV_VOICE || 'en-US-AriaNeural', RATE = '+10%';   // neural voices read slower than SAPI; the inspection scene must fit 18 s
 const only = process.argv.find(x => x.startsWith('--only='))?.split('=')[1];
-const tours = [['pi', 'short-video-of-iriv-pi'], ['edge', 'short-video-of-iriv-edgeai'], ['hub', 'short-video-of-iriv-hub']].filter(([key]) => !only || only === key);
+const tours = [['pi', 'short-video-of-iriv-pi'], ['edge', 'short-video-of-iriv-edgeai'], ['hub', 'short-video-of-iriv-hub'], ['smarthub', 'short-video-of-iriv-smarthub'], ['ioc', 'short-video-of-iriv-ioc']].filter(([key]) => !only || only === key);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 let chrome, ws, seq = 0; const pending = new Map();
 const cdp = (method, params = {}) => new Promise((resolve, reject) => { const id = ++seq; pending.set(id, { resolve, reject }); ws.send(JSON.stringify({ id, method, params })); });

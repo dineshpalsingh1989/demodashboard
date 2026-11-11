@@ -196,7 +196,7 @@
     body.panel-open .hint{display:none}
   }
 </style>
-<link rel="stylesheet" href="ui.css">
+<link rel="stylesheet" href="styles/ui.css">
 </head>
 <body>
 <a class="skip-link" href="#bSearch">Skip to city search</a>
@@ -261,7 +261,7 @@
 </dialog>
 <div id="announcement" class="sr-only" role="status"></div>
 
-<script src="ui.js"></script>
+<script src="scripts/ui/ui.js"></script>
 <script>
 /* ================================================================
    CONTENT — what each part of the city "says"
@@ -5913,17 +5913,17 @@ function updTicker() {
 }
 
 </script>
-<script src="milesight-devices.js"></script>
-<script src="utilities.js"></script>
-<script src="weather.js"></script>
-<script src="airport.js"></script>
-<script src="power-grid.js"></script>
-<script src="ferry.js"></script>
-<script src="logistics.js"></script>
-<script src="device-insights.js"></script>
-<script src="city3d-details.js"></script>
-<script src="city3d-life.js"></script>
-<script src="city3d.js"></script>
+<script src="scripts/devices/milesight-devices.js"></script>
+<script src="scripts/systems/utilities.js"></script>
+<script src="scripts/systems/weather.js"></script>
+<script src="scripts/systems/airport.js"></script>
+<script src="scripts/systems/power-grid.js"></script>
+<script src="scripts/systems/ferry.js"></script>
+<script src="scripts/systems/logistics.js"></script>
+<script src="scripts/devices/device-insights.js"></script>
+<script src="scripts/city/city3d-details.js"></script>
+<script src="scripts/city/city3d-life.js"></script>
+<script src="scripts/city/city3d.js"></script>
 <script>
 // Include devices appended by every district and interior expansion.
 const TOTAL_DEVICES = DEVICES.reduce((a, d) => a + d.qty, 0);

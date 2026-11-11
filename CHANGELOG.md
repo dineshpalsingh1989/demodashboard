@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### IRIV product tours
+
+- Added an IRIV SmartHub CM5 tour: a pinned scroll-through look around the unit, live demos of a shop checkout, two-screen signage and a production tracker, port maps, 19 compatible parts with a system builder, and a narrated film.
+- Added an IRIV IO Controller MQTT tour: a hands-on panel that shows the MQTT message for each input, output and analog value, pump-station and machine-monitor demos, all 32 terminals, the browser setup screens and a narrated film.
+- Redesigned the IRIV EdgeAI CM5 tour with a product-first hero and a highlights grid.
+- Film narration now uses a Microsoft neural voice through `edge-tts` in place of the Windows SAPI voice.
+- The films panel, IO Controller device panels, comparison page and README link to the new tours.
+
 ## V2.0 — 11 November 2026
 
 ### City and street life
