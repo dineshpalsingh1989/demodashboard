@@ -54,7 +54,7 @@ const filmReady = Promise.all([
 function canvasTex(w, h, draw) { const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d'); draw(g, w, h); const t = new THREE.CanvasTexture(c); t.anisotropy = 4; t.encoding = THREE.sRGBEncoding; t.userData = { g, w, h, draw }; return t; }
 const mat = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: .6, metalness: .1, envMapIntensity: (o.metalness || 0) > .5 ? .7 : .12, ...o });   // RoomEnvironment is bright: plastics would wash out
 function mesh(geo, m, pos, parent = scene, rot) { const x = new THREE.Mesh(geo, m); x.position.copy(pos); if (rot) x.rotation.set(...rot); x.castShadow = x.receiveShadow = true; parent.add(x); return x; }
-function tube(points, color, r = .007) { const curve = new THREE.CatmullRomCurve3(points); const m = mat(color, { roughness: .45, emissive: color, emissiveIntensity: 0 }); const x = mesh(new THREE.TubeGeometry(curve, 160, r, 8), m, V3(0, 0, 0)); return { curve, mesh: x, mat: m }; }
+function tube(points, color, r = .007, segments = 160) { const curve = new THREE.CatmullRomCurve3(points); const m = mat(color, { roughness: .45, emissive: color, emissiveIntensity: 0 }); const x = mesh(new THREE.TubeGeometry(curve, segments, r, 8), m, V3(0, 0, 0)); return { curve, mesh: x, mat: m }; }
 function rr(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
 
 // Scene scale: the cabinet and its parts are modelled at 2× real size (IRIV 140 × 60 × 36 mm → 0.28 × 0.12 × 0.072),
@@ -134,7 +134,22 @@ function build() {
   for (const dx of [-.22, .22]) mesh(rbox(.1, .2, .44, .01), blue, V3(-1.45 + dx, .14, .2), motor);
   const guard = new THREE.CylinderGeometry(.09, .09, .22, 32, 1, true, 0, Math.PI);
   mesh(guard, mat('#e8b100', { roughness: .45, side: THREE.DoubleSide }), V3(-0.86, .42, .2), motor, [Math.PI / 2, 0, Math.PI / 2]);   // coupling guard
-  mesh(new THREE.TorusGeometry(.15, .07, 20, 40), mat('#3d6b8f', { metalness: .45, roughness: .4 }), V3(-0.62, .42, .2), motor, [0, Math.PI / 2, 0]);   // pump volute
+  // Cast centrifugal pump casing, bolted cover and bearing pedestal.
+  const pumpPaint=mat('#24516c',{metalness:.25,roughness:.64});
+  mesh(new THREE.CylinderGeometry(.205,.185,.18,64),pumpPaint,V3(-.62,.42,.2),motor,[0,0,Math.PI/2]);
+  mesh(new THREE.CylinderGeometry(.17,.17,.025,64),pumpPaint,V3(-.515,.42,.2),motor,[0,0,Math.PI/2]);
+  for(let k=0;k<8;k++){const a=k*Math.PI/4;mesh(new THREE.CylinderGeometry(.012,.012,.018,6),steel,V3(-.495,.42+Math.sin(a)*.145,.2+Math.cos(a)*.145),motor,[0,0,Math.PI/2]);}
+  mesh(rbox(.3,.16,.35,.018),pumpPaint,V3(-.62,.13,.2),motor);
+  mesh(rbox(1.7,.055,.60,.012),dark,V3(-1.2,.035,.2),motor);
+  // Discharge riser, gasket joint, flange bolts and pipe support.
+  mesh(new THREE.CylinderGeometry(.055,.055,.42,32),pumpPaint,V3(-.62,.76,.2),motor);
+  for(const y of [.82,.85])mesh(new THREE.CylinderGeometry(.095,.095,.018,48),steel,V3(-.62,y,.2),motor);
+  mesh(new THREE.CylinderGeometry(.086,.086,.009,48),dark,V3(-.62,.835,.2),motor);
+  for(let k=0;k<8;k++){const a=k*Math.PI/4;mesh(new THREE.CylinderGeometry(.007,.007,.055,6),steel,V3(-.62+Math.cos(a)*.077,.835,.2+Math.sin(a)*.077),motor);}
+  // Motor end-shield bolts and a separate terminal-box lid.
+  for(let k=0;k<6;k++){const a=k*Math.PI/3;mesh(new THREE.CylinderGeometry(.009,.009,.018,6),steel,V3(-1.057,.42+Math.sin(a)*.18,.2+Math.cos(a)*.18),motor,[0,0,Math.PI/2]);}
+  mesh(rbox(.18,.012,.13,.006),blue,V3(-1.48,.556,.44),motor);
+  for(const x of [-1.55,-1.41])for(const z of [.395,.485])mesh(new THREE.CylinderGeometry(.005,.005,.008,6),steel,V3(x,.565,z),motor);
   mesh(new THREE.CylinderGeometry(.1, .1, .12, 32), mat('#3d6b8f', { metalness: .45, roughness: .4 }), V3(-0.62, .42, .2), motor, [0, 0, Math.PI / 2]);
   mesh(new THREE.CylinderGeometry(.06, .06, .55, 24), steel, V3(-0.62, .42, .52), motor, [Math.PI / 2, 0, 0]);
   mesh(new THREE.CylinderGeometry(.09, .09, .02, 24), steel, V3(-0.62, .42, .79), motor, [Math.PI / 2, 0, 0]);
@@ -144,18 +159,40 @@ function build() {
   const topTex = canvasTex(512, 512, (g, w) => {
     g.fillStyle = '#111317'; g.fillRect(0, 0, w, w);
     g.fillStyle = '#f0f1f2'; g.textAlign = 'center';
-    g.font = '800 72px ' + FONT; g.fillText('Wilcoxon', 256, 275);
-    g.font = '600 27px ' + FONT; g.letterSpacing = '5px'; g.fillText('SENSING TECHNOLOGIES', 256, 315);
-    g.beginPath(); g.arc(385, 122, 32, 0, 7); g.fillStyle = '#252a2f'; g.fill();
+    // The slashed W and wordmark sit across the lid, as on the product reference.
+    g.save(); g.translate(72, 238);
+    for (let i = 0; i < 3; i++) { g.beginPath(); g.moveTo(i * 17, -31); g.lineTo(i * 17 + 13, -31); g.lineTo(i * 17 + 32, 27); g.lineTo(i * 17 + 19, 27); g.closePath(); g.fill(); }
+    g.restore();
+    g.textAlign = 'left'; g.font = '700 66px ' + FONT; g.fillText('Wilcoxon', 145, 266);
+    g.textAlign = 'center'; g.font = '500 19px ' + FONT; g.letterSpacing = '3px'; g.fillText('SENSING TECHNOLOGIES', 256, 302);
   });
-  const shell = mat('#34383d', { metalness: .48, roughness: .42 });
+  const sideTex883 = canvasTex(1024, 256, (g,w,h) => {
+    g.fillStyle = '#70747a'; g.fillRect(0,0,w,h);
+    g.fillStyle = '#cbd0d3'; g.font = '500 75px ' + FONT; g.fillText('CE', 170, 183);
+    g.font = '600 25px ' + FONT; g.fillText('883M', 620, 165);
+    g.font = '500 18px ' + FONT; g.fillText('X   Y   Z', 620, 195);
+  });
+  const shell = mat('#b0b4ba', { map: sideTex883, metalness: .28, roughness: .55, envMapIntensity: .07 });
   mesh(new THREE.CylinderGeometry(.035, .035, .006, 64), steel, V3(0, .003, 0), s883);
-  mesh(new THREE.CylinderGeometry(.0345, .035, .042, 64), shell, V3(0, .027, 0), s883);
+  // Four shallow wrench flats interrupt the round aluminium housing.
+  const housing = new THREE.CylinderGeometry(.0345, .035, .042, 96, 1, true);
+  const hp = housing.attributes.position;
+  for (let i = 0; i < hp.count; i++) { hp.setX(i, Math.max(-.032,Math.min(.032,hp.getX(i)))); hp.setZ(i,Math.max(-.032,Math.min(.032,hp.getZ(i)))); }
+  hp.needsUpdate = true; housing.computeVertexNormals();
+  mesh(housing, shell, V3(0, .027, 0), s883);
   mesh(new THREE.CylinderGeometry(.0345, .0345, .003, 64), [shell, mat('#fff', { map: topTex, roughness: .58 }), shell], V3(0, .0495, 0), s883);
-  mesh(new THREE.TorusGeometry(.0345, .0015, 8, 64), mat('#16191d', { metalness: .35, roughness: .5 }), V3(0, .049, 0), s883, [Math.PI / 2, 0, 0]);
+  mesh(new THREE.TorusGeometry(.034, .0006, 8, 64), mat('#16191d', { metalness: .35, roughness: .5 }), V3(0, .049, 0), s883, [Math.PI / 2, 0, 0]);
   mesh(new THREE.CylinderGeometry(.009, .009, .015, 24), steel, V3(.041, .028, 0), s883, [0, 0, Math.PI / 2]);
   mesh(new THREE.CylinderGeometry(.0065, .0065, .011, 24), mat('#17191d', { metalness: .3 }), V3(.052, .028, 0), s883, [0, 0, Math.PI / 2]);
-  W.sensorLed = mesh(new THREE.SphereGeometry(.0038, 16, 16), new THREE.MeshBasicMaterial({ color: '#30d158' }), V3(.016, .052, -.013), s883);
+  for (let i=0;i<7;i++) mesh(new THREE.TorusGeometry(.0091,.00035,6,32),steel,V3(.035+i*.0018,.028,0),s883,[0,Math.PI/2,0]);
+  // Mated cable plug: captive coupling nut and a tapered, ribbed strain-relief boot.
+  const cableRubber = mat('#20252a', { roughness: .86, metalness: 0 });
+  mesh(new THREE.CylinderGeometry(.0105,.0105,.017,32),steel,V3(.050,.028,0),s883,[0,0,Math.PI/2]);
+  for(let i=0;i<10;i++) mesh(new THREE.TorusGeometry(.0106,.00045,6,32),steel,V3(.043+i*.0014,.028,0),s883,[0,Math.PI/2,0]);
+  mesh(new THREE.CylinderGeometry(.006,.009,.028,32),cableRubber,V3(.072,.028,0),s883,[0,0,-Math.PI/2]);
+  for(let i=0;i<5;i++) mesh(new THREE.TorusGeometry(.0085-i*.00055,.0007,8,24),cableRubber,V3(.061+i*.005,.028,0),s883,[0,Math.PI/2,0]);
+  mesh(new THREE.CylinderGeometry(.0052,.0052,.001,32),mat('#090b0d',{roughness:.6}),V3(.016,.0512,-.013),s883);
+  W.sensorLed = mesh(new THREE.CylinderGeometry(.0027,.0027,.0005,24), new THREE.MeshBasicMaterial({ color: '#30d158' }), V3(.016, .0518, -.013), s883);
   W.axes = new THREE.Group(); s883.add(W.axes); W.axes.position.y = .055;
   [['#e5383b', V3(1, 0, 0)], ['#30d158', V3(0, 0, 1)], ['#0a84ff', V3(0, 1, 0)]].forEach(([c, d]) => W.axes.add(new THREE.ArrowHelper(d, V3(0, 0, 0), .11, c, .025, .014)));
 
@@ -223,8 +260,24 @@ function build() {
 
   // cables: sensor cable to a split, then its three cores into A, B and G; power, DO0, beacon, DI1 and Ethernet
   const split = V3(0.775, 1.215, -0.315);
-  W.sensorCable = tube([V3(-1.05, .68, .2), V3(-0.99, .67, .27), V3(-0.97, .5, .46), V3(-0.95, .03, .58), V3(-0.3, .015, .7), V3(0.5, .015, .3), V3(0.7, .02, -0.4), V3(0.72, .6, -0.47), V3(0.74, 1.0, -0.47), V3(0.76, 1.15, -0.36), split], '#2b2f36', .006);
-  W.cores = [['#f2f2f2', 1], ['#7a4a22', 2], ['#3a8f3a', 3]].map(([c, k]) => tube([split, split.clone().add(V3(0, .03, .012)), term(1, 'top', k).add(V3(0, -.012, .012)), term(1, 'top', k)], c, .0022));
+  const protectedRoute = [V3(-1.24,.16,.57),V3(-1.65,.12,.57),V3(-2.12,.12,.52),V3(-2.15,.12,-.32),V3(-1.95,.12,-.46),V3(-.8,.12,-.46),V3(.50,.12,-.46),V3(.70,.24,-.40),V3(.70,.55,-.40),V3(.70,.70,-.40)];
+  W.sensorCable = tube([V3(-1.014,.688,.2),V3(-.986,.688,.2),V3(-.95,.675,.24),V3(-.97,.59,.40),V3(-1.12,.46,.54),V3(-1.24,.32,.57),...protectedRoute,V3(.70,.80,-.40),V3(.72,1.0,-.47),V3(.76,1.15,-.36),split], '#24292e', .0045, 960);
+  // Protected run skirts the machine base and enters the existing bottom gland.
+  tube(protectedRoute, '#49535c', .015);
+  for(const [x,y,z] of [[-1.12,.46,.54],[-1.24,.32,.57]]) {
+    mesh(rbox(.055,.027,.012,.004),steel,V3(x,y,z-.012),motor);
+    mesh(new THREE.TorusGeometry(.007,.0025,8,24),cableRubber,V3(x,y,z),motor,[Math.PI/2,0,0]);
+    for(const dx of [-.021,.021]) mesh(new THREE.CylinderGeometry(.004,.004,.006,6),steel,V3(x+dx,y,z-.003),motor,[Math.PI/2,0,0]);
+  }
+  for(const x of [-1.8,-.8,.35]) {
+    mesh(rbox(.065,.12,.035,.004),steel,V3(x,.06,-.46));
+    mesh(new THREE.TorusGeometry(.017,.003,8,24),steel,V3(x,.12,-.46),scene,[0,Math.PI/2,0]);
+  }
+  for(const y of [.36,.58]) {
+    mesh(rbox(.065,.025,.09,.004),steel,V3(.70,y,-.455));
+    mesh(new THREE.TorusGeometry(.017,.003,8,24),steel,V3(.70,y,-.40),scene,[Math.PI/2,0,0]);
+  }
+  W.cores = [['#3a8f3a', 1], ['#f2f2f2', 2], ['#20252a', 3], ['#d63a2e', 0]].map(([c, k]) => tube([split, split.clone().add(V3(0, .03, .012)), term(1, 'top', k).add(V3(0, -.012, .012)), term(1, 'top', k)], c, .0022));
   W.powerWire = tube([V3(0.535, 1.288, -0.425), V3(0.56, 1.22, -0.37), V3(0.72, 1.24, -0.33), term(1, 'top', 0).add(V3(0, -.01, .012)), term(1, 'top', 0)], '#d63a2e', .0028);
   W.powerNeg = tube([V3(0.557, 1.288, -0.425), V3(0.58, 1.23, -0.37), V3(0.73, 1.25, -0.335), term(1, 'bottom', 0).add(V3(0, -.01, .012)), term(1, 'bottom', 0)], '#2a62c9', .0028);
   W.doWire = tube([term(2, 'top', 0), term(2, 'top', 0).add(V3(.004, -.01, .014)), V3(0.86, 1.2, -0.33), V3(0.98, 1.24, -0.4), RELAY.clone().add(V3(0, -.055, .0))], '#e08a1e', .0028);
@@ -240,6 +293,22 @@ function build() {
   W.holo = mesh(new THREE.PlaneGeometry(1.25, .703), new THREE.MeshBasicMaterial({ map: W.holoTex, transparent: true, opacity: .95, side: THREE.DoubleSide }), HOLO, scene, [0, 0, 0]);
   mesh(rbox(1.29, .743, .03, .01), mat('#14171c', { metalness: .4, roughness: .4 }), HOLO.clone().add(V3(0, 0, -.02)));   // the screen's bezel on the wall
   W.dash.castShadow = W.holo.castShadow = false;
+  // Installation details: enclosure fasteners, hinges, glands and circuit markers.
+  for (const x of [.46,1.34]) for (const y of [.82,1.68]) {
+    mesh(new THREE.CylinderGeometry(.009,.009,.006,6),steel,V3(x,y,-.491),scene,[Math.PI/2,0,0]);
+    mesh(new THREE.BoxGeometry(.01,.0015,.001),dark,V3(x,y,-.487));
+  }
+  for(const y of [.93,1.57]) mesh(new THREE.CylinderGeometry(.013,.013,.09,16),steel,V3(.39,y,-.22));
+  for(const x of [.70,1.05]) {
+    mesh(new THREE.CylinderGeometry(.022,.022,.035,6),mat('#424951',{roughness:.65}),V3(x,.73,-.4));
+    mesh(new THREE.CylinderGeometry(.012,.012,.05,24),mat('#242b32',{roughness:.7}),V3(x,.70,-.4));
+  }
+  const marker=(text,pos)=>{const tex=canvasTex(256,64,(g,w,h)=>{g.fillStyle='#ece9d8';g.fillRect(0,0,w,h);g.fillStyle='#202731';g.font='700 28px '+FONT;g.textAlign='center';g.fillText(text,w/2,43);});mesh(new THREE.PlaneGeometry(.075,.019),mat('#fff',{map:tex,roughness:.85}),pos);};
+  marker('RS485',V3(.76,1.19,-.30));marker('24 VDC',V3(.61,1.25,-.33));marker('DO0',V3(.98,1.23,-.37));marker('ETH',V3(.57,1.07,-.40));
+  marker('883M',V3(-1.24,.27,.58));
+  // Subtle chipped paint and anchor bolts on the motor feet.
+  for(const x of [-1.67,-1.23]) for(const z of [.02,.38])mesh(new THREE.CylinderGeometry(.012,.012,.012,6),steel,V3(x,.245,z),motor);
+  for(let i=0;i<12;i++)mesh(new THREE.BoxGeometry(.012+i%3*.003,.002,.004),mat(i%3?'#687681':'#795541',{roughness:.95}),V3(-1.69+i*.042,.246,.418),motor);
 }
 
 function drawDash(g, w, h) {
@@ -296,7 +365,7 @@ function updateWorld(t, s, u) {
   const relayOn = al && u >= T_TRIP && u < T_CLEAR, pressed = al && u >= T_ACK && u < T_ACK + .7;
   const amp = .0007 * v * v;
   W.motor.position.set(Math.sin(t * 61) * amp, Math.sin(t * 47 + 1) * amp, Math.sin(t * 53 + 2) * amp * .6);
-  W.axes.visible = s.id === 'sensor'; W.axes.scale.setScalar(ease((u - .8) / 1));
+  W.axes.visible = s.id === 'sensor' && u > 5; W.axes.scale.setScalar(ease((u - 5) / 1));
   const flash = relayOn && Math.sin(u * 14) > -.2;
   W.lensMat.emissiveIntensity = relayOn ? (flash ? 2.4 : .25) : 0; W.beaconLight.intensity = relayOn ? (flash ? 3.2 : .3) : 0;
   W.relayLed.material.color.set(relayOn ? '#ff3b30' : '#331010'); W.do0Led.material.color.set(relayOn ? '#ffb020' : '#3a2a10');
@@ -374,6 +443,10 @@ function alarmHud(ctx, u) {
   const io = (lx, label, lit, c) => { ctx.beginPath(); ctx.arc(lx, y + 322, 10, 0, 7); ctx.fillStyle = lit ? c : '#3a4253'; ctx.fill(); ctx.fillStyle = '#e8edf5'; ctx.font = `700 22px ${FONT}`; ctx.fillText(label, lx + 20, y + 330); };
   io(x + 40, 'DO0 relay', on, '#ffb020'); io(x + 230, 'DI1 ACK', u >= T_ACK && u < T_ACK + .7, '#0a84ff'); io(x + 400, 'Beacon', on, '#ff453a');
   ctx.restore();
+  const stages=['Vibration rises','IOC reads','Alarm latched','Acknowledged','Normal again'];
+  const stage=u<T_OVER?0:u<T_TRIP?1:u<T_ACK?2:u<T_CLEAR?3:4;
+  ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='600 20px '+FONT;
+  stages.forEach((label,i)=>{const x=110+i*340;ctx.fillStyle=i===stage?'#ffad70':'rgba(12,25,38,.85)';rr(ctx,x,700,324,50,12);ctx.fill();ctx.fillStyle=i===stage?'#102432':'#d4e2ed';ctx.fillText(`${i+1} · ${label}`,x+162,725);});ctx.restore();
 }
 function footer(ctx, i, t) {
   ctx.save(); ctx.font = `600 22px ${FONT}`; ctx.fillStyle = 'rgba(232,237,245,.75)'; ctx.textBaseline = 'alphabetic';

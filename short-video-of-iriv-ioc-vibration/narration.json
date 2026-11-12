@@ -9,7 +9,7 @@
       {"at":6.5,"text":"The controller polls it over Modbus, and publishes each reading as MQTT."},
       {"at":11.8,"text":"MultiViz learns what normal looks like."}
     ]},
-    {"id":"sensor","minDuration":8,"text":"The eight eight three M is a triaxial MEMS sensor. Plus or minus sixteen g, two hertz to five kilohertz, sealed to IP sixty seven."},
+    {"id":"sensor","minDuration":24,"text":"The Wilcoxon eight eight three M measures vibration in X, Y and Z, plus temperature. It reports acceleration, velocity and displacement, along with waveforms and a frequency spectrum. Its acceleration range is plus or minus sixteen g, with a frequency response from two hertz to five kilohertz. The compact housing is thirty five millimetres wide and twenty six millimetres high, with an M eight connector. It sends digital readings over Modbus R T U. These measurements help track changes in a machine; diagnosis also needs its operating conditions and history."},
     {"id":"rs485","minDuration":7,"display":"883M A and B to RS485 A and B, ground to G. Terminator on.","text":"Its RS485 pair lands on A and B, with ground on G. The controller ends the bus, so the terminator switch goes on."},
     {"id":"power","minDuration":6,"display":"One 24 V DC rail for the controller and the sensor.","text":"A twenty four volt supply powers the controller, and the sensor shares the same rail."},
     {"id":"setup","minDuration":8,"text":"Install the firmware from the web installer. Then set the MQTT broker and the alarm limits in the controller's own web dashboard."},

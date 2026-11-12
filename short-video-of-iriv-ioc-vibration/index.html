@@ -214,7 +214,7 @@
         <p class="eyebrow">Machine condition monitoring</p>
         <h1>Vibration in.<br>Alarm out.</h1>
         <p class="lede">See a Wilcoxon 883M on a motor, an IRIV IO Controller reading it over RS485, and a local alarm that someone can acknowledge. Follow the data into Viking Analytics over MQTT.</p>
-        <div class="hero-ctas"><a class="primary" href="#film">Watch the 2-minute film →</a><a class="secondary" href="#try">Try the alarm demo</a></div>
+        <div class="hero-ctas"><a class="primary" href="#film">Watch the narrated film →</a><a class="secondary" href="#try">Try the alarm demo</a></div>
         <p class="hero-proof">Real product references · narrated 3D demonstration · interactive wiring</p>
       </div>
       <div class="hero-visual" aria-label="The Wilcoxon 883M sensor and IRIV IO Controller used in this demonstration">
@@ -237,7 +237,7 @@
   <div class="wrap">
     <p class="eyebrow">The film</p>
     <h2>How it works.</h2>
-    <p class="lede">About two minutes: the sensor, the wiring, the firmware setup, MultiViz and the alarm.</p>
+    <p class="lede">Follow the sensor, the wiring, the firmware setup, MultiViz and one complete alarm event.</p>
   </div>
   <div class="player">
     <div class="screen" id="screen">
@@ -390,6 +390,13 @@
   <div class="wrap">
     <p class="eyebrow">Wilcoxon 883M</p>
     <h2>The sensor on the motor.</h2>
+    <div class="card" style="margin-bottom:24px"><h3>A supported cable, from sensor to cabinet</h3><p>The film shows a seated M8 plug, a flexible boot, a service bend, cable clamps and a protected conduit run into the cabinet gland. This is an illustrative route; select the cable’s bend radius and supports for the actual installation.</p><p>Wilcoxon’s optional cable uses red for power, black for ground, green for signal + and white for signal −. The shield connects through the connector housing. Check your cable’s pinout before wiring.</p><a href="https://wilcoxon.com/wp-content/uploads/2026/09/883M-manual-97052A.pdf" target="_blank" rel="noopener">883M setup manual · connector and cable definitions ↗</a></div>
+    <p><a href="https://wilcoxon.com/wp-content/uploads/2025/08/883M-spec-99473A4.pdf" target="_blank" rel="noopener">Read the official Wilcoxon 883M datasheet (PDF) ↗</a></p>
+    <div class="wire-overview">
+      <div class="wire-step"><small>Measures</small><strong>Three axes + temperature</strong><span>Track vibration in X, Y and Z at the mounting point.</span></div>
+      <div class="wire-step"><small>Reports</small><strong>Metrics, waveform, spectrum</strong><span>Read acceleration, velocity and displacement, or inspect the signal over time and frequency.</span></div>
+      <div class="wire-step"><small>Helps explain</small><strong>Changes in machine condition</strong><span>Compare readings with the machine’s operating conditions and history before diagnosing a fault.</span></div>
+    </div>
     <p class="lede" style="margin-left:0">A digital triaxial MEMS accelerometer with a temperature sensor. It works out the vibration numbers itself and serves them over Modbus RTU, so the IOC only has to read registers.</p>
     <div class="photos">
       <figure><img src="images/883m.jpg" width="1200" height="900" alt="Wilcoxon 883M sensor: black aluminium top, stainless base, M8 connector on the side" loading="lazy"><figcaption>Aluminium top, stainless base, M8 connector and an RGB status LED.</figcaption></figure>
@@ -446,6 +453,8 @@
 <script src="narration.js"></script>
 <script src="player.js"></script>
 <script src="live.js"></script>
+<link rel="stylesheet" href="experience.css">
+<script src="experience.js"></script>
 <!-- film-build:start · renders the 3D film for tools/build-iriv-videos.cjs; not needed to watch it -->
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/geometries/RoundedBoxGeometry.js"></script>

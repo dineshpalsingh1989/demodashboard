@@ -65,6 +65,17 @@ async function main(){
  console.log('PASS scene rendering and page initialization');
 }
 async function checkTour(key,folder,url){
+ if(key==='iocvib'){
+  await ev("document.querySelector('[data-wire=alarm]').click()");
+  assert(await ev("document.querySelector('[data-path=alarm]').classList.contains('active') && !document.querySelector('[data-path=power]').classList.contains('active')"),'Wiring selection');
+  await ev("document.querySelector('[data-view=spectrum]').click();document.getElementById('sample-level').value='1.5';document.getElementById('sample-level').dispatchEvent(new Event('input'))");
+  assert(await ev("document.getElementById('sample-scope').getAttribute('aria-label').includes('1.5') && document.getElementById('sample-scope').getAttribute('aria-label').includes('spectrum')"),'Sample spectrum and amplitude');
+  await ev("document.querySelector('[data-step=\"3\"]').click()");
+  assert(await ev("document.getElementById('setup-next').disabled && document.getElementById('setup-title').textContent==='Test the alarm'"),'Guided setup final step');
+  await ev("document.getElementById('setup-prev').click()");
+  assert(await ev("document.getElementById('setup-title').textContent==='Configure the gateway'"),'Guided setup previous');
+  console.log('PASS interactive wiring, sample charts and guided setup');
+ }
  await waitFor("document.getElementById('tour-video').readyState>=2");
  const meta=await ev("(()=>{const v=document.getElementById('tour-video');return {duration:v.duration,width:v.videoWidth,height:v.videoHeight,controls:v.controls,muted:v.muted,tracks:v.textTracks.length}})()");
  const total=await ev('TOTAL');assert(Math.abs(meta.duration-total)<.15,'Audio/video duration mismatch');assert.equal(meta.width,1920);assert.equal(meta.height,1080);assert(meta.controls&&!meta.muted&&meta.tracks===1);
@@ -95,6 +106,8 @@ async function checkTour(key,folder,url){
   if(key==='iocvib'){
    await ev("document.getElementById('connect').scrollIntoView({block:'start',behavior:'instant'})");await sleep(180);
    const wiring=await cdp('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(out,`${key}-wiring-${width}.png`),Buffer.from(wiring.data,'base64'));
+   await ev("document.getElementById('measurements').scrollIntoView({block:'start',behavior:'instant'})");await sleep(180);
+   const scope=await cdp('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(out,`${key}-scope-${width}.png`),Buffer.from(scope.data,'base64'));
   }
  }
  if(key==='edge'){
