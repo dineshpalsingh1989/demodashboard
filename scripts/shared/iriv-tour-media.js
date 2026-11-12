@@ -85,7 +85,7 @@ async function exportNarratedTour(onProgress = () => {}) {
   const audioConfig = { codec:'mp4a.40.2',sampleRate:48000,numberOfChannels:1,bitrate:96000 };
   if (!window.AudioEncoder || !(await AudioEncoder.isConfigSupported(audioConfig)).supported) throw Error('AAC encoding is unavailable. Use Chrome on Windows to build the narrated MP4.');
   let codec;
-  for (const candidate of ['avc1.640028','avc1.4d0028','avc1.42e028']) if ((await VideoEncoder.isConfigSupported({codec:candidate,width:FW,height:FH,bitrate:5e6,framerate:FPS})).supported) {codec=candidate;break;}
+  for (const candidate of ['avc1.640028','avc1.4d0028','avc1.42e028']) if ((await VideoEncoder.isConfigSupported({codec:candidate,width:FW,height:FH,bitrate:window.FILM_BITRATE||5e6,framerate:FPS})).supported) {codec=candidate;break;}
   if (!codec) throw Error('H.264 encoding is unavailable.');
   const response=await fetch(NARRATION.audio); if(!response.ok)throw Error('Narration audio is missing');
   const audioContext=new OfflineAudioContext(1,48000,48000), buffer=await audioContext.decodeAudioData(await response.arrayBuffer()), samples=buffer.getChannelData(0);if(buffer.numberOfChannels!==1||Math.abs(buffer.duration-TOTAL)>1)throw Error('Narration must be mono and match the film length ('+TOTAL.toFixed(1)+' s), got '+buffer.numberOfChannels+' ch / '+buffer.duration.toFixed(1)+' s');
@@ -98,7 +98,7 @@ async function exportNarratedTour(onProgress = () => {}) {
     for(let i=0;i<samples.length;i+=1024){const data=samples.slice(i,Math.min(samples.length,i+1024));const frame=new AudioData({format:'f32',sampleRate:48000,numberOfFrames:data.length,numberOfChannels:1,timestamp:Math.round(i/48000*1e6),data});aenc.encode(frame);frame.close();if(aenc.encodeQueueSize>20)await aenc.flush();if(failure)throw failure;}
     await aenc.flush();
     const cv=document.createElement('canvas');cv.width=FW;cv.height=FH;const ctx=cv.getContext('2d');
-    venc.configure({codec,width:FW,height:FH,bitrate:5e6,framerate:FPS});
+    venc.configure({codec,width:FW,height:FH,bitrate:window.FILM_BITRATE||5e6,framerate:FPS});
     const count=Math.round(TOTAL*FPS);
     for(let i=0;i<count;i++){
       if(failure)throw failure;render(ctx,i/FPS);

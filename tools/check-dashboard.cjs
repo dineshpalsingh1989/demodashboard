@@ -116,10 +116,10 @@ async function layoutCheck(width, height) {
     console.log('frame ms · city ' + city.toFixed(1) + ' · airport ' + air.toFixed(1) + ' · terminal ' + hall.toFixed(1));
     assert(city < 1500 && air < 1500 && hall < 1500, 'frame time regressed badly (headless software rendering is slow; this only catches big jumps)');
   });
-  await step('IRIV films button lists both films', async () => {
+  await step('IRIV films button lists all tours', async () => {
     await ev("document.getElementById('bFilms').click()"); await sleep(500);
-    assert.equal(await ev("document.querySelectorAll('#panel .ins-film').length"), 7, 'five films, the compare page and Warehouse Command 3D');
-    assert.deepEqual(await ev("[...document.querySelectorAll('#panel .ins-film')].map(a => a.getAttribute('href'))"), ['short-video-of-iriv-edgeai/', 'short-video-of-iriv-pi/', 'short-video-of-iriv-smarthub/', 'short-video-of-iriv-ioc/', 'short-video-of-iriv-hub/', 'iriv-controllers/', 'warehouse-3d/']);
+    assert.equal(await ev("document.querySelectorAll('#panel .ins-film').length"), 8, 'six films, the compare page and Warehouse Command 3D');
+    assert.deepEqual(await ev("[...document.querySelectorAll('#panel .ins-film')].map(a => a.getAttribute('href'))"), ['short-video-of-iriv-edgeai/', 'short-video-of-iriv-pi/', 'short-video-of-iriv-smarthub/', 'short-video-of-iriv-ioc/', 'short-video-of-iriv-ioc-vibration/', 'short-video-of-iriv-hub/', 'iriv-controllers/', 'warehouse-3d/']);
     await shot('films'); await ev('closePanel()');
   });
   await step('Guided tour starts and stops', async () => {

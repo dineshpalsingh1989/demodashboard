@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### 883M vibration monitor tour
+
+- Added a narrated 3D tour of a Wilcoxon 883M connected to an IRIV IO Controller, with a sensor close-up, landscape controller model, wiring, MQTT analytics and a local alarm sequence.
+- Added a responsive product page with the film, captions, transcript, wiring overview, live MQTT viewer, interactive alarm demonstration and sensor reference.
+- Linked the new tour from the city dashboard and README.
+
 ### Map exploration polish
 
 - Moved the default Walk mode starting point to a clear street view, clipped geometry behind the camera, and kept nearby traffic signals at a readable size.

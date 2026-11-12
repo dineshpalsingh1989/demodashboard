@@ -1,0 +1,28 @@
+{
+  "product": "IRIV IOC · Wilcoxon 883M · Viking Analytics",
+  "base": "IRIV-IOC-883M-vibration-tour",
+  "scenes": [
+    {"id":"intro","minDuration":7.5,"display":"IRIV IO Controller + Wilcoxon 883M, analysed by Viking Analytics.","text":"This vibration monitor uses an IRIV IO Controller, running the Wilcoxon gateway firmware. It reads a Wilcoxon eight eight three M, and publishes to Viking Analytics over MQTT."},
+    {"id":"overview","minDuration":8,"text":"The sensor measures. The controller polls it and publishes. Viking Analytics learns the machine, and flags what changes."},
+    {"id":"chain","minDuration":15,"segments":[
+      {"at":0.6,"text":"The eight eight three M sits on the motor, and measures vibration on three axes, plus temperature."},
+      {"at":6.5,"text":"The controller polls it over Modbus, and publishes each reading as MQTT."},
+      {"at":11.8,"text":"MultiViz learns what normal looks like."}
+    ]},
+    {"id":"sensor","minDuration":8,"text":"The eight eight three M is a triaxial MEMS sensor. Plus or minus sixteen g, two hertz to five kilohertz, sealed to IP sixty seven."},
+    {"id":"rs485","minDuration":7,"display":"883M A and B to RS485 A and B, ground to G. Terminator on.","text":"Its RS485 pair lands on A and B, with ground on G. The controller ends the bus, so the terminator switch goes on."},
+    {"id":"power","minDuration":6,"display":"One 24 V DC rail for the controller and the sensor.","text":"A twenty four volt supply powers the controller, and the sensor shares the same rail."},
+    {"id":"setup","minDuration":8,"text":"Install the firmware from the web installer. Then set the MQTT broker and the alarm limits in the controller's own web dashboard."},
+    {"id":"viking","minDuration":9,"text":"MultiViz learns a baseline for each sensor, so there are no thresholds to tune. When the pattern shifts, it names the symptom, and ranks which machine needs attention first."},
+    {"id":"do","minDuration":7,"display":"DO0 follows the dashboard alarm, latched. The relay contact runs the beacon.","text":"Now the alarm. Output zero follows the dashboard alarm, and drives a twenty four volt relay for a beacon and buzzer."},
+    {"id":"di","minDuration":6,"display":"DI1: acknowledge push button. DI0: start a capture.","text":"A push button on input one acknowledges the alarm. Input zero can start a capture."},
+    {"id":"alarm","minDuration":22,"segments":[
+      {"at":0.6,"text":"Vibration on the motor climbs past the alarm limit."},
+      {"at":4.4,"text":"After the delay, the controller trips the alarm. Output zero closes the relay, and the beacon flashes."},
+      {"at":11.6,"text":"The operator presses acknowledge. While vibration is still high, the relay stays on."},
+      {"at":17.6,"text":"Once it clears, the relay drops, and the alarm is ready again."}
+    ]},
+    {"id":"rule","minDuration":8.5,"text":"The rule runs on the controller. Trip on velocity or temperature, after a delay, and latch the relay. It drops only when the alarm is acknowledged, and the reading has cleared."},
+    {"id":"outro","minDuration":7,"text":"Sense, analyse, act. One sensor, one controller, and an alarm that someone has to answer."}
+  ]
+}
