@@ -4,6 +4,7 @@
   "scenes": [
     {"id":"intro","minDuration":7.5,"display":"IRIV IO Controller + Wilcoxon 883M, analysed by Viking Analytics.","text":"This vibration monitor uses an IRIV IO Controller, running the Wilcoxon gateway firmware. It reads a Wilcoxon eight eight three M, and publishes to Viking Analytics over MQTT."},
     {"id":"overview","minDuration":8,"text":"The sensor measures. The controller polls it and publishes. Viking Analytics learns the machine, and flags what changes."},
+    {"id":"cutaway","minDuration":14,"text":"This simplified cutaway reveals the bearings, shaft and pump impeller. Forces from rotating parts travel through the bearings into the housing, where the sensor measures vibration. The motion is slowed for illustration; this is not a drawing of a specific motor or pump."},
     {"id":"chain","minDuration":15,"segments":[
       {"at":0.6,"text":"The eight eight three M sits on the motor, and measures vibration on three axes, plus temperature."},
       {"at":6.5,"text":"The controller polls it over Modbus, and publishes each reading as MQTT."},

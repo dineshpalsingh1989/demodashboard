@@ -36,6 +36,7 @@ async function main(){
   if(check){await checkTour(key,folder,url);continue;}
   await ev("window.reviewCanvas=document.createElement('canvas');reviewCanvas.width=1920;reviewCanvas.height=1080;window.reviewContext=reviewCanvas.getContext('2d');");
   const frames=key==='iocvib'?[2,SCENE_TIME('chain',3),SCENE_TIME('chain',12),SCENE_TIME('sensor',4),SCENE_TIME('rs485',4),SCENE_TIME('setup',4),SCENE_TIME('viking',5),SCENE_TIME('do',4),SCENE_TIME('alarm',6),SCENE_TIME('alarm',12),SCENE_TIME('rule',5),SCENE_TIME('outro',4)]:key==='ioc'?[2,SCENE_TIME('pump',6),SCENE_TIME('pump',12),SCENE_TIME('front',4),SCENE_TIME('rs485',3),SCENE_TIME('di',3),SCENE_TIME('do',3),SCENE_TIME('status',3),SCENE_TIME('switches',3),SCENE_TIME('machine',6),SCENE_TIME('setup',4),SCENE_TIME('din',3)]:key==='smarthub'?[2,SCENE_TIME('pos',4),SCENE_TIME('pos',12),SCENE_TIME('rear',3),SCENE_TIME('hdmi',3),SCENE_TIME('leds',3),SCENE_TIME('cell',3),SCENE_TIME('signage',5),SCENE_TIME('mes',6),SCENE_TIME('mount',3),SCENE_TIME('proof',3)]:key==='hub'?[2,SCENE_TIME('find',3),SCENE_TIME('rules',3),SCENE_TIME('failover',3),SCENE_TIME('control',3),SCENE_TIME('outro',3)]:key==='edge'?[2,SCENE_TIME('inspection',3),SCENE_TIME('inspection',8),SCENE_TIME('inspection',16),SCENE_TIME('power',3),SCENE_TIME('di',3),SCENE_TIME('cams',3),SCENE_TIME('outro',3)]:[2,SCENE_TIME('power',3),SCENE_TIME('di',3),SCENE_TIME('usb',3),SCENE_TIME('expand',3),SCENE_TIME('outro',3)];
+  if(key==='iocvib')frames.push(SCENE_TIME('cutaway',6),SCENE_TIME('sensor',12));
   for(let i=0;i<frames.length;i++){
    const time=typeof frames[i]==='number'?frames[i]:await ev(frames[i]);
    const data=await ev(`render(reviewContext,${time});reviewCanvas.toDataURL('image/png').split(',')[1]`);
@@ -66,6 +67,21 @@ async function main(){
 }
 async function checkTour(key,folder,url){
  if(key==='iocvib'){
+  for(const part of ['sensor','ioc','relay']){
+   await ev(`document.querySelector('[data-hardware="${part}"]').click()`);
+   assert(await ev(`document.querySelector('[data-hardware="${part}"]').getAttribute('aria-pressed')==='true' && document.querySelector('#hardware-detail').textContent.includes('Connections:')`),'Hardware selection');
+  }
+  await ev("document.querySelector('#hardware-watch').click();document.querySelector('#tour-video').pause()");
+  assert(await ev("Math.abs(document.querySelector('#tour-video').currentTime-NARRATION.scenes.find(s=>s.id==='do').start)<.5"),'Hardware film seek');
+  const paths=[];
+  for(const fault of ['normal','imbalance','misalignment']){
+   await ev(`document.querySelector('[data-fault="${fault}"]').click()`);
+   paths.push(await ev("document.querySelector('#fault-plot path[stroke]').getAttribute('d')"));
+   assert(await ev(`document.querySelector('#fault-plot').getAttribute('aria-label').toLowerCase().includes('${fault}')`),'Fault example explanation');
+  }
+  assert.equal(new Set(paths).size,3,'Fault examples must differ');
+  assert(fs.readFileSync(path.join(root,folder,'wiring-guide.pdf')).subarray(0,5).toString()==='%PDF-','Printable PDF');
+  console.log('PASS hardware selection, film links, fault comparisons and PDF');
   await ev("document.querySelector('[data-wire=alarm]').click()");
   assert(await ev("document.querySelector('[data-path=alarm]').classList.contains('active') && !document.querySelector('[data-path=power]').classList.contains('active')"),'Wiring selection');
   await ev("document.querySelector('[data-view=spectrum]').click();document.getElementById('sample-level').value='1.5';document.getElementById('sample-level').dispatchEvent(new Event('input'))");
@@ -95,6 +111,13 @@ async function checkTour(key,folder,url){
  // Seek to representative captions, verify end-card and phone presentation.
  await ev("document.getElementById('tour-video').currentTime=NARRATION.scenes[2].start+1.5");await sleep(250);
  for(const width of [1440,390]){
+  if(key==='iocvib'&&width===390){
+   await cdp('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:true});
+   await ev("document.querySelector('.menu-toggle').click()");
+   assert(await ev("document.querySelector('.menu-toggle').getAttribute('aria-expanded')==='true' && getComputedStyle(document.querySelector('nav .links')).display==='flex'"),'Mobile sections menu opens');
+   await ev("document.querySelector('nav a[href=\"#explore\"]').click()");
+   assert(await ev("document.querySelector('.menu-toggle').getAttribute('aria-expanded')==='false' && document.activeElement.id==='explore'"),'Menu closes and focuses destination');
+  }
   await cdp('Emulation.setDeviceMetricsOverride',{width,height:1000,deviceScaleFactor:1,mobile:width<600});
   if(key==='iocvib'){
    await ev('window.scrollTo({top:0,behavior:"instant"})');await sleep(200);
@@ -108,6 +131,8 @@ async function checkTour(key,folder,url){
    const wiring=await cdp('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(out,`${key}-wiring-${width}.png`),Buffer.from(wiring.data,'base64'));
    await ev("document.getElementById('measurements').scrollIntoView({block:'start',behavior:'instant'})");await sleep(180);
    const scope=await cdp('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(out,`${key}-scope-${width}.png`),Buffer.from(scope.data,'base64'));
+   await ev("document.getElementById('explore').scrollIntoView({block:'start',behavior:'instant'})");await sleep(180);
+   const explore=await cdp('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(out,`${key}-explore-${width}.png`),Buffer.from(explore.data,'base64'));
   }
  }
  if(key==='edge'){
@@ -129,6 +154,13 @@ async function checkTour(key,folder,url){
    assert(await ev('document.documentElement.scrollWidth<=innerWidth'),'Demo horizontal overflow');const image=await cdp('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(out,`edge-demo-${width}.png`),Buffer.from(image.data,'base64'));
   }
   await cdp('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});await cdp('Page.reload');await waitFor("typeof demoPaused!=='undefined'");assert(await ev('demoPaused'),'Reduced-motion preference must pause the live demo');await cdp('Emulation.setEmulatedMedia',{features:[]});
+ }
+ if(key==='iocvib'){
+  assert((await fetch(`${url}/${folder}/wiring-guide.pdf`)).ok,'PDF download route');
+  await cdp('Page.navigate',{url:`${url}/${folder}/wiring-guide.html`});await waitFor("document.querySelector('.check li')!==null");
+  assert(await ev("document.querySelectorAll('table').length===2 && document.querySelectorAll('.check li').length===10"),'Guide tables and checklist');
+  await cdp('Emulation.setDeviceMetricsOverride',{width:1000,height:1200,deviceScaleFactor:1,mobile:false});
+  const guide=await cdp('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(out,'iocvib-print-guide.png'),Buffer.from(guide.data,'base64'));
  }
  console.log('PASS',key,'audio/video decode, captions, seeking, end-card links and desktop/mobile controls',JSON.stringify(meta));
 }

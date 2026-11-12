@@ -4,6 +4,11 @@
 
 ### 883M vibration monitor tour
 
+- Expanded the film to three minutes with a narrated motor/pump cutaway, sensor labels, detailed cabling, fan grille, pipe support and material textures.
+- Added clickable hardware, clearly labelled synthetic fault comparisons, and a downloadable PDF/HTML wiring guide with parts and setup checklist.
+- Added the 883M RS485 to MQTT project logo, responsive sections menu, active-section feedback, keyboard diagram access and mobile chart captions.
+- Documented the current single-sensor custom firmware limit and the requirements for RS485 expansion.
+
 - Added a narrated 3D tour of a Wilcoxon 883M connected to an IRIV IO Controller, with a sensor close-up, landscape controller model, wiring, MQTT analytics and a local alarm sequence.
 - Added a responsive product page with the film, captions, transcript, wiring overview, live MQTT viewer, interactive alarm demonstration and sensor reference.
 - Linked the new tour from the city dashboard and README.

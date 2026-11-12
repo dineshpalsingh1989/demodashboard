@@ -12,6 +12,7 @@ const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
 /* ---------- scenes: text, overlays and camera keys [fraction, position, target] ---------- */
 const SENSOR = V3(-1.1, 0.68, 0.2), IOC_C = V3(0.8, 1.36, -0.412), HOLO = V3(-0.3, 2.05, -0.45), DASH = V3(-0.45, 1.45, 0.55), BTN = V3(1.3, 1.0, -0.24), RELAY = V3(1.02, 1.36, -0.43), BEACON = V3(1.22, 1.86, -0.4);
 const SCENE_DEFS = {
+  cutaway: { kicker: 'Illustrative cutaway · slowed motion', title: 'Inside the rotating machine.', chips: ['Bearings support the shaft', 'Shaft drives the impeller', 'Vibration reaches the housing'], keys: [[0,V3(-.5,1.0,2.0),V3(-1.25,.43,.2)],[1,V3(-.3,.85,1.8),V3(-1.25,.43,.2)]], callouts: [[V3(-1.72,.42,.2),'Bearing','#936323'],[V3(-1.35,.42,.2),'Shaft','#23617c'],[V3(-.62,.42,.2),'Impeller','#936323']] },
   intro: { kicker: 'Vibration monitor', title: 'Motor vibration, on MQTT.', keys: [[0, V3(2.9, 1.8, 3.6), V3(-0.2, 1.1, -0.2)], [1, V3(-0.9, 1.45, 3.5), V3(0.0, 1.15, -0.2)]] },
   overview: { kicker: 'Three parts', title: 'Sense. Bridge. Analyse.', keys: [[0, V3(0.4, 2.3, 4.3), V3(-0.1, 1.2, -0.2)], [1, V3(0.1, 2.1, 3.9), V3(-0.1, 1.25, -0.2)]],
     callouts: [[SENSOR, 'Sense · Wilcoxon 883M', '#8e44ad'], [IOC_C, 'Bridge · IRIV IO Controller', ACCENT], [HOLO, 'Analyse · Viking Analytics', '#0a84ff']] },
@@ -154,6 +155,25 @@ function build() {
   mesh(new THREE.CylinderGeometry(.06, .06, .55, 24), steel, V3(-0.62, .42, .52), motor, [Math.PI / 2, 0, 0]);
   mesh(new THREE.CylinderGeometry(.09, .09, .02, 24), steel, V3(-0.62, .42, .79), motor, [Math.PI / 2, 0, 0]);
   // 883M on a spot face over the drive-end bearing, where a real one is mounted
+  W.outerMotor = motor.children.map(part=>({part,original:part.material,ghost:Array.isArray(part.material)?part.material.map(m=>{const c=m.clone();c.transparent=true;c.opacity=.10;c.depthWrite=false;return c;}):(()=>{const c=part.material.clone();c.transparent=true;c.opacity=.10;c.depthWrite=false;return c;})()}));
+  W.internals = new THREE.Group(); motor.add(W.internals);
+  const copper = mat('#bc7838',{metalness:.75,roughness:.35});
+  mesh(new THREE.CylinderGeometry(.027,.027,1.2,32),steel,V3(-1.17,.42,.2),W.internals,[0,0,Math.PI/2]);
+  mesh(new THREE.CylinderGeometry(.11,.11,.42,48),copper,V3(-1.45,.42,.2),W.internals,[0,0,Math.PI/2]);
+  for(const x of [-1.72,-1.12]) {
+    mesh(new THREE.TorusGeometry(.068,.018,12,48),steel,V3(x,.42,.2),W.internals,[0,Math.PI/2,0]);
+    for(let k=0;k<10;k++){const a=k*Math.PI/5;mesh(new THREE.SphereGeometry(.012,12,8),copper,V3(x,.42+Math.sin(a)*.068,.2+Math.cos(a)*.068),W.internals);}
+  }
+  W.impeller=new THREE.Group();W.impeller.position.set(-.62,.42,.2);W.internals.add(W.impeller);
+  mesh(new THREE.CylinderGeometry(.14,.14,.018,48),copper,V3(0,0,0),W.impeller,[0,0,Math.PI/2]);
+  for(let k=0;k<7;k++){const a=k*Math.PI*2/7;mesh(rbox(.05,.09,.015,.006),copper,V3(.025,Math.sin(a)*.075,Math.cos(a)*.075),W.impeller,[a,0,0]);}
+  // Actual depth on the fan guard, and an independently supported inlet pipe.
+  for(const r of [.08,.13,.18])mesh(new THREE.TorusGeometry(r,.003,8,64),dark,V3(-1.974,.42,.2),motor,[0,Math.PI/2,0]);
+  for(let k=0;k<8;k++){const a=k*Math.PI/4;mesh(new THREE.BoxGeometry(.004,.40,.004),dark,V3(-1.978,.42,.2),motor,[a,0,0]);}
+  mesh(rbox(.10,.32,.10,.008),dark,V3(-.62,.18,.68));
+  mesh(new THREE.TorusGeometry(.066,.006,8,32),steel,V3(-.62,.42,.68));
+  const paintGrain=canvasTex(128,128,(g,w,h)=>{g.fillStyle='#888';g.fillRect(0,0,w,h);for(let i=0;i<4000;i++){g.fillStyle=i%2?'#777':'#999';g.fillRect((i*37)%w,(i*59+Math.floor(i/w)*17)%h,1,1);}});
+  blue.bumpMap=pumpPaint.bumpMap=paintGrain;blue.bumpScale=pumpPaint.bumpScale=.0007;
   mesh(new THREE.CylinderGeometry(.045, .045, .03, 32), blue, V3(-1.1, .645, .2), motor);
   const s883 = W.s883 = new THREE.Group(); s883.position.set(-1.1, .66, .2); motor.add(s883);
   const topTex = canvasTex(512, 512, (g, w) => {
@@ -194,7 +214,7 @@ function build() {
   mesh(new THREE.CylinderGeometry(.0052,.0052,.001,32),mat('#090b0d',{roughness:.6}),V3(.016,.0512,-.013),s883);
   W.sensorLed = mesh(new THREE.CylinderGeometry(.0027,.0027,.0005,24), new THREE.MeshBasicMaterial({ color: '#30d158' }), V3(.016, .0518, -.013), s883);
   W.axes = new THREE.Group(); s883.add(W.axes); W.axes.position.y = .055;
-  [['#e5383b', V3(1, 0, 0)], ['#30d158', V3(0, 0, 1)], ['#0a84ff', V3(0, 1, 0)]].forEach(([c, d]) => W.axes.add(new THREE.ArrowHelper(d, V3(0, 0, 0), .11, c, .025, .014)));
+  [['#e5383b', V3(1, 0, 0)], ['#30d158', V3(0, 0, 1)], ['#0a84ff', V3(0, 1, 0)]].forEach(([c, d]) => W.axes.add(new THREE.ArrowHelper(d, V3(0, 0, 0), .055, c, .012, .007)));
 
   // enclosure: RAL 7035 body with an open door, galvanised mounting plate, DIN rail, slotted wire duct
   const ral = mat('#d5d7d6', { roughness: .5, metalness: .05 }), plateM = mat('#c3c8ce', { metalness: .75, roughness: .42 });
@@ -366,6 +386,9 @@ function updateWorld(t, s, u) {
   const amp = .0007 * v * v;
   W.motor.position.set(Math.sin(t * 61) * amp, Math.sin(t * 47 + 1) * amp, Math.sin(t * 53 + 2) * amp * .6);
   W.axes.visible = s.id === 'sensor' && u > 5; W.axes.scale.setScalar(ease((u - 5) / 1));
+  const cutaway=s.id==='cutaway' && u>1 && u<s.d-1;
+  W.outerMotor.forEach(({part,original,ghost})=>{part.material=cutaway?ghost:original;part.castShadow=!cutaway;});W.internals.visible=cutaway;
+  W.impeller.rotation.x=t*.9;
   const flash = relayOn && Math.sin(u * 14) > -.2;
   W.lensMat.emissiveIntensity = relayOn ? (flash ? 2.4 : .25) : 0; W.beaconLight.intensity = relayOn ? (flash ? 3.2 : .3) : 0;
   W.relayLed.material.color.set(relayOn ? '#ff3b30' : '#331010'); W.do0Led.material.color.set(relayOn ? '#ffb020' : '#3a2a10');
@@ -392,6 +415,11 @@ function updateWorld(t, s, u) {
 function screenOf(p) { const v = p.clone().project(camera); return v.z > 1 ? null : [(v.x + 1) / 2 * FW, (1 - v.y) / 2 * FH]; }
 function pill(ctx, x, y, text, bg, size = 24) { ctx.font = `700 ${size}px ${FONT}`; const w = ctx.measureText(text).width + size * 1.2, h = size * 1.8; ctx.beginPath(); rr(ctx, x - w / 2, y - h / 2, w, h, h / 2); ctx.fillStyle = bg; ctx.fill(); ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, x, y + 1); return w; }
 function callouts(ctx, s, a) {
+  if(s.id==='sensor') {
+    const labels=[['M8 connector',V3(-1.05,.688,.2)],['Status LED',V3(-1.084,.712,-.013+.2)],['Mounting base',V3(-1.1,.663,.2)],['X / Y / Z directions',V3(-1.1,.75,.2)]];
+    ctx.save();ctx.globalAlpha=a;
+    labels.forEach(([label,p],i)=>{const point=screenOf(p);if(!point)return;const x=i%2?1500:340,y=160+Math.floor(i/2)*130;ctx.strokeStyle='#80cbd7';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(...point);ctx.lineTo(x,y);ctx.stroke();pill(ctx,x,y,label,'#173b50',24);});ctx.restore();
+  }
   if (!s.callouts || a <= 0) return;
   ctx.save(); ctx.globalAlpha = a;
   s.callouts.forEach((c, k) => {

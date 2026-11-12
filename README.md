@@ -4,6 +4,21 @@ An interactive smart city simulation built with HTML, CSS, and JavaScript. One m
 
 **[Open the live demo](https://dineshpalsingh1989.github.io/demodashboard/)**
 
+## Current project: 883M RS485 to MQTT
+
+<a href="https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-ioc-vibration/"><img src="short-video-of-iriv-ioc-vibration/images/883m-rs485-to-mqtt-logo.png" alt="883M RS485 to MQTT project logo" width="200"></a>
+
+The latest work connects the Wilcoxon 883M demonstration to an IRIV IO Controller walkthrough: a three-minute narrated film with a motor/pump cutaway, labelled sensor close-ups, supported cabling, and a complete alarm sequence.
+
+- **Explore:** clickable hardware, interactive wiring, synthetic waveform/spectrum and fault comparisons, and guided setup.
+- **Use on mobile:** responsive sections menu, keyboard navigation, readable diagrams and reduced-motion support.
+- **Take to the bench:** [PDF wiring guide](short-video-of-iriv-ioc-vibration/wiring-guide.pdf), [printable HTML guide](short-video-of-iriv-ioc-vibration/wiring-guide.html), connection table, parts list and commissioning checklist.
+- **Firmware scope:** the current custom gateway reads one configured sensor ID. The RS485 expansion diagram explains the additional firmware and validation needed for multiple sensors; 32-sensor monitoring is not enabled.
+
+[Open the 883M experience](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-ioc-vibration/) · [Gateway firmware](https://github.com/dineshpalsingh1989/Wilcoxon-883M_RTU-to-TCP-and-MQTT) · [Watch the film](short-video-of-iriv-ioc-vibration/IRIV-IOC-883M-vibration-tour.mp4)
+
+The film, fault comparisons and sample charts are illustrative simulations. The live MQTT viewer uses a separately configured broker.
+
 ## Install the app
 
 Open the live demo on your phone or computer, then choose **Install app** on the welcome screen. Chrome and other supported browsers show an install prompt. On iPhone or iPad, open the site in Safari, tap **Share**, choose **Add to Home Screen**, and turn on **Open as Web App** before tapping **Add**. The installed app launches in its own window and keeps the main dashboard available offline after the first online visit. Tour films still need a connection.
@@ -42,7 +57,7 @@ Click **IRIV films** in the top bar of the dashboard to open all of these, or us
 | **IRIV PiControl** | [Tour](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-pi/): an interactive map of every pin and port, 49 compatible Cytron parts by port, a system builder that checks port limits, and ready-made parts lists | [MP4 · 1 min 45 s](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-pi/IRIV-PiControl-tour.mp4) |
 | **IRIV SmartHub CM5** | [Tour](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-smarthub/): a scroll-through look around the unit, live demos of a shop checkout, two-screen signage and a production tracker, every port, 19 compatible Cytron parts and a system builder | [MP4 · 2 min 14 s](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-smarthub/IRIV-SmartHub-CM5-tour.mp4) |
 | **IRIV IO Controller MQTT** | [Tour](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-ioc/): a hands-on panel that shows the MQTT message for every input you flip, pump-station and machine-monitor demos, all 32 terminals, the browser setup screens and compatible Cytron parts | [MP4 · 2 min 17 s](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-ioc/IRIV-IO-Controller-MQTT-tour.mp4) |
-| **883M vibration monitor** | [Tour](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-ioc-vibration/): detailed motor, pump and supported sensor cabling, expanded 883M explanation, interactive wiring, sample waveforms/spectra, guided setup and a complete alarm event | [MP4 · 2 min 43 s](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-ioc-vibration/IRIV-IOC-883M-vibration-tour.mp4) |
+| **883M vibration monitor** | [Tour](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-ioc-vibration/): narrated motor/pump cutaway, labelled sensor close-ups, clickable hardware, synthetic fault comparisons, interactive wiring, guided setup and a printable wiring guide | [MP4 · 3 min](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-ioc-vibration/IRIV-IOC-883M-vibration-tour.mp4) |
 | **IRIV Edge dashboard** | [Tour](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-hub/): the dashboard itself, recorded from this demo: the map of every unit, wiring, live rules, MQTT messages, offline behaviour and the airport control centre. All readings are simulated. | [MP4 · 1 min 10 s](https://dineshpalsingh1989.github.io/demodashboard/short-video-of-iriv-hub/IRIV-Edge-dashboard-tour.mp4) |
 | **All IRIV controllers** | [Compare page](https://dineshpalsingh1989.github.io/demodashboard/iriv-controllers/): PiControl, IO Controller and EdgeAI CM5 side by side, a "Which IRIV do I need?" picker and how they work together | both films |
 | **Warehouse Command 3D** | [Open](https://dineshpalsingh1989.github.io/demodashboard/warehouse-3d/): a 3D view of three warehouses. Forklifts accelerate, brake, wait for free aisles, give way at aisle mouths and recharge on their bays. Turn **anti-collision off** to see them collide. All 30 sensors and cameras are installed and clickable (UG65, EM300-TH, TS302 cold room, EM300-SLD, AM319, VS133, WS101, WS558, CT101/CT105, EM400-TLD at each dock, IRIV EdgeAI CM5, PiControl and IO Controller MQTT). Night mode, heatmap, follow and 1–4× speed. All simulated. | none |
