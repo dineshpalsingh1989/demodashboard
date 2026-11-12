@@ -350,6 +350,35 @@
   </div>
 </section>
 
+<section class="grey" id="multi-sensor">
+  <div class="wrap">
+    <p class="eyebrow">Scaling the installation</p>
+    <h2>One RS485 bus. Multiple sensor addresses.</h2>
+    <p class="lede" style="margin-left:0">Connect the sensors through the IOC’s RS485 A, B and G terminals. Each sensor needs a unique Modbus address and matching serial settings. The controller polls addresses in turn.</p>
+    <div class="lab">
+      <span class="sample-label">Expansion concept · not enabled by this demo firmware</span>
+      <h3>Can one IOC monitor 32 sensors?</h3>
+      <p><strong>The current custom 883M gateway reads one configured sensor ID.</strong> A 32-sensor installation needs a firmware polling list, separate readings and alarms per sensor, and testing of power, bus loading and refresh time. Changing the diagram does not enable that capability.</p>
+      <div class="wiring-scroll"><svg class="wiring-map" viewBox="0 0 900 310" role="img" aria-labelledby="bus-title bus-desc">
+        <title id="bus-title">Proposed multi-sensor RS485 trunk</title>
+        <desc id="bus-desc">One IOC at the first end connects along an A and B trunk to sensors with unique addresses 1, 2 through N. Short branches connect each sensor. Termination is at the two physical ends. G and a separately sized power supply are required but omitted from this signal diagram. N equals 32 only after firmware and installation validation.</desc>
+        <g fill="#203d50" stroke="#4e7086"><rect x="25" y="55" width="155" height="100" rx="12"/><rect x="235" y="180" width="150" height="70" rx="12"/><rect x="445" y="180" width="150" height="70" rx="12"/><rect x="685" y="180" width="150" height="70" rx="12"/></g>
+        <g fill="none" stroke="#62d6e6" stroke-width="3"><path d="M180 90H850 M300 90V180 M510 90V180 M750 90V180"/></g>
+        <g fill="none" stroke="#ffb174" stroke-width="3"><path d="M180 125H850 M320 125V180 M530 125V180 M770 125V180"/></g>
+        <g stroke="#e5f1f7" stroke-width="5"><path d="M195 90V125 M850 90V125"/></g>
+        <text x="45" y="90">IRIV IOC</text><text x="45" y="120">A / B / G</text><text x="235" y="65">A → pin 3 (+)</text><text x="445" y="65">B → pin 4 (−)</text><text x="250" y="210">883M · ID 1</text><text x="460" y="210">883M · ID 2</text><text x="700" y="210">883M · ID N</text><text x="625" y="215">…</text><text x="25" y="280">Termination at both physical ends · short branches · G and power omitted for clarity</text>
+      </svg></div>
+      <div class="wire-overview">
+        <div class="wire-step"><small>01 · Wire</small><strong>A, B and reference</strong><span>Route one trunk with short branches: A to pin 3, B to pin 4, G to sensor ground. Use a correctly sized supply for pin 1 and pin 2. Terminate the two physical bus ends, not every sensor.</span></div>
+        <div class="wire-step"><small>02 · Address</small><strong>Configure each sensor</strong><span>Assign unique IDs, for example 1–32, one sensor at a time. Match baud, parity and stop bits. For a star layout, use an appropriate RS485 hub as described by Wilcoxon.</span></div>
+        <div class="wire-step"><small>03 · Validate</small><strong>Allow time for every reply</strong><span>More sensors and waveform transfers share the same bus time. Verify refresh time, missing-sensor handling and per-sensor MQTT identification before deploying.</span></div>
+      </div>
+      <p><strong>32 polling jobs is a separate limit.</strong> Cytron’s standard IOC MQTT firmware offers up to 32 poll jobs. One sensor may need several jobs, so this does not guarantee complete monitoring of 32 vibration sensors.</p>
+      <p>References: <a href="https://www.cytron.io/tutorial/field-bus-rs485modbus-rtu" target="_blank" rel="noopener">Cytron poll-job documentation</a> · <a href="https://wilcoxon.com/wp-content/uploads/2026/09/883M-manual-97052A.pdf" target="_blank" rel="noopener">Wilcoxon bus topologies and settings</a> · <a href="https://github.com/dineshpalsingh1989/Wilcoxon-883M_RTU-to-TCP-and-MQTT/blob/2bc818b7915e3035e7406076b9866b08ca991c08/IRIV%20IOC/src/modbus/modbus_rtu.cpp" target="_blank" rel="noopener">Custom gateway source reviewed</a>.</p>
+    </div>
+  </div>
+ </section>
+
 <section class="grey" id="setup">
   <div class="wrap">
     <p class="eyebrow">Setup</p>
